@@ -63,9 +63,15 @@ create table if not exists public.profiles (
   phone      text,
   avatar     text,
   is_active  boolean not null default true,
+  last_login_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Enforce unique email if present
+create unique index if not exists idx_profiles_email_unique
+  on public.profiles((lower(email)))
+  where email is not null and email <> '';
 
 create or replace function public.tg_profiles_set_updated_at()
 returns trigger language plpgsql as $$
