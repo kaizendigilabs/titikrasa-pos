@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { AppProviders } from '@/components/Providers';
+import { AppProviders } from '@/components/shared/Providers';
 import { Toaster } from 'sonner';
 import './globals.css';
 
