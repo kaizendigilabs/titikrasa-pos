@@ -1,33 +1,41 @@
-import { AppSidebar } from '@/components/navigation/AppSidebar';
-import { SiteHeader } from '@/components/shared/SiteHeader';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+"use client";
 
-export default function Page() {
+import { useState } from "react";
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
+import { getDateRange, type DateRangeType } from "@/lib/utils/date-helpers";
+
+export default function DashboardPage() {
+  const [dateRange, setDateRange] = useState<DateRangeType>("today");
+  const [metrics] = useState(null);
+  const [chartData] = useState<Array<{ date: string; revenue: number }>>([]);
+
+  // Get current date range for rendering
+  const { start, end } = getDateRange(dateRange);
+  const rangeLabel = `${start.toLocaleDateString()} — ${end.toLocaleDateString()}`;
+
   return (
-    <SidebarProvider
-      style={
-        {
-          '--sidebar-width': 'calc(var(--spacing) * 72)',
-          '--header-height': 'calc(var(--spacing) * 12)',
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              {/** Metric Cards */}
-              <div className="px-4 lg:px-6">
-                {/** Sales Overview Chart */}
-              </div>
+    <div className="flex flex-1 flex-col">
+      <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          {/* Date Range Filter */}
+          <div className="px-4 lg:px-6 space-y-2">
+            <DateRangeFilter value={dateRange} onChange={setDateRange} />
+            <p className="text-sm text-muted-foreground">Showing data for {rangeLabel}</p>
+          </div>
 
-              {/** Transaction History Table */}
+          {/* Metrics Cards */}
+
+          <div className="px-4 lg:px-6">
+            {/* Sales Chart */}
+          </div>
+
+          <div className="px-4 lg:px-6">
+            <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+              {/* Transaction History Table */}
             </div>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </div>
   );
 }
