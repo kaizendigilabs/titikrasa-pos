@@ -19,8 +19,10 @@ import { STORE_NAME } from "@/lib/constants/app";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
+    id: string;
     name: string;
     email: string;
+    phone?: string | null;
     avatar?: string;
   };
 }

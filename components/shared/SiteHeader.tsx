@@ -5,9 +5,11 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/shared/Breadcrumbs";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { useUserProfile } from "@/lib/hooks/use-user-profile";
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const profile = useUserProfile();
 
   // Generate breadcrumbs from pathname
   const getBreadcrumbs = (): BreadcrumbItem[] => {
@@ -16,10 +18,14 @@ export function SiteHeader() {
 
     paths.forEach((path, index) => {
       const href = "/" + paths.slice(0, index + 1).join("/");
-      const label = path
+      let label = path
         .split("-")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ");
+
+      if (index === paths.length - 1 && profile && path === profile.userId) {
+        label = profile.displayName;
+      }
 
       breadcrumbs.push({
         label,

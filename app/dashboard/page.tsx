@@ -1,13 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import { getDateRange, type DateRangeType } from "@/lib/utils/date-helpers";
 
 export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<DateRangeType>("today");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [metrics] = useState(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [chartData] = useState<Array<{ date: string; revenue: number }>>([]);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const handledRef = useRef(false);
+
+  useEffect(() => {
+    if (handledRef.current) return;
+    const status = searchParams.get("status");
+    const message = searchParams.get("message");
+    if (status === "forbidden") {
+      toast.error(message ?? "You do not have permission to access this resource");
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("status");
+      params.delete("message");
+      router.replace(`/dashboard${params.toString() ? `?${params.toString()}` : ""}`);
+      handledRef.current = true;
+    }
+  }, [router, searchParams]);
 
   // Get current date range for rendering
   const { start, end } = getDateRange(dateRange);
