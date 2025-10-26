@@ -122,7 +122,7 @@ export async function PATCH(
 
     const { data, error } = await actor.supabase
       .from("profiles")
-      .select("user_id, name, email, phone")
+      .select("user_id, name, email, phone, avatar")
       .eq("user_id", id)
       .maybeSingle();
 
@@ -138,6 +138,7 @@ export async function PATCH(
       name: data?.name ?? null,
       email: data?.email ?? trimmedEmail ?? actor.user.email ?? null,
       phone: data?.phone ?? null,
+      avatar: data?.avatar ?? null,
     });
   } catch (error) {
     if (error instanceof AppError) {

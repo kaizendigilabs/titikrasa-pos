@@ -126,6 +126,7 @@ export type UserProfileResponse = {
   name: string | null;
   email: string | null;
   phone: string | null;
+  avatar: string | null;
 };
 
 export async function updateProfile(
@@ -135,6 +136,7 @@ export async function updateProfile(
     email: string;
     phone: string | null;
     password: string;
+    avatar: string | null;
   }>,
 ) {
   const { data } = await request<UserProfileResponse>(

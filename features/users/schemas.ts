@@ -85,6 +85,9 @@ export const profileUpdateSchema = z
       .min(8, "Password must be at least 8 characters long")
       .max(128, "Password is too long")
       .optional(),
+    avatar: z
+      .union([z.string().url("Avatar must be a valid URL"), z.literal("")])
+      .optional(),
   })
   .refine(
     (payload) =>

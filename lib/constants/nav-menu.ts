@@ -64,7 +64,7 @@ export const NAV_MENU: NavMenuItem[] = [
   {
     title: "Resellers",
     icon: IconUsers,
-    url: "/dashboard/reseller",
+    url: "/dashboard/resellers",
   },
   {
     title: "Users",

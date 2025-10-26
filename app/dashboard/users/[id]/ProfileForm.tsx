@@ -24,6 +24,7 @@ type ProfileFormProps = {
     name: string;
     email: string;
     phone: string | null;
+    avatar: string | null;
   };
 };
 
@@ -33,6 +34,7 @@ export function ProfileForm({ userId, initialProfile }: ProfileFormProps) {
     name: initialProfile.name ?? '',
     email: initialProfile.email ?? '',
     phone: initialProfile.phone ?? '',
+    avatar: initialProfile.avatar ?? '',
     password: '',
   }));
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -43,9 +45,10 @@ export function ProfileForm({ userId, initialProfile }: ProfileFormProps) {
       name: initialProfile.name ?? '',
       email: initialProfile.email ?? '',
       phone: initialProfile.phone ?? '',
+      avatar: initialProfile.avatar ?? '',
       password: '',
     });
-  }, [initialProfile.email, initialProfile.name, initialProfile.phone]);
+  }, [initialProfile.email, initialProfile.name, initialProfile.phone, initialProfile.avatar]);
 
   const handleSubmit = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -94,7 +97,14 @@ export function ProfileForm({ userId, initialProfile }: ProfileFormProps) {
         setIsSubmitting(false);
       }
     },
-    [formState, initialProfile.email, initialProfile.name, initialProfile.phone, router, userId],
+    [
+      formState,
+      initialProfile.email,
+      initialProfile.name,
+      initialProfile.phone,
+      router,
+      userId,
+    ],
   );
 
   return (

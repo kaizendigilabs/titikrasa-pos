@@ -24,7 +24,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 
     const { data, error } = await actor.supabase
       .from('profiles')
-      .select('user_id, name, email, phone')
+      .select('user_id, name, email, phone, avatar')
       .eq('user_id', targetId)
       .maybeSingle();
 
@@ -40,6 +40,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
       name: data.name ?? actor.user.email ?? 'User',
       email: data.email ?? actor.user.email ?? '',
       phone: data.phone ?? '',
+      avatar: data.avatar ?? null,
     };
 
     return (
