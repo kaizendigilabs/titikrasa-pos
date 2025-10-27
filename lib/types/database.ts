@@ -777,7 +777,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      purchase_order_item_entries: {
+        Row: {
+          base_uom: string | null
+          catalog_item_id: string | null
+          completed_at: string | null
+          created_by: string | null
+          issued_at: string | null
+          price: number | null
+          purchase_order_id: string | null
+          qty: number | null
+          status: Database["public"]["Enums"]["po_status"] | null
+          store_ingredient_id: string | null
+          supplier_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: { Args: { role_name: string; uid: string }; Returns: boolean }

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   IconDashboard,
   IconCash,
@@ -9,7 +9,8 @@ import {
   IconFileInvoice,
   IconUsers,
   IconSettings,
-} from "@tabler/icons-react";
+  IconAdjustments,
+} from '@tabler/icons-react';
 
 export interface NavMenuItem {
   title: string;
@@ -20,60 +21,67 @@ export interface NavMenuItem {
 
 export const NAV_MENU: NavMenuItem[] = [
   {
-    title: "Dashboard",
+    title: 'Dashboard',
     icon: IconDashboard,
-    url: "/dashboard",
+    url: '/dashboard',
   },
   {
-    title: "Point of Sale",
+    title: 'Point of Sale',
     icon: IconCash,
     items: [
-      { title: "POS", url: "/dashboard/pos", icon: IconCash },
-      { title: "Kitchen Display", url: "/dashboard/kds", icon: IconChefHat },
+      { title: 'POS', url: '/dashboard/pos', icon: IconCash },
+      { title: 'Kitchen Display', url: '/dashboard/kds', icon: IconChefHat },
     ],
   },
   {
-    title: "Menu Management",
+    title: 'Menu Management',
     icon: IconBook,
     items: [
-      { title: "Menus", url: "/dashboard/menus", icon: IconBook },
-      { title: "Recipes", url: "/dashboard/recipes", icon: IconChefHat },
+      { title: 'Menus', url: '/dashboard/menus', icon: IconBook },
+      { title: 'Recipes', url: '/dashboard/recipes', icon: IconChefHat },
     ],
   },
   {
-    title: "Inventory",
+    title: 'Inventory',
     icon: IconPackage,
-    items: [{ title: "Ingredients", url: "/dashboard/inventory", icon: IconPackage }],
+    items: [
+      { title: 'Ingredients', url: '/dashboard/inventory', icon: IconPackage },
+      {
+        title: 'Stock Adjustments',
+        url: '/dashboard/inventory/stock-adjustments',
+        icon: IconAdjustments,
+      },
+    ],
   },
   {
-    title: "Procurement",
+    title: 'Procurement',
     icon: IconBuilding,
     items: [
       {
-        title: "Suppliers",
-        url: "/dashboard/procurements/suppliers",
+        title: 'Suppliers',
+        url: '/dashboard/procurements/suppliers',
         icon: IconBuilding,
       },
       {
-        title: "Purchase Orders",
-        url: "/dashboard/procurements/purchase-orders",
+        title: 'Purchase Orders',
+        url: '/dashboard/procurements/purchase-orders',
         icon: IconFileInvoice,
       },
     ],
   },
   {
-    title: "Resellers",
+    title: 'Resellers',
     icon: IconUsers,
-    url: "/dashboard/resellers",
+    url: '/dashboard/resellers',
   },
   {
-    title: "Users",
+    title: 'Users',
     icon: IconUsers,
-    url: "/dashboard/users",
+    url: '/dashboard/users',
   },
   {
-    title: "Settings",
+    title: 'Settings',
     icon: IconSettings,
-    url: "/dashboard/settings",
+    url: '/dashboard/settings',
   },
 ];
