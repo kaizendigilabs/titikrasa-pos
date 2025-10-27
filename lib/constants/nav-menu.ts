@@ -51,12 +51,12 @@ export const NAV_MENU: NavMenuItem[] = [
     items: [
       {
         title: "Suppliers",
-        url: "/dashboard/procurement/suppliers",
+        url: "/dashboard/procurements/suppliers",
         icon: IconBuilding,
       },
       {
         title: "Purchase Orders",
-        url: "/dashboard/procurement/po",
+        url: "/dashboard/procurements/purchase-orders",
         icon: IconFileInvoice,
       },
     ],

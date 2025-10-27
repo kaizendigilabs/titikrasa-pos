@@ -36,7 +36,7 @@ Web app POS untuk coffee shop **single store** dengan fokus: transaksi cepat, KD
 - **KDS-FLOW-02**: KDS menerima tiket per item; barista ubah status: `queue → making → ready → served`. Jika POS centang **bypass `served`**, tiket dibuat langsung berstatus `served`.
 - **INV-FLOW-03**: Penjualan mengurangi stok **ingredients** sesuai resep (auto consume ke ledger).
 - **REC-FLOW-04**: Resep versi baru (versioning) memengaruhi costing/consumption ke depan.
-- **PO-FLOW-05** (**PO‑first**): Buat PO **status** `draft` → `pending` → `complete` dari **Supplier Catalog**. Pada `draft/pending`, setiap item **wajib di‑map** ke **Store Ingredient** (boleh **create on‑the‑fly**, stok 0) dan **boleh dipakai di Resep**. Saat barang datang, ubah ke `complete` → stok (base UOM) naik, ledger `po` tercatat, **average cost** update. **Multi‑supplier** dalam satu PO didukung; memilih `complete` saat checkout menambah stok segera.
+- **PO-FLOW-05** (**PO‑first**): Buat PO **status** `draft` → `pending` → `complete` dari **Supplier Catalog**. Pada `draft/pending`, setiap item **wajib di‑map** ke **Store Ingredient** (boleh **create on‑the‑fly**, stok 0) dan **boleh dipakai di Resep**. Harga catalog disimpan per **base UOM** (`gr/ml/pcs`) dan qty PO diinput langsung dalam base unit—tidak ada konversi pack. Saat barang datang, ubah ke `complete` → stok (base UOM) naik, ledger `po` tercatat, **average cost** update. **Multi‑supplier** dalam satu PO didukung; memilih `complete` saat checkout menambah stok segera.
 - **STK-FLOW-06**: Halaman **Stock Opname**: kolom _Nama Bahan, Stok Sekarang, Stok Aktual (input), Selisih, Status (`synced`/`out-of-sync`), Notes_ → input stok aktual → klik **Singkronkan** (wajib isi Notes) → sistem buat **Stock Adjustment** otomatis; admin/manager langsung commit, staff sebagai draft menunggu approval → baris jadi `synced`.
 - **RSL-FLOW-07**: Sama dengan customer; bedanya identitas **reseller** (autocomplete, wajib) & **price list grosir**. Pembayaran **cash/transfer**; **payment_status** `paid/unpaid/void` (default `paid`). Jika `unpaid`, **due date** bisa diisi manual (default +7 hari bila dikosongkan).
 
@@ -78,7 +78,7 @@ Web app POS untuk coffee shop **single store** dengan fokus: transaksi cepat, KD
 
 ### 5.5 Procurement
 
-- **Supplier** & **Supplier Catalog**: CRUD item supplier (`name`, `pack_uom`, `pack_to_base_factor`, `base_uom`, `purchase_price`, `status`). Catalog supplier **boleh lebih banyak** dari bahan toko.
+- **Supplier** & **Supplier Catalog**: CRUD item supplier (`name`, `base_uom`, `purchase_price`, `status`). Catalog supplier **boleh lebih banyak** dari bahan toko. Harga tercatat per base unit; qty PO mengikuti base unit yang sama.
 - **PO (draft/pending/complete)**: tambah item dari catalog; **wajib map** `catalog_item → store_ingredient` (buat on‑the‑fly bila belum ada). Pada `draft/pending` boleh dipakai di Resep (stok 0). **Complete**: receiving implicit (tanpa partial) → stok naik, ledger `po`, **average cost** update & **PO terkunci** untuk qty/harga.
 
 ### 5.6 Reseller
@@ -149,9 +149,9 @@ Web app POS untuk coffee shop **single store** dengan fokus: transaksi cepat, KD
 - **recipe_variant_overrides**: id, menu_id, size(enum s/m/l), temperature(enum hot/ice), version, effective_from, items(json[{ingredient_id, qty, uom}])
 - **stock_ledger**: id, ingredient_id, delta_qty, uom, reason(enum: sale,po,adjust,waste), ref_type, ref_id, at(ts)
 - **suppliers**: id, name, contact(json), is_active
-- **supplier_catalog_items**: id, supplier_id, name, pack_uom, pack_to_base_factor, base_uom, purchase_price(money), is_active
+- **supplier_catalog_items**: id, supplier_id, name, base_uom(enum gr/ml/pcs), purchase_price(money per base unit), is_active
 - **ingredient_supplier_links**: id, store_ingredient_id, catalog_item_id, preferred(flag), last_purchase_price(money), last_purchased_at(ts)
-- **purchase_orders**: id, status(enum: draft,pending,complete), items(json[{catalog_item_id, store_ingredient_id, qty_pack, pack_uom, qty_base, price(money)}]), totals(json), issued_at, completed_at
+- **purchase_orders**: id, status(enum: draft,pending,complete), items(json[{catalog_item_id, store_ingredient_id, qty, base_uom, price(money)}]), totals(json), issued_at, completed_at
 - **resellers**: id, name, contact(json), terms(json), is_active
 - **orders**: id, number, channel(enum: pos,reseller), **payment_method(enum: cash,transfer)**, **payment_status(enum: paid,unpaid,void)**, **due_date(date|null)**, customer_note, status(enum: open,paid,void,refunded), totals(json), paid_at
 - **order_items**: id, order_id, menu_id, variant, qty, price(money), discount(money), tax(money)
@@ -181,7 +181,7 @@ Web app POS untuk coffee shop **single store** dengan fokus: transaksi cepat, KD
 ## 9) Konvensi
 
 - **Money**: integer ex‑PPN; helper `money.ts`.
-- **UOM**: konversi standar di `uom.ts` (kg↔g, liter↔ml, botol/cup↔ml).
+- **UOM**: Procurement & stock pakai base unit (`gr`, `ml`, `pcs`). Tidak ada konversi pack↔base pada PO; resep masih boleh memakai helper konversi ringan bila dibutuhkan.
 - **Variant key**: `${size}|${temperature}` (contoh: `"m|ice"`) atau `null` (simple).
 - **Timezone**: simpan UTC; render WIB.
 - **tsconfig alias**:

@@ -7,7 +7,6 @@ create table if not exists store_ingredients (
   min_stock      integer not null default 0,  -- base uom
   current_stock  integer not null default 0,  -- base uom
   avg_cost       integer not null default 0,  -- IDR per base uom
-  conversions    jsonb not null default '{}'::jsonb, -- uom mapping kustom
   is_active      boolean not null default true,
   created_at     timestamptz not null default now()
 );

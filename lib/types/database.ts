@@ -651,7 +651,6 @@ export type Database = {
         Row: {
           avg_cost: number
           base_uom: Database["public"]["Enums"]["base_uom"]
-          conversions: Json
           created_at: string
           current_stock: number
           id: string
@@ -663,7 +662,6 @@ export type Database = {
         Insert: {
           avg_cost?: number
           base_uom: Database["public"]["Enums"]["base_uom"]
-          conversions?: Json
           created_at?: string
           current_stock?: number
           id?: string
@@ -675,7 +673,6 @@ export type Database = {
         Update: {
           avg_cost?: number
           base_uom?: Database["public"]["Enums"]["base_uom"]
-          conversions?: Json
           created_at?: string
           current_stock?: number
           id?: string
@@ -693,8 +690,6 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
-          pack_to_base_factor: number
-          pack_uom: string
           purchase_price: number
           supplier_id: string
         }
@@ -704,8 +699,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
-          pack_to_base_factor: number
-          pack_uom: string
           purchase_price: number
           supplier_id: string
         }
@@ -715,8 +708,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
-          pack_to_base_factor?: number
-          pack_uom?: string
           purchase_price?: number
           supplier_id?: string
         }

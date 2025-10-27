@@ -13,8 +13,6 @@ create table if not exists supplier_catalog_items (
   id                  uuid primary key default gen_random_uuid(),
   supplier_id         uuid not null references suppliers(id) on delete cascade,
   name                text not null,
-  pack_uom            text not null,                 -- 'botol','kg', dll.
-  pack_to_base_factor integer not null check (pack_to_base_factor > 0),
   base_uom            base_uom not null,
   purchase_price      integer not null,              -- per base uom (ex-PPN)
   is_active           boolean not null default true,
