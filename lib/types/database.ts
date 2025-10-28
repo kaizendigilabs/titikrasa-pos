@@ -808,6 +808,7 @@ export type Database = {
       is_role_admin_id: { Args: { p_role_id: string }; Returns: boolean }
       is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
       kds_items_check: { Args: { items: Json }; Returns: boolean }
+      pos_checkout: { Args: { payload: Json }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

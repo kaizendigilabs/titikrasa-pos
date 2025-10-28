@@ -7,6 +7,7 @@ import { ERR, appError } from "@/lib/utils/errors";
 type RoleFlags = {
   isAdmin: boolean;
   isManager: boolean;
+  isStaff: boolean;
 };
 
 export type ActorContext = {
@@ -39,6 +40,12 @@ export function ensureAdmin(roles: RoleFlags) {
 
 export function ensureAdminOrManager(roles: RoleFlags) {
   if (!roles.isAdmin && !roles.isManager) {
+    throw ERR.FORBIDDEN;
+  }
+}
+
+export function ensureStaffOrAbove(roles: RoleFlags) {
+  if (!roles.isAdmin && !roles.isManager && !roles.isStaff) {
     throw ERR.FORBIDDEN;
   }
 }
@@ -79,8 +86,9 @@ async function resolveRoleFlags(
 ): Promise<RoleFlags> {
   const isAdmin = await rpcHasRole(supabase, userId, "admin");
   const isManager = await rpcHasRole(supabase, userId, "manager");
+  const isStaff = await rpcHasRole(supabase, userId, "staff");
 
-  return { isAdmin, isManager };
+  return { isAdmin, isManager, isStaff };
 }
 
 async function rpcHasRole(
