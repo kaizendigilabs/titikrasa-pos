@@ -4,6 +4,7 @@ import {
   IconCash,
   IconBook,
   IconChefHat,
+  IconCategory,
   IconPackage,
   IconBuilding,
   IconFileInvoice,
@@ -37,6 +38,7 @@ export const NAV_MENU: NavMenuItem[] = [
     title: 'Menu Management',
     icon: IconBook,
     items: [
+      { title: 'Categories', url: '/dashboard/menus/categories', icon: IconCategory },
       { title: 'Menus', url: '/dashboard/menus', icon: IconBook },
       { title: 'Recipes', url: '/dashboard/recipes', icon: IconChefHat },
     ],
