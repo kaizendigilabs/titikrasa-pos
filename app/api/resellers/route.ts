@@ -5,7 +5,7 @@ import { AppError, ERR, appError } from "@/lib/utils/errors";
 import {
   createResellerSchema,
   resellerFiltersSchema,
-} from "@/features/resellers/schemas";
+} from "@/features/resellers/model/forms/schema";
 import { adminClient, ensureAdminOrManager, requireActor } from "@/features/users/server";
 import type { ResellerListItem } from "@/features/resellers/types";
 import { parseContact, parseTerms } from "@/features/resellers/types";

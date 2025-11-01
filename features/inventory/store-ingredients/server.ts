@@ -4,7 +4,7 @@ import type {
   PurchaseHistoryFilters,
   StoreIngredientFilters,
   UpdateStoreIngredientInput,
-} from "./schemas.ts";
+} from "./model/forms/schema";
 import type {
   PurchaseHistoryEntry,
   StoreIngredientDetail,

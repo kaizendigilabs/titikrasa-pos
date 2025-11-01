@@ -5,12 +5,9 @@ import { AppError, ERR, appError } from "@/lib/utils/errors";
 import {
   createPurchaseOrderSchema,
   purchaseOrderFiltersSchema,
-} from "@/features/procurements/purchase-orders/schemas";
-import {
-  parsePurchaseOrderItems,
-  type PurchaseOrderListItem,
-  type PurchaseOrderRow,
-} from "@/features/procurements/purchase-orders/types";
+} from "@/features/procurements/purchase-orders/model/forms/schema";
+import { mapPurchaseOrderRow, type RawPurchaseOrderRow } from "@/features/procurements/purchase-orders/data/dto";
+import type { PurchaseOrderRow } from "@/features/procurements/purchase-orders/types";
 import {
   adminClient,
   ensureAdminOrManager,
@@ -19,18 +16,6 @@ import {
 import type { TablesInsert } from "@/lib/types/database";
 
 const MAX_PAGE_SIZE = 200;
-
-function mapPurchaseOrder(row: any): PurchaseOrderListItem {
-  return {
-    id: row.id,
-    status: row.status,
-    items: parsePurchaseOrderItems(row.items ?? []),
-    totals: typeof row.totals === "object" && row.totals !== null ? row.totals : {},
-    issued_at: row.issued_at ?? null,
-    completed_at: row.completed_at ?? null,
-    created_at: row.created_at ?? new Date().toISOString(),
-  };
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -67,7 +52,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const purchaseOrders = (data ?? []).map(mapPurchaseOrder);
+    const purchaseOrders = (data ?? []).map((row) =>
+      mapPurchaseOrderRow(row as RawPurchaseOrderRow),
+    );
 
     return ok(
       { purchaseOrders },
@@ -256,7 +243,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return ok({ purchaseOrder: mapPurchaseOrder(data) });
+    return ok({ purchaseOrder: mapPurchaseOrderRow(data as RawPurchaseOrderRow) });
   } catch (error) {
     if (error instanceof AppError) {
       return fail(error);

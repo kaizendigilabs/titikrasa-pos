@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
 import { adminClient, ensureAdminOrManager, requireActor } from "@/features/users/server";
-import { updateResellerSchema } from "@/features/resellers/schemas";
+import { updateResellerSchema } from "@/features/resellers/model/forms/schema";
 import type { ResellerListItem } from "@/features/resellers/types";
 import { parseContact, parseTerms } from "@/features/resellers/types";
 

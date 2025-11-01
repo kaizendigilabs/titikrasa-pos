@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getMenuById } from "@/features/menus/server";
-import { mapMenuRow } from "@/features/menus/mappers";
+import { mapMenuRow } from "@/features/menus/data/dto";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";

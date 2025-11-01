@@ -7,7 +7,7 @@ import {
 import { requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, appError, ERR } from "@/lib/utils/errors";
-import { updateStoreIngredientSchema } from "@/features/inventory/store-ingredients/schemas";
+import { updateStoreIngredientSchema } from "@/features/inventory/store-ingredients/model/forms/schema";
 
 export async function GET(
   _request: NextRequest,

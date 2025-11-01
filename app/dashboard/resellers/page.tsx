@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { ResellersTable } from "./ResellersTable";
+import { ResellersTableScreen } from "@/features/resellers/ui/components/reseller-table";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
-import { resellerFiltersSchema } from "@/features/resellers/schemas";
+import { resellerFiltersSchema } from "@/features/resellers/model/forms/schema";
 import type { ResellerListItem } from "@/features/resellers/types";
-import { parseContact, parseTerms } from "@/features/resellers/types";
+import { mapResellerRow, type RawResellerRow } from "@/features/resellers/data/dto";
 
 export const dynamic = "force-dynamic";
 
@@ -32,14 +32,16 @@ export default async function ResellersPage() {
     }
 
     const initialResellers: ResellerListItem[] =
-      data?.map((row) => ({
-        id: row.id,
-        name: row.name,
-        contact: parseContact(row.contact),
-        terms: parseTerms(row.terms),
-        is_active: row.is_active,
-        created_at: row.created_at,
-      })) ?? [];
+      data?.map((row) =>
+        mapResellerRow({
+          id: row.id,
+          name: row.name,
+          contact: (row.contact ?? null) as RawResellerRow['contact'],
+          terms: (row.terms ?? null) as RawResellerRow['terms'],
+          is_active: row.is_active,
+          created_at: row.created_at,
+        }),
+      ) ?? [];
 
     const initialMeta = {
       pagination: {
@@ -61,8 +63,8 @@ export default async function ResellersPage() {
             Manage reseller partners, their contact information, and payment terms.
           </p>
         </div>
-        <ResellersTable
-          initialResellers={initialResellers}
+        <ResellersTableScreen
+          initialItems={initialResellers}
           initialMeta={initialMeta}
           canManage={actor.roles.isAdmin || actor.roles.isManager}
         />

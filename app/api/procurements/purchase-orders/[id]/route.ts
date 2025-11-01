@@ -2,31 +2,15 @@ import { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
-import {
-  updatePurchaseOrderSchema,
-} from "@/features/procurements/purchase-orders/schemas";
-import {
-  parsePurchaseOrderItems,
-  type PurchaseOrderListItem,
-} from "@/features/procurements/purchase-orders/types";
+import { updatePurchaseOrderSchema } from "@/features/procurements/purchase-orders/model/forms/schema";
+import { mapPurchaseOrderRow, type RawPurchaseOrderRow } from "@/features/procurements/purchase-orders/data/dto";
+import type { PurchaseOrderListItem } from "@/features/procurements/purchase-orders/types";
 import {
   adminClient,
   ensureAdminOrManager,
   requireActor,
 } from "@/features/users/server";
 import type { Database, TablesUpdate } from "@/lib/types/database";
-
-function mapPurchaseOrder(row: any): PurchaseOrderListItem {
-  return {
-    id: row.id,
-    status: row.status,
-    items: parsePurchaseOrderItems(row.items ?? []),
-    totals: typeof row.totals === "object" && row.totals !== null ? row.totals : {},
-    issued_at: row.issued_at ?? null,
-    completed_at: row.completed_at ?? null,
-    created_at: row.created_at ?? new Date().toISOString(),
-  };
-}
 
 async function applyCompletionEffects(purchaseOrder: PurchaseOrderListItem) {
   const admin = adminClient();
@@ -159,7 +143,7 @@ export async function PATCH(
       });
     }
 
-    const purchaseOrder = mapPurchaseOrder(data);
+    const purchaseOrder = mapPurchaseOrderRow(data as RawPurchaseOrderRow);
 
     if (shouldComplete) {
       await applyCompletionEffects(purchaseOrder);

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { fetchPurchaseHistory } from "@/features/inventory/store-ingredients/server";
-import { purchaseHistoryFiltersSchema } from "@/features/inventory/store-ingredients/schemas";
+import { purchaseHistoryFiltersSchema } from "@/features/inventory/store-ingredients/model/forms/schema";
 import { requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, appError, ERR } from "@/lib/utils/errors";

@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import { appError, ERR } from "@/lib/utils/errors";
 
-import { mapCategoryRow } from "./mappers";
+import { mapCategoryRow } from "./data/dto";
 import type { MenuCategory } from "./types";
 
 type DbClient = SupabaseClient<Database>;

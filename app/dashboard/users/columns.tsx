@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { DataTableColumnHeader } from '@/components/tables/data-table-column-header';
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import type { UserListItem } from '@/features/users/types';
 import Link from 'next/link';
 

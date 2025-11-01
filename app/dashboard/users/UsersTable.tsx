@@ -14,9 +14,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { IconEye, IconEyeOff, IconLoader2, IconPlus, IconX } from '@tabler/icons-react';
 import { toast } from 'sonner';
 
-import { DataTableContent } from '@/components/tables/data-table-content';
-import { DataTablePagination } from '@/components/tables/data-table-pagination';
-import { DataTableSelectFilter } from '@/components/tables/data-table-select-filter';
+import { DataTableContent } from '@/components/data-table/table-content';
+import { DataTablePagination } from '@/components/data-table/pagination';
+import { DataTableSelectFilter } from '@/components/data-table/select-filter';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';

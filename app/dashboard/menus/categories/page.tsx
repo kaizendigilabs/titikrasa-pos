@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { CategoriesTable } from "./CategoriesTable";
-import { mapCategoryRow } from "@/features/menu-categories/mappers";
+import { MenuCategoriesTableScreen } from "@/features/menu-categories/ui/components/menu-categories-table";
+import { mapCategoryRow } from "@/features/menu-categories/data/dto";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { AppError, ERR } from "@/lib/utils/errors";
 
@@ -48,7 +48,7 @@ export default async function MenuCategoriesPage() {
     };
 
     return (
-      <CategoriesTable
+      <MenuCategoriesTableScreen
         initialItems={items}
         initialMeta={initialMeta}
         canManage={actor.roles.isAdmin || actor.roles.isManager}

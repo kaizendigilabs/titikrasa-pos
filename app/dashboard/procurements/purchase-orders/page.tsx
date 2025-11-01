@@ -1,17 +1,15 @@
 import { redirect } from "next/navigation";
 
+import { PurchaseOrdersTableScreen } from "@/features/procurements/purchase-orders/ui/components/purchase-orders-table";
 import {
-  PurchaseOrdersTable,
   type PurchaseOrderCatalogItem,
   type PurchaseOrderCatalogLink,
-} from "./PurchaseOrdersTable";
+  type PurchaseOrderSupplier,
+} from "@/features/procurements/purchase-orders/model/view-model";
+import { purchaseOrderFiltersSchema } from "@/features/procurements/purchase-orders/model/forms/schema";
+import { mapPurchaseOrderRow, type RawPurchaseOrderRow } from "@/features/procurements/purchase-orders/data/dto";
+import type { PurchaseOrderListItem } from "@/features/procurements/purchase-orders/types";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
-import { purchaseOrderFiltersSchema } from "@/features/procurements/purchase-orders/schemas";
-import type {
-  PurchaseOrderListItem,
-} from "@/features/procurements/purchase-orders/types";
-import { parsePurchaseOrderItems } from "@/features/procurements/purchase-orders/types";
-import { parseSupplierContact } from "@/features/procurements/suppliers/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +27,7 @@ export default async function PurchaseOrdersPage() {
 
     const { data, error, count } = await actor.supabase
       .from("purchase_orders")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("issued_at", { ascending: false, nullsFirst: false })
       .range(0, filters.pageSize - 1);
 
@@ -37,29 +35,34 @@ export default async function PurchaseOrdersPage() {
       throw error;
     }
 
-    const purchaseOrders: PurchaseOrderListItem[] =
-      data?.map((row) => ({
-        id: row.id,
-        status: row.status,
-        items: parsePurchaseOrderItems(row.items ?? []),
-        totals:
-          row.totals && typeof row.totals === "object" && !Array.isArray(row.totals)
-            ? (row.totals as Record<string, unknown>)
-            : {},
-        issued_at: row.issued_at ?? null,
-        completed_at: row.completed_at ?? null,
-        created_at: row.issued_at ?? new Date().toISOString(),
-      })) ?? [];
+    const initialItems: PurchaseOrderListItem[] =
+      data?.map((row) =>
+        mapPurchaseOrderRow(row as RawPurchaseOrderRow),
+      ) ?? [];
 
     const suppliersPromise = actor.supabase
       .from("suppliers")
-      .select("*")
+      .select("id, name, is_active, created_at")
       .order("name", { ascending: true });
 
     const catalogPromise = actor.supabase
       .from("supplier_catalog_items")
       .select(
-        "*, ingredient_supplier_links ( id, store_ingredient_id, preferred, store_ingredients(name, base_uom) )",
+        `
+          id,
+          supplier_id,
+          name,
+          base_uom,
+          purchase_price,
+          is_active,
+          created_at,
+          ingredient_supplier_links (
+            id,
+            store_ingredient_id,
+            preferred,
+            store_ingredients ( name, base_uom )
+          )
+        `,
       )
       .order("created_at", { ascending: false });
 
@@ -68,73 +71,63 @@ export default async function PurchaseOrdersPage() {
       catalogPromise,
     ]);
 
-    const suppliersData =
+    const suppliers: PurchaseOrderSupplier[] =
       suppliersResult.status === "fulfilled" && !suppliersResult.value.error
-        ? suppliersResult.value.data ?? []
+        ? (suppliersResult.value.data ?? []).map((supplier) => ({
+            id: supplier.id,
+            name: supplier.name,
+            isActive: supplier.is_active,
+          }))
         : [];
-    if (
-      suppliersResult.status === "fulfilled" &&
-      suppliersResult.value.error
-    ) {
+    if (suppliersResult.status === "fulfilled" && suppliersResult.value.error) {
       console.error("[PO_SUPPLIERS_ERROR]", suppliersResult.value.error);
     }
-    const catalogData =
+
+    const catalogItems: PurchaseOrderCatalogItem[] =
       catalogResult.status === "fulfilled" && !catalogResult.value.error
-        ? catalogResult.value.data ?? []
+        ? (catalogResult.value.data ?? []).map((row) => {
+            const linksData = Array.isArray(row.ingredient_supplier_links)
+              ? row.ingredient_supplier_links
+              : [];
+            const links: PurchaseOrderCatalogLink[] = linksData
+              .map((link: any) => ({
+                id: String(link.id ?? ""),
+                storeIngredientId: String(link.store_ingredient_id ?? ""),
+                ingredientName: link.store_ingredients?.name ?? "—",
+                baseUom: link.store_ingredients?.base_uom ?? null,
+                preferred: Boolean(link.preferred),
+                lastPurchasePrice: null,
+                lastPurchasedAt: null,
+              }))
+              .filter((link) => link.id);
+
+            return {
+              id: row.id,
+              supplierId: row.supplier_id,
+              name: row.name,
+              baseUom: row.base_uom,
+              purchasePrice: row.purchase_price ?? 0,
+              isActive: row.is_active,
+              createdAt: row.created_at,
+              links,
+            } satisfies PurchaseOrderCatalogItem;
+          })
         : [];
-    if (
-      catalogResult.status === "fulfilled" &&
-      catalogResult.value.error
-    ) {
+    if (catalogResult.status === "fulfilled" && catalogResult.value.error) {
       console.error("[PO_CATALOG_ERROR]", catalogResult.value.error);
     }
-    const suppliers = suppliersData.map((supplier) => ({
-      id: supplier.id,
-      name: supplier.name,
-      is_active: supplier.is_active,
-      contact: parseSupplierContact(supplier.contact ?? null),
-      catalogCount: 0,
-      created_at: supplier.created_at,
-    }));
 
-    const catalogItems: PurchaseOrderCatalogItem[] = catalogData.map((row) => {
-      const linksData = Array.isArray(row.ingredient_supplier_links)
-        ? row.ingredient_supplier_links
-        : [];
-      const links: PurchaseOrderCatalogLink[] = linksData
-        .map((link: any) => ({
-          id: String(link.id ?? ""),
-          storeIngredientId: String(link.store_ingredient_id ?? ""),
-          ingredientName: link.store_ingredients?.name ?? "—",
-          baseUom: link.store_ingredients?.base_uom ?? null,
-          preferred: Boolean(link.preferred),
-          lastPurchasePrice: null,
-          lastPurchasedAt: null,
-        }))
-        .filter((link) => link.id);
-
-      return {
-        id: row.id,
-        supplier_id: row.supplier_id,
-        name: row.name,
-        base_uom: row.base_uom,
-        purchase_price: row.purchase_price ?? 0,
-        is_active: row.is_active,
-        created_at: row.created_at,
-        links,
-      };
-    });
     const initialMeta = {
       pagination: {
         page: filters.page,
         pageSize: filters.pageSize,
-        total: count ?? purchaseOrders.length,
+        total: count ?? initialItems.length,
       },
       filters: {
         status: filters.status,
         search: filters.search ?? null,
       },
-    };
+    } as const;
 
     return (
       <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-8 lg:py-10">
@@ -144,8 +137,8 @@ export default async function PurchaseOrdersPage() {
             Create and track purchase orders to keep ingredient stock in sync.
           </p>
         </div>
-        <PurchaseOrdersTable
-          initialPurchaseOrders={purchaseOrders}
+        <PurchaseOrdersTableScreen
+          initialItems={initialItems}
           initialMeta={initialMeta}
           suppliers={suppliers}
           catalogItems={catalogItems}

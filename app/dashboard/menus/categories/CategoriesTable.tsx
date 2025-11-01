@@ -18,9 +18,9 @@ import {
 import { toast } from 'sonner';
 
 import { createCategoryColumns } from './columns';
-import { DataTableContent } from '@/components/tables/data-table-content';
-import { DataTablePagination } from '@/components/tables/data-table-pagination';
-import { DataTableSelectFilter } from '@/components/tables/data-table-select-filter';
+import { DataTableContent } from '@/components/data-table/table-content';
+import { DataTablePagination } from '@/components/data-table/pagination';
+import { DataTableSelectFilter } from '@/components/data-table/select-filter';
 import {
   AlertDialog,
   AlertDialogAction,

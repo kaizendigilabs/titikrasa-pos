@@ -10,8 +10,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 
-import { DataTableContent } from '@/components/tables/data-table-content';
-import { DataTablePagination } from '@/components/tables/data-table-pagination';
+import { DataTableContent } from '@/components/data-table/table-content';
+import { DataTablePagination } from '@/components/data-table/pagination';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -24,8 +24,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import type { PurchaseHistoryFilters } from '@/features/inventory/store-ingredients/schemas';
-import { usePurchaseHistory } from '@/features/inventory/store-ingredients/hooks';
+import type { PurchaseHistoryFilters } from '@/features/inventory/store-ingredients/model/forms/schema';
+import { usePurchaseHistory } from '@/features/inventory/store-ingredients/model/queries';
 import type { PurchaseHistoryEntry } from '@/features/inventory/store-ingredients/types';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils/formatters';
 

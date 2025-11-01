@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { MenusTable } from "./MenusTable";
-import { mapMenuRow } from "@/features/menus/mappers";
+import { MenuTableScreen } from "@/features/menus/ui/components/menu-table";
+import { mapMenuRow } from "@/features/menus/data/dto";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { AppError, ERR } from "@/lib/utils/errors";
 
@@ -70,7 +70,7 @@ export default async function MenusPage() {
     };
 
     return (
-      <MenusTable
+      <MenuTableScreen
         initialItems={items}
         initialMeta={initialMeta}
         categories={categories}
