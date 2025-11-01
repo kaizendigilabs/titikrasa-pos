@@ -4,12 +4,12 @@ import { z } from "zod";
 import {
   createMenuCategorySchema,
   menuCategoryFiltersSchema,
-} from "@/features/menu-categories/schemas";
+} from "@/features/menu-categories/model/forms/schema";
 import {
   getNextCategorySortOrder,
   getMenuCategoryById,
 } from "@/features/menu-categories/server";
-import { mapCategoryRow } from "@/features/menu-categories/mappers";
+import { mapCategoryRow } from "@/features/menu-categories/data/dto";
 import type { MenuCategory } from "@/features/menu-categories/types";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";

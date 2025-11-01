@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { PurchaseHistoryTable } from "./purchase-history-table";
 import { fetchPurchaseHistory, fetchStoreIngredientDetail } from "@/features/inventory/store-ingredients/server";
-import { purchaseHistoryFiltersSchema } from "@/features/inventory/store-ingredients/schemas";
+import { purchaseHistoryFiltersSchema } from "@/features/inventory/store-ingredients/model/forms/schema";
 import { adminClient } from "@/features/users/server";
 import { requireActor } from "@/features/users/server";
 import { Badge } from "@/components/ui/badge";

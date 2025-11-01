@@ -2,30 +2,14 @@ import { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
-import {
-  updateCatalogItemSchema,
-} from "@/features/procurements/suppliers/schemas";
-import {
-  type SupplierCatalogItem,
-} from "@/features/procurements/suppliers/types";
+import { updateCatalogItemSchema } from "@/features/procurements/suppliers/model/forms/schema";
+import { mapCatalogRow } from "@/features/procurements/suppliers/data/dto";
 import {
   adminClient,
   ensureAdminOrManager,
   requireActor,
 } from "@/features/users/server";
 import type { TablesUpdate } from "@/lib/types/database";
-
-function mapCatalogItem(row: any): SupplierCatalogItem {
-  return {
-    id: row.id,
-    supplier_id: row.supplier_id,
-    name: row.name,
-    base_uom: row.base_uom,
-    purchase_price: row.purchase_price,
-    is_active: row.is_active,
-    created_at: row.created_at,
-  };
-}
 
 export async function PATCH(
   request: NextRequest,
@@ -65,7 +49,7 @@ export async function PATCH(
       });
     }
 
-    return ok({ item: mapCatalogItem(data) });
+    return ok({ item: mapCatalogRow(data as any) });
   } catch (error) {
     if (error instanceof AppError) {
       return fail(error);

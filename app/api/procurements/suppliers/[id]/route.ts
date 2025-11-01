@@ -2,32 +2,13 @@ import { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
-import {
-  updateSupplierSchema,
-} from "@/features/procurements/suppliers/schemas";
-import {
-  parseSupplierContact,
-  type SupplierListItem,
-} from "@/features/procurements/suppliers/types";
+import { updateSupplierSchema } from "@/features/procurements/suppliers/model/forms/schema";
+import { mapSupplierRow } from "@/features/procurements/suppliers/data/dto";
 import {
   adminClient,
   ensureAdminOrManager,
   requireActor,
 } from "@/features/users/server";
-
-function mapSupplierRow(row: any): SupplierListItem {
-  const catalogAgg = Array.isArray(row.supplier_catalog_items)
-    ? row.supplier_catalog_items[0]?.count ?? 0
-    : 0;
-  return {
-    id: row.id,
-    name: row.name,
-    is_active: row.is_active,
-    catalogCount: catalogAgg ?? 0,
-    contact: parseSupplierContact(row.contact ?? null),
-    created_at: row.created_at,
-  };
-}
 
 export async function PATCH(
   request: NextRequest,

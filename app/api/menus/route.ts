@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { createMenuSchema, menuFiltersSchema } from "@/features/menus/schemas";
-import { mapMenuRow } from "@/features/menus/mappers";
-import { toPersistedVariants } from "@/features/menus/utils";
+import {
+  createMenuSchema,
+  menuFiltersSchema,
+} from "@/features/menus/model/forms/schema";
+import { mapMenuRow } from "@/features/menus/data/dto";
+import { toPersistedVariants } from "@/features/menus/model/utils";
 import type { MenuListItem } from "@/features/menus/types";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";

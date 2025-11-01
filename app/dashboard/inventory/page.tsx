@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { StoreIngredientsTable } from "./StoreIngredientsTable";
+import { StoreIngredientsTableScreen } from "@/features/inventory/store-ingredients/ui/components/store-ingredients-table";
 import { fetchStoreIngredients } from "@/features/inventory/store-ingredients/server";
-import { storeIngredientFiltersSchema } from "@/features/inventory/store-ingredients/schemas";
+import { storeIngredientFiltersSchema } from "@/features/inventory/store-ingredients/model/forms/schema";
 import { requireActor } from "@/features/users/server";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +59,7 @@ export default async function InventoryPage() {
           Monitor ingredient stock levels, average costs, and recent purchasing activity.
         </p>
       </div>
-      <StoreIngredientsTable
+      <StoreIngredientsTableScreen
         initialItems={initialItems}
         initialMeta={initialMeta}
         canManage={canManage}

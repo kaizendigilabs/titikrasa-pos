@@ -1,36 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { CatalogCreateForm } from "../CatalogCreateForm";
-import { CatalogItemActions } from "../CatalogItemActions";
 import {
   ensureAdminOrManager,
   requireActor,
 } from "@/features/users/server";
-import {
-  parseSupplierContact,
-  type IngredientSupplierLink,
-  type SupplierCatalogItem,
-  type SupplierListItem,
+import { mapCatalogLinkRow, mapCatalogRow, mapSupplierRow } from "@/features/procurements/suppliers/data/dto";
+import type {
+  IngredientSupplierLink,
+  SupplierCatalogItem,
+  SupplierListItem,
 } from "@/features/procurements/suppliers/types";
-import { CatalogLinkForm } from "../CatalogLinkForm";
-import { CatalogLinkEntry } from "../CatalogLinkEntry";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +24,6 @@ type SupplierDetail = SupplierListItem & {
       links: IngredientSupplierLink[];
     }
   >;
-};
-
-type StoreIngredientOption = {
-  id: string;
-  name: string;
-  baseUom: string;
 };
 
 function formatIDR(value: number) {
@@ -76,16 +54,7 @@ export default async function SupplierDetailPage({
       throw supplierError ?? new Error("Supplier not found");
     }
 
-    const contact = parseSupplierContact(supplierRow.contact ?? null);
-
-    const supplier: SupplierListItem = {
-      id: supplierRow.id,
-      name: supplierRow.name,
-      is_active: supplierRow.is_active,
-      catalogCount: 0,
-      contact,
-      created_at: supplierRow.created_at,
-    };
+    const supplier = mapSupplierRow(supplierRow as any);
 
     const { data: catalogRows, error: catalogError } = await actor.supabase
       .from("supplier_catalog_items")
@@ -99,50 +68,14 @@ export default async function SupplierDetailPage({
       throw catalogError;
     }
 
-    const { data: ingredientRows, error: ingredientsError } = await actor.supabase
-      .from("store_ingredients")
-      .select("id, name, base_uom, is_active")
-      .order("name", { ascending: true });
-
-    if (ingredientsError) {
-      throw ingredientsError;
-    }
-
-    const storeIngredients: StoreIngredientOption[] = (ingredientRows ?? [])
-      .filter((row) => row.is_active)
-      .map((row) => ({
-        id: row.id,
-        name: row.name,
-        baseUom: row.base_uom,
-      }));
-
     const catalog =
       catalogRows?.map((row) => {
+        const mapped = mapCatalogRow(row as any);
         const linksData = Array.isArray(row.ingredient_supplier_links)
           ? row.ingredient_supplier_links
           : [];
-        const links = linksData.map((link: any) => ({
-          id: String(link.id ?? ""),
-          storeIngredientId: String(link.store_ingredient_id ?? ""),
-          ingredientName: link.store_ingredients?.name ?? "—",
-          baseUom: link.store_ingredients?.base_uom ?? null,
-          preferred: Boolean(link.preferred),
-          lastPurchasePrice:
-            typeof link.last_purchase_price === "number"
-              ? link.last_purchase_price
-              : null,
-          lastPurchasedAt: link.last_purchased_at ?? null,
-        }));
-        return {
-          id: row.id,
-          supplier_id: row.supplier_id,
-          name: row.name,
-          base_uom: row.base_uom,
-          purchase_price: row.purchase_price,
-          is_active: row.is_active,
-          created_at: row.created_at,
-          links: links.filter((link) => link.id),
-        };
+        const links = linksData.map((link: any) => mapCatalogLinkRow(link));
+        return { ...mapped, links };
       }) ?? [];
 
     const detail: SupplierDetail = {
@@ -150,195 +83,139 @@ export default async function SupplierDetailPage({
       catalog,
     };
 
-    const canManage = actor.roles.isAdmin || actor.roles.isManager;
-
     return (
       <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-8 lg:py-10">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button asChild variant="outline" size="sm">
-              <Link href="/dashboard/procurements/suppliers">Back to suppliers</Link>
+              <Link href="/dashboard/procurements/suppliers">Kembali</Link>
             </Button>
-            <Badge
-              className={
-                detail.is_active
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : undefined
-              }
-              variant={detail.is_active ? "default" : "destructive"}
-            >
-              {detail.is_active ? "Active" : "Inactive"}
+            <Badge variant={detail.is_active ? "default" : "destructive"}>
+              {detail.is_active ? "Aktif" : "Nonaktif"}
             </Badge>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {detail.name}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Supplier contact and catalog overview.
-          </p>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{detail.name}</h1>
+            <p className="text-sm text-muted-foreground">
+              Rangkuman profil pemasok dan item katalog yang terhubung ke inventory.
+            </p>
+          </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
           <Card>
             <CardHeader>
-              <CardTitle>Contact</CardTitle>
+              <CardTitle>Informasi kontak</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <CardContent className="space-y-3 text-sm">
               <div>
-                <span className="font-medium text-foreground">Name: </span>
-                <span>{detail.contact.name ?? "—"}</span>
+                <p className="text-muted-foreground">Nama kontak</p>
+                <p className="font-medium text-foreground">{detail.contact.name ?? "—"}</p>
               </div>
               <div>
-                <span className="font-medium text-foreground">Email: </span>
-                <span>{detail.contact.email ?? "—"}</span>
+                <p className="text-muted-foreground">Email</p>
+                <p className="font-medium text-foreground">{detail.contact.email ?? "—"}</p>
               </div>
               <div>
-                <span className="font-medium text-foreground">Phone: </span>
-                <span>{detail.contact.phone ?? "—"}</span>
+                <p className="text-muted-foreground">Telepon</p>
+                <p className="font-medium text-foreground">{detail.contact.phone ?? "—"}</p>
               </div>
               <div>
-                <span className="font-medium text-foreground">Address: </span>
-                <span>{detail.contact.address ?? "—"}</span>
+                <p className="text-muted-foreground">Alamat</p>
+                <p className="font-medium text-foreground">{detail.contact.address ?? "—"}</p>
               </div>
               <div>
-                <span className="font-medium text-foreground">Notes: </span>
-                <span>{detail.contact.note ?? "—"}</span>
+                <p className="text-muted-foreground">Catatan</p>
+                <p className="font-medium text-foreground">{detail.contact.note ?? "—"}</p>
               </div>
             </CardContent>
           </Card>
-          <Card>
+
+          <Card className="flex flex-col">
             <CardHeader>
-              <CardTitle>Summary</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Katalog pembelian</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Kelola item katalog melalui drawer di halaman utama Suppliers untuk pengalaman yang konsisten.
+                  </p>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <div>
-                <span className="font-medium text-foreground">
-                  Catalog items:{" "}
-                </span>
-                <span>{detail.catalog.length}</span>
-              </div>
-              <div>
-                <span className="font-medium text-foreground">
-                  Created at:{" "}
-                </span>
-                <span>
-                  {detail.created_at
-                    ? new Date(detail.created_at).toLocaleString("id-ID")
-                    : "—"}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle>Catalog & Ingredient Links</CardTitle>
-              <Badge variant="secondary">{detail.catalog.length} items</Badge>
-            </div>
-            {canManage ? (
-              <CatalogCreateForm supplierId={detail.id} />
-            ) : null}
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Base UOM</TableHead>
-                  <TableHead>Purchase Price</TableHead>
-                  <TableHead>Linked Ingredients</TableHead>
-                  {canManage ? <TableHead className="w-[180px]">Actions</TableHead> : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {detail.catalog.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="py-10 text-center text-sm text-muted-foreground"
-                    >
-                      This supplier has no catalog items yet.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  detail.catalog.map((item) => {
-                    const existingIngredientIds = new Set(
-                      item.links?.map((link) => link.storeIngredientId) ?? [],
-                    );
-                    const statusBadge = item.is_active ? (
-                      <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
-                        Active
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive">Inactive</Badge>
-                    );
-
-                    return (
-                      <TableRow key={item.id} className={!item.is_active ? "opacity-60" : undefined}>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium text-foreground">
-                              {item.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              Added{" "}
-                              {new Date(item.created_at).toLocaleDateString("id-ID")}
-                            </span>
-                            {statusBadge}
-                          </div>
+            <CardContent className="flex-1 overflow-hidden">
+              <div className="max-h-[420px] overflow-y-auto rounded-md border">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Satuan</TableHead>
+                      <TableHead>Harga beli</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Linked ingredients</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detail.catalog.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                          Belum ada item katalog. Gunakan tombol &quot;Kelola katalog&quot; pada halaman daftar supplier.
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {item.base_uom}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatIDR(item.purchase_price)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-3">
-                            {item.links.length === 0 ? (
-                              <span className="text-sm text-muted-foreground">
-                                No ingredient links
-                              </span>
-                            ) : (
-                              <div className="flex flex-col gap-2">
-                                {item.links.map((link) => (
-                                  <CatalogLinkEntry
-                                    key={link.id}
-                                    supplierId={detail.id}
-                                    link={link}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                            {canManage ? (
-                              <CatalogLinkForm
-                                supplierId={detail.id}
-                                catalogItemId={item.id}
-                                ingredients={storeIngredients}
-                                existingIngredientIds={existingIngredientIds}
-                              />
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        {canManage ? (
-                          <TableCell>
-                            <CatalogItemActions supplierId={detail.id} item={item} />
-                          </TableCell>
-                        ) : null}
                       </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                    ) : (
+                      detail.catalog.map((item) => (
+                        <TableRow key={item.id} className={item.is_active ? "" : "opacity-60"}>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium text-foreground">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Dibuat {new Date(item.created_at).toLocaleDateString("id-ID")}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{item.base_uom}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatIDR(item.purchase_price)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={item.is_active ? "default" : "destructive"}>
+                              {item.is_active ? "Aktif" : "Nonaktif"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="space-y-2 text-xs text-muted-foreground">
+                            {item.links && item.links.length > 0 ? (
+                              item.links.map((link) => (
+                                <div key={link.id} className="rounded-md border px-2 py-1">
+                                  <p className="font-medium text-foreground">{link.ingredientName}</p>
+                                  <p>
+                                    {link.baseUom ?? "—"} • {link.preferred ? "Preferred supplier" : "Sekunder"}
+                                  </p>
+                                  {link.lastPurchasePrice ? (
+                                    <p>
+                                      Terakhir beli: {formatIDR(link.lastPurchasePrice)} •{' '}
+                                      {link.lastPurchasedAt
+                                        ? new Date(link.lastPurchasedAt).toLocaleDateString("id-ID")
+                                        : "—"}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ))
+                            ) : (
+                              <span>Tidak ada relasi ingredient</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   } catch (error) {
-    console.error("[SUPPLIER_DETAIL_PAGE_ERROR]", error);
+    console.error("[SUPPLIER_DETAIL_ERROR]", error);
     redirect("/dashboard/procurements/suppliers");
   }
 }

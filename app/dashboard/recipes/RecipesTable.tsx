@@ -13,9 +13,9 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 import { RecipeForm } from './RecipeForm';
-import { DataTableContent } from '@/components/tables/data-table-content';
-import { DataTablePagination } from '@/components/tables/data-table-pagination';
-import { DataTableSelectFilter } from '@/components/tables/data-table-select-filter';
+import { DataTableContent } from '@/components/data-table/table-content';
+import { DataTablePagination } from '@/components/data-table/pagination';
+import { DataTableSelectFilter } from '@/components/data-table/select-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

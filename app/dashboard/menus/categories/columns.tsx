@@ -8,7 +8,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 
-import { DataTableColumnHeader } from '@/components/tables/data-table-column-header';
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

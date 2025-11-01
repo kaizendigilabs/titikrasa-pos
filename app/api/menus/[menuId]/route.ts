@@ -2,9 +2,9 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getMenuById } from "@/features/menus/server";
-import { updateMenuSchema } from "@/features/menus/schemas";
+import { updateMenuSchema } from "@/features/menus/model/forms/schema";
 import { toPersistedVariants } from "@/features/menus/utils";
-import { mapMenuRow } from "@/features/menus/mappers";
+import { mapMenuRow } from "@/features/menus/data/dto";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";

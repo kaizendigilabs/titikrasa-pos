@@ -2,9 +2,7 @@ import { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
-import {
-  updateSupplierLinkSchema,
-} from "@/features/procurements/suppliers/schemas";
+import { updateSupplierLinkSchema } from "@/features/procurements/suppliers/model/forms/schema";
 import {
   adminClient,
   ensureAdminOrManager,

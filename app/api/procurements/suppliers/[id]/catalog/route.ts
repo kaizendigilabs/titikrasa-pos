@@ -2,30 +2,14 @@ import { NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
-import {
-  createCatalogItemSchema,
-} from "@/features/procurements/suppliers/schemas";
-import {
-  type SupplierCatalogItem,
-} from "@/features/procurements/suppliers/types";
+import { createCatalogItemSchema } from "@/features/procurements/suppliers/model/forms/schema";
+import { mapCatalogRow } from "@/features/procurements/suppliers/data/dto";
 import {
   adminClient,
   ensureAdminOrManager,
   requireActor,
 } from "@/features/users/server";
 import type { TablesInsert } from "@/lib/types/database";
-
-function mapCatalogItem(row: any): SupplierCatalogItem {
-  return {
-    id: row.id,
-    supplier_id: row.supplier_id,
-    name: row.name,
-    base_uom: row.base_uom,
-    purchase_price: row.purchase_price,
-    is_active: row.is_active,
-    created_at: row.created_at,
-  };
-}
 
 export async function GET(
   _request: NextRequest,
@@ -50,7 +34,7 @@ export async function GET(
       });
     }
 
-    const items = (data ?? []).map(mapCatalogItem);
+    const items = (data ?? []).map((row) => mapCatalogRow(row as any));
     return ok({ items });
   } catch (error) {
     if (error instanceof AppError) {
@@ -100,7 +84,7 @@ export async function POST(
       });
     }
 
-    return ok({ item: mapCatalogItem(data) });
+    return ok({ item: mapCatalogRow(data as any) });
   } catch (error) {
     if (error instanceof AppError) {
       return fail(error);

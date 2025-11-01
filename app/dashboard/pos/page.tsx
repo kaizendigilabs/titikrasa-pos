@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { PosScreen } from "./PosScreen";
-import { mapMenuRow, type RawMenuRow } from "@/features/menus/mappers";
+import { mapMenuRow, type RawMenuRow } from "@/features/menus/data/dto";
 import { parseContact, parseTerms, type ResellerListItem } from "@/features/resellers/types";
 import { ORDER_SELECT } from "@/features/orders/server";
 import { mapOrderRow } from "@/features/orders/mappers";

@@ -1,12 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { SuppliersTable } from "./SuppliersTable";
+import { SuppliersTableScreen } from "@/features/procurements/suppliers/ui/components/suppliers-table";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
-import { supplierFiltersSchema } from "@/features/procurements/suppliers/schemas";
-import {
-  parseSupplierContact,
-  type SupplierListItem,
-} from "@/features/procurements/suppliers/types";
+import { supplierFiltersSchema } from "@/features/procurements/suppliers/model/forms/schema";
+import { mapSupplierRow } from "@/features/procurements/suppliers/data/dto";
+import type { SupplierListItem } from "@/features/procurements/suppliers/types";
 
 export const dynamic = "force-dynamic";
 
@@ -34,16 +32,7 @@ export default async function SuppliersPage() {
     }
 
     const suppliers: SupplierListItem[] =
-      data?.map((row) => ({
-        id: row.id,
-        name: row.name,
-        is_active: row.is_active,
-        catalogCount: Array.isArray(row.supplier_catalog_items)
-          ? row.supplier_catalog_items[0]?.count ?? 0
-          : 0,
-        contact: parseSupplierContact(row.contact ?? null),
-        created_at: row.created_at,
-      })) ?? [];
+      data?.map((row) => mapSupplierRow(row as any)) ?? [];
 
     const initialMeta = {
       pagination: {
@@ -62,11 +51,11 @@ export default async function SuppliersPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Suppliers</h1>
           <p className="text-sm text-muted-foreground">
-            Manage suppliers, their purchasing catalog, and keep procurement aligned with inventory.
+            Kelola mitra pemasok dan katalog pembelian untuk menjaga proses procurement tetap rapi.
           </p>
         </div>
-        <SuppliersTable
-          initialSuppliers={suppliers}
+        <SuppliersTableScreen
+          initialItems={suppliers}
           initialMeta={initialMeta}
           canManage={actor.roles.isAdmin || actor.roles.isManager}
         />
