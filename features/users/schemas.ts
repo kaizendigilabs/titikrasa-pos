@@ -16,10 +16,15 @@ export const createUserSchema = z.object({
     .min(1, "Name is required")
     .max(120, "Name is too long"),
   phone: z
-    .string()
-    .trim()
-    .min(3, "Phone number is too short")
-    .max(30, "Phone number is too long"),
+    .union([
+      z
+        .string()
+        .trim()
+        .min(3, "Phone number is too short")
+        .max(30, "Phone number is too long"),
+      z.literal(""),
+    ])
+    .optional(),
   role: z.enum(ROLE_OPTIONS),
   password: z
     .string()
@@ -75,10 +80,14 @@ export const profileUpdateSchema = z
       .optional(),
     email: emailSchema.optional(),
     phone: z
-      .string()
-      .trim()
-      .min(3, "Phone number is too short")
-      .max(30, "Phone number is too long")
+      .union([
+        z
+          .string()
+          .trim()
+          .min(3, "Phone number is too short")
+          .max(30, "Phone number is too long"),
+        z.literal(""),
+      ])
       .optional(),
     password: z
       .string()

@@ -3,6 +3,8 @@ import type { User } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerClient } from "@/lib/supabase/server";
 import { ERR, appError } from "@/lib/utils/errors";
+import { mapProfileToUser, type RawUserRow } from "./mappers";
+import type { UserListItem } from "./types";
 
 type RoleFlags = {
   isAdmin: boolean;
@@ -14,6 +16,19 @@ export type ActorContext = {
   supabase: Awaited<ReturnType<typeof createServerClient>>;
   user: User;
   roles: RoleFlags;
+};
+
+export type UsersTableBootstrap = {
+  initialUsers: UserListItem[];
+  initialMeta: {
+    pagination: { page: number; pageSize: number; total: number };
+    filters: {
+      status: "all" | "active" | "inactive";
+      role: string | null;
+      search: string | null;
+    };
+  };
+  initialRoles: Array<{ id: string; name: string }>;
 };
 
 export async function requireActor(): Promise<ActorContext> {
@@ -78,6 +93,75 @@ export async function getRoleIdByName(
 
 export function adminClient() {
   return createAdminClient();
+}
+
+export async function getUsersTableBootstrap(
+  actor: ActorContext,
+  options: { pageSize?: number } = {},
+): Promise<UsersTableBootstrap> {
+  const pageSize = options.pageSize ?? 50;
+
+  const { data, error, count } = await actor.supabase
+    .from("profiles")
+    .select(
+      `
+        user_id,
+        name,
+        email,
+        phone,
+        avatar,
+        is_active,
+        last_login_at,
+        created_at,
+        updated_at,
+        user_roles (
+          role_id,
+          roles (
+            id,
+            name
+          )
+        )
+      `,
+      { count: "exact" },
+    )
+    .order("created_at", { ascending: false })
+    .range(0, pageSize - 1);
+
+  if (error) {
+    throw appError(ERR.SERVER_ERROR, {
+      message: "Failed to load initial users",
+      details: { hint: error.message },
+    });
+  }
+
+  const initialUsers =
+    (data as RawUserRow[] | null)?.map(mapProfileToUser) ?? [];
+
+  const { data: roleData, error: rolesError } = await actor.supabase
+    .from("roles")
+    .select("id, name")
+    .order("name", { ascending: true });
+
+  if (rolesError) {
+    console.error("[USERS_BOOTSTRAP_ROLES_ERROR]", rolesError);
+  }
+
+  return {
+    initialUsers,
+    initialMeta: {
+      pagination: {
+        page: 1,
+        pageSize,
+        total: count ?? initialUsers.length,
+      },
+      filters: {
+        status: "all",
+        role: null,
+        search: null,
+      },
+    },
+    initialRoles: roleData ?? [],
+  };
 }
 
 async function resolveRoleFlags(

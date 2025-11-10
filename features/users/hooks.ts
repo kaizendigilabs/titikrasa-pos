@@ -10,14 +10,12 @@ import {
   createUser,
   deleteUser,
   fetchRoles,
-  getUser,
   listUsers,
   resetUserPassword,
   setUserActiveStatus,
   updateUser,
   type ListUsersParams,
 } from "./client";
-import type { UserListItem } from "./types";
 import { createBrowserClient } from "@/lib/supabase/client";
 
 const USERS_QUERY_KEY = "users";
@@ -26,53 +24,6 @@ const ROLES_QUERY_KEY = "users-roles";
 type UseUsersOptions = {
   initialData?: Awaited<ReturnType<typeof listUsers>>;
 };
-
-type UsersQueryData = Awaited<ReturnType<typeof listUsers>>;
-
-function sortUsersByCreatedAt(users: UserListItem[]) {
-  return [...users].sort((a, b) => {
-    const aTime = a.created_at ? Date.parse(a.created_at) : 0;
-    const bTime = b.created_at ? Date.parse(b.created_at) : 0;
-    return bTime - aTime;
-  });
-}
-
-function upsertUserInList(list: UserListItem[], user: UserListItem) {
-  const index = list.findIndex((item) => item.user_id === user.user_id);
-  if (index === -1) {
-    return sortUsersByCreatedAt([...list, user]);
-  }
-
-  const next = [...list];
-  next[index] = user;
-  return sortUsersByCreatedAt(next);
-}
-
-function removeUserFromList(list: UserListItem[], userId: string) {
-  return list.filter((item) => item.user_id !== userId);
-}
-
-function adjustMetaTotal(
-  meta: UsersQueryData["meta"],
-  delta: number,
-): UsersQueryData["meta"] {
-  if (!meta) return meta;
-  const pagination = (meta as {
-    pagination?: { total?: number };
-  }).pagination;
-  const total = pagination?.total;
-  if (typeof total !== "number") {
-    return meta;
-  }
-
-  return {
-    ...meta,
-    pagination: {
-      ...pagination,
-      total: Math.max(total + delta, 0),
-    },
-  };
-}
 
 export function useUsers(
   filters: ListUsersParams,
@@ -180,8 +131,6 @@ export function useUsersQueryKey() {
 
 type UseUsersRealtimeOptions = {
   enabled?: boolean;
-  onUserUpsert?: (user: UserListItem) => void;
-  onUserDelete?: (userId: string) => void;
 };
 
 export function useUsersRealtime(
@@ -195,96 +144,23 @@ export function useUsersRealtime(
     if (options.enabled === false) return;
 
     const supabase = createBrowserClient();
-    const queryKey = [USERS_QUERY_KEY, filters] as const;
-    const pending = new Set<string>();
-
-    const upsertUser = (user: UserListItem) => {
-      queryClient.setQueryData<UsersQueryData | undefined>(
-        queryKey,
-        (current) => {
-          if (!current) return current;
-          const existed = current.items.some(
-            (item) => item.user_id === user.user_id,
-          );
-          const items = upsertUserInList(current.items, user);
-          const meta =
-            existed || !current.meta
-              ? current.meta
-              : adjustMetaTotal(current.meta, 1);
-          return { ...current, items, meta };
-        },
-      );
-      options.onUserUpsert?.(user);
+    const filterKey = JSON.stringify(filters ?? {});
+    const channelName = `users-dashboard-${filterKey}-${Date.now()}`;
+    const invalidate = () => {
+      void queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     };
 
-    const removeUser = (userId: string) => {
-      queryClient.setQueryData<UsersQueryData | undefined>(
-        queryKey,
-        (current) => {
-          if (!current) return current;
-          const existed = current.items.some(
-            (item) => item.user_id === userId,
-          );
-          if (!existed) {
-            return current;
-          }
-          const items = removeUserFromList(current.items, userId);
-          const meta = current.meta
-            ? adjustMetaTotal(current.meta, -1)
-            : current.meta;
-          return { ...current, items, meta };
-        },
-      );
-      options.onUserDelete?.(userId);
-    };
-
-    const refreshUser = async (userId: string) => {
-      if (!userId || pending.has(userId)) return;
-      pending.add(userId);
-      try {
-        const user = await getUser(userId);
-        if (user) {
-          upsertUser(user);
-        } else {
-          removeUser(userId);
-        }
-      } catch (error) {
-        console.error("[USERS_REALTIME_SYNC_ERROR]", error);
-      } finally {
-        pending.delete(userId);
-      }
-    };
-
-    const channelName = `users-dashboard-${Date.now()}`;
     const channel = supabase
       .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "profiles" },
-        (payload) => {
-          const userId =
-            (payload.new as { user_id?: string } | null)?.user_id ??
-            (payload.old as { user_id?: string } | null)?.user_id;
-
-          if (!userId) return;
-
-          if (payload.eventType === "DELETE") {
-            removeUser(userId);
-          } else {
-            void refreshUser(userId);
-          }
-        },
+        invalidate,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "user_roles" },
-        (payload) => {
-          const userId =
-            (payload.new as { user_id?: string } | null)?.user_id ??
-            (payload.old as { user_id?: string } | null)?.user_id;
-          if (!userId) return;
-          void refreshUser(userId);
-        },
+        invalidate,
       );
 
     channel.subscribe();
@@ -292,5 +168,5 @@ export function useUsersRealtime(
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [filters, options, options.enabled, options.onUserDelete, options.onUserUpsert, queryClient]);
+  }, [filters, options.enabled, queryClient]);
 }

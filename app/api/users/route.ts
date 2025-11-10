@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
+    const roleJoin = role ? "!inner" : "";
     let query = actor.supabase
       .from("profiles")
       .select(
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
         last_login_at,
         created_at,
         updated_at,
-        user_roles (
+        user_roles: user_roles${roleJoin} (
           role_id,
           roles (
             id,
@@ -65,6 +66,10 @@ export async function GET(request: NextRequest) {
 
     if (status !== "all") {
       query = query.eq("is_active", status === "active");
+    }
+
+    if (role) {
+      query = query.ilike("user_roles.roles.name", role);
     }
 
     if (search && search.length > 0) {
@@ -84,11 +89,9 @@ export async function GET(request: NextRequest) {
     }
 
     const items: UserListItem[] = (data ?? []).map(mapProfileToUser);
-
-    const filteredItems =
-      role != null
-        ? items.filter((item) => item.role === role)
-        : items;
+    const filteredItems = role
+      ? items.filter((item) => item.role === role)
+      : items;
 
     return ok(
       { items: filteredItems },
@@ -97,7 +100,9 @@ export async function GET(request: NextRequest) {
           pagination: {
             page,
             pageSize,
-            total: role ? filteredItems.length : count ?? filteredItems.length,
+            total: role
+              ? filteredItems.length
+              : count ?? filteredItems.length,
           },
           filters: {
             status,
@@ -126,6 +131,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const admin = adminClient();
+  let createdUserId: string | null = null;
+
   try {
     const actor = await requireActor();
     ensureAdmin(actor.roles);
@@ -134,8 +142,10 @@ export async function POST(request: NextRequest) {
     const { email, name, phone, role, password } =
       createUserSchema.parse(payload);
 
+    const normalizedPhone =
+      typeof phone === "string" && phone.trim().length > 0 ? phone : null;
+
     const roleId = await getRoleIdByName(actor.supabase, role);
-    const admin = adminClient();
 
     const { data: created, error: createError } =
       await admin.auth.admin.createUser({
@@ -144,7 +154,7 @@ export async function POST(request: NextRequest) {
         email_confirm: true,
         user_metadata: {
           full_name: name,
-          phone,
+          ...(normalizedPhone ? { phone: normalizedPhone } : {}),
         },
       });
 
@@ -158,6 +168,7 @@ export async function POST(request: NextRequest) {
         message: "User creation returned no user entity",
       });
     }
+    createdUserId = newUser.id;
 
     const { error: roleError } = await admin
       .from("user_roles")
@@ -172,7 +183,7 @@ export async function POST(request: NextRequest) {
 
     const { error: profileUpdateError } = await admin
       .from("profiles")
-      .update({ name, phone })
+      .update({ name, phone: normalizedPhone })
       .eq("user_id", newUser.id);
 
     if (profileUpdateError) {
@@ -233,6 +244,15 @@ export async function POST(request: NextRequest) {
 
     return ok(mapProfileToUser(fetched));
   } catch (error) {
+    if (createdUserId) {
+      const { error: cleanupError } = await admin.auth.admin.deleteUser(
+        createdUserId,
+      );
+      if (cleanupError) {
+        console.error("[USER_CREATE_CLEANUP_ERROR]", cleanupError);
+      }
+    }
+
     if (error instanceof AppError) {
       return fail(error);
     }

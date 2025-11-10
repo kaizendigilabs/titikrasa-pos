@@ -25,6 +25,13 @@ export async function GET() {
       return fail(error);
     }
 
-    return fail(error);
+    return fail(
+      appError(ERR.SERVER_ERROR, {
+        message: "Failed to load roles",
+        details: {
+          hint: error instanceof Error ? error.message : String(error),
+        },
+      }),
+    );
   }
 }

@@ -11,11 +11,15 @@ import { flexRender, type Table } from "@tanstack/react-table";
 type DataTableContentProps<TData> = {
   table: Table<TData>;
   isLoading?: boolean;
+  loadingMessage?: string;
+  emptyMessage?: string;
 };
 
 export function DataTableContent<TData>({
   table,
   isLoading = false,
+  loadingMessage = "Loading...",
+  emptyMessage = "No results.",
 }: DataTableContentProps<TData>) {
   const columnCount = table.getAllLeafColumns().length;
 
@@ -46,7 +50,7 @@ export function DataTableContent<TData>({
         {isLoading ? (
           <TableRow>
             <TableCell colSpan={columnCount} className="h-24 text-center">
-              Loading users...
+              {loadingMessage}
             </TableCell>
           </TableRow>
         ) : table.getRowModel().rows?.length ? (
@@ -65,7 +69,7 @@ export function DataTableContent<TData>({
         ) : (
           <TableRow>
             <TableCell colSpan={columnCount} className="h-24 text-center">
-              No results.
+              {emptyMessage}
             </TableCell>
           </TableRow>
         )}

@@ -1,93 +1,58 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
-import { UsersTable } from "./UsersTable";
-import { ensureAdminOrManager, requireActor } from "@/features/users/server";
-import { mapProfileToUser, type RawUserRow } from "@/features/users/mappers";
-import { AppError, ERR } from "@/lib/utils/errors";
+import { UsersTable } from './data-table';
+import {
+  ensureAdminOrManager,
+  getUsersTableBootstrap,
+  requireActor,
+} from '@/features/users/server';
+import { AppError, ERR } from '@/lib/utils/errors';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 50;
 
 export default async function UsersPage() {
+  let actor: Awaited<ReturnType<typeof requireActor>> | null = null;
+  let bootstrap: Awaited<ReturnType<typeof getUsersTableBootstrap>> | null =
+    null;
+
   try {
-    const actor = await requireActor();
+    actor = await requireActor();
     ensureAdminOrManager(actor.roles);
-
-    const { data, error, count } = await actor.supabase
-      .from("profiles")
-      .select(
-        `
-      user_id,
-      name,
-      email,
-      phone,
-      avatar,
-      is_active,
-      last_login_at,
-      created_at,
-      updated_at,
-      user_roles (
-        role_id,
-        roles (
-          id,
-          name
-        )
-      )
-    `,
-        { count: "exact" },
-      )
-      .order("created_at", { ascending: false })
-      .range(0, PAGE_SIZE - 1);
-
-    if (error) {
-      throw error;
-    }
-
-    const initialUsers =
-      (data as RawUserRow[] | null)?.map(mapProfileToUser) ?? [];
-
-    const { data: roleData, error: rolesError } = await actor.supabase
-      .from("roles")
-      .select("id, name")
-      .order("name", { ascending: true });
-
-    if (rolesError) {
-      console.error("[USERS_PAGE_ROLES_ERROR]", rolesError);
-    }
-
-    const initialMeta = {
-      pagination: {
-        page: 1,
-        pageSize: PAGE_SIZE,
-        total: count ?? initialUsers.length,
-      },
-      filters: {
-        status: "all" as const,
-        role: null as string | null,
-        search: null as string | null,
-      },
-    };
-
-    return (
-      <UsersTable
-        initialUsers={initialUsers}
-        initialMeta={initialMeta}
-        initialRoles={roleData ?? []}
-        currentUserId={actor.user.id}
-        canManage={actor.roles.isAdmin}
-      />
-    );
+    bootstrap = await getUsersTableBootstrap(actor, { pageSize: PAGE_SIZE });
   } catch (error) {
     if (
       error instanceof AppError &&
       error.statusCode === ERR.FORBIDDEN.statusCode
     ) {
       redirect(
-        "/dashboard?status=forbidden&message=You%20do%20not%20have%20permission%20to%20access%20this%20resource",
+        '/dashboard?status=forbidden&message=You%20do%20not%20have%20permission%20to%20access%20this%20resource'
       );
     }
-    console.error("[USERS_PAGE_ERROR]", error);
-    redirect("/dashboard");
+    console.error('[USERS_PAGE_ERROR]', error);
+    redirect('/dashboard');
   }
+
+  if (!actor || !bootstrap) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-8 lg:py-10">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
+        <p className="text-sm text-muted-foreground">
+          Manage Users & Permissions
+        </p>
+      </div>
+      <UsersTable
+        initialUsers={bootstrap.initialUsers}
+        initialMeta={bootstrap.initialMeta}
+        initialRoles={bootstrap.initialRoles}
+        currentUserId={actor.user.id}
+        canManage={actor.roles.isAdmin}
+      />
+    </div>
+  );
 }

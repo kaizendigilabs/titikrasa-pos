@@ -11,15 +11,15 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils/cn";
 
-type Option<T extends string> = {
+export type DataTableSelectFilterOption<T extends string> = {
   label: string;
   value: T;
 };
 
-type DataTableSelectFilterProps<T extends string> = {
+export type DataTableSelectFilterProps<T extends string> = {
   value: T;
   onValueChange: (value: T) => void;
-  options: Option<T>[];
+  options: DataTableSelectFilterOption<T>[];
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -52,3 +52,8 @@ export function DataTableSelectFilter<T extends string>({
     </Select>
   );
 }
+
+export type DataTableSelectFilterConfig<T extends string = string> =
+  DataTableSelectFilterProps<T> & {
+    id: string;
+  };
