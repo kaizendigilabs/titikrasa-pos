@@ -23,6 +23,40 @@ export type ResellerListItem = {
   created_at: string;
 };
 
+export type ResellerOrder = {
+  id: string;
+  number: string;
+  status: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  dueDate: string | null;
+  totalAmount: number;
+  createdAt: string;
+  paidAt: string | null;
+};
+
+export type ResellerCatalogEntry = {
+  menuId: string;
+  menuName: string;
+  thumbnailUrl: string | null;
+  totalQty: number;
+  lastOrderAt: string | null;
+  lastPrice: number | null;
+};
+
+export type ResellerDetailStats = {
+  totalOrders: number;
+  unpaidCount: number;
+  totalOutstanding: number;
+};
+
+export type ResellerDetailBootstrap = {
+  reseller: ResellerListItem;
+  stats: ResellerDetailStats;
+  recentOrders: ResellerOrder[];
+  catalogHighlights: ResellerCatalogEntry[];
+};
+
 export function parseContact(contact: Json | null): ResellerContact {
   if (!contact || typeof contact !== "object") {
     return {};

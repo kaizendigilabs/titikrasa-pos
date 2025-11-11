@@ -31,7 +31,7 @@ export function ResellersTable(props: ResellersTableProps) {
       renderToolbar={(context) => (
         <DataTableToolbar {...controller.buildToolbarConfig(context)} />
       )}
-      renderAfterTable={(context) => (
+      renderAfterTable={() => (
         <>
           {props.canManage ? (
             <>

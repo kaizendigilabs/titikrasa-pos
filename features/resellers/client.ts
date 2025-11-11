@@ -1,7 +1,13 @@
-import type { ResellerListItem } from "./types";
+import type {
+  ResellerCatalogEntry,
+  ResellerListItem,
+  ResellerOrder,
+} from "./types";
 import type {
   CreateResellerPayload,
+  ResellerCatalogFilters,
   ResellerFilters,
+  ResellerOrderFilters,
   UpdateResellerPayload,
 } from "./schemas";
 import { parseContact, parseTerms } from "./types";
@@ -26,6 +32,14 @@ export type ResellerListResponse = {
   items: ResellerListItem[];
 };
 
+export type ResellerOrdersResponse = {
+  items: ResellerOrder[];
+};
+
+export type ResellerCatalogResponse = {
+  items: ResellerCatalogEntry[];
+};
+
 function transformListItem(payload: any): ResellerListItem {
   return {
     id: payload.id,
@@ -34,6 +48,31 @@ function transformListItem(payload: any): ResellerListItem {
     terms: parseTerms(payload.terms),
     is_active: payload.is_active,
     created_at: payload.created_at,
+  };
+}
+
+function transformOrder(payload: any): ResellerOrder {
+  return {
+    id: payload.id,
+    number: payload.number,
+    status: payload.status,
+    paymentStatus: payload.paymentStatus ?? payload.payment_status,
+    paymentMethod: payload.paymentMethod ?? payload.payment_method,
+    dueDate: payload.dueDate ?? payload.due_date ?? null,
+    totalAmount: payload.totalAmount ?? payload.total_amount ?? 0,
+    createdAt: payload.createdAt ?? payload.created_at,
+    paidAt: payload.paidAt ?? payload.paid_at ?? null,
+  };
+}
+
+function transformCatalogEntry(payload: any): ResellerCatalogEntry {
+  return {
+    menuId: payload.menuId ?? payload.menu_id,
+    menuName: payload.menuName ?? payload.menu_name ?? "Menu",
+    thumbnailUrl: payload.thumbnailUrl ?? payload.thumbnail_url ?? null,
+    totalQty: payload.totalQty ?? payload.total_qty ?? 0,
+    lastOrderAt: payload.lastOrderAt ?? payload.last_order_at ?? null,
+    lastPrice: payload.lastPrice ?? payload.last_price ?? null,
   };
 }
 
@@ -135,4 +174,51 @@ export async function deleteReseller(resellerId: string): Promise<void> {
   await request<{ success: boolean }>(`/api/resellers/${resellerId}`, {
     method: "DELETE",
   });
+}
+
+export async function listResellerOrders(
+  resellerId: string,
+  filters: ResellerOrderFilters,
+) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(filters.page));
+  searchParams.set("pageSize", String(filters.pageSize));
+  if (filters.paymentStatus && filters.paymentStatus !== "all") {
+    searchParams.set("paymentStatus", filters.paymentStatus);
+  }
+  if (filters.search?.trim()) {
+    searchParams.set("search", filters.search.trim());
+  }
+
+  const response = await request<ResellerOrdersResponse>(
+    `/api/resellers/${resellerId}/orders?${searchParams.toString()}`,
+    { method: "GET" },
+  );
+
+  return {
+    items: response.data.items.map(transformOrder),
+    meta: (response.meta as ResellerListMeta | null) ?? null,
+  };
+}
+
+export async function listResellerCatalog(
+  resellerId: string,
+  filters: ResellerCatalogFilters,
+) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(filters.page));
+  searchParams.set("pageSize", String(filters.pageSize));
+  if (filters.search?.trim()) {
+    searchParams.set("search", filters.search.trim());
+  }
+
+  const response = await request<ResellerCatalogResponse>(
+    `/api/resellers/${resellerId}/catalog?${searchParams.toString()}`,
+    { method: "GET" },
+  );
+
+  return {
+    items: response.data.items.map(transformCatalogEntry),
+    meta: (response.meta as ResellerListMeta | null) ?? null,
+  };
 }

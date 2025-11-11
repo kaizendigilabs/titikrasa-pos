@@ -10,20 +10,31 @@ import * as React from "react";
 import {
   createReseller,
   deleteReseller,
+  listResellerCatalog,
+  listResellerOrders,
   listResellers,
   toggleResellerStatus,
   updateReseller,
   type ResellerListMeta,
 } from "./client";
 import type {
+  ResellerCatalogFilters,
   ResellerFilters,
+  ResellerOrderFilters,
   UpdateResellerPayload,
 } from "./schemas";
-import type { ResellerListItem } from "./types";
+import type {
+  ResellerCatalogEntry,
+  ResellerListItem,
+  ResellerOrder,
+} from "./types";
 import { parseContact, parseTerms } from "./types";
 import { createBrowserClient } from "@/lib/supabase/client";
+import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
 
 const RESELLERS_KEY = "resellers";
+const RESELLER_ORDERS_KEY = "reseller-orders";
+const RESELLER_CATALOG_KEY = "reseller-catalog";
 
 type UseResellersOptions = {
   initialData?: Awaited<ReturnType<typeof listResellers>>;
@@ -229,4 +240,42 @@ export function useResellersRealtime(enabled: boolean, options: RealtimeOptions 
       void supabase.removeChannel(channel);
     };
   }, [options, enabled, queryClient]);
+}
+
+type UseResellerOrdersOptions = {
+  initialData?: DataTableQueryResult<ResellerOrder>;
+};
+
+export function useResellerOrders(
+  resellerId: string,
+  filters: ResellerOrderFilters,
+  options: UseResellerOrdersOptions = {},
+) {
+  return useQuery({
+    queryKey: [RESELLER_ORDERS_KEY, resellerId, filters],
+    queryFn: () => listResellerOrders(resellerId, filters),
+    placeholderData: keepPreviousData,
+    gcTime: 1000 * 60 * 30,
+    staleTime: 1000 * 30,
+    ...(options.initialData ? { initialData: options.initialData } : {}),
+  });
+}
+
+type UseResellerCatalogOptions = {
+  initialData?: DataTableQueryResult<ResellerCatalogEntry>;
+};
+
+export function useResellerCatalog(
+  resellerId: string,
+  filters: ResellerCatalogFilters,
+  options: UseResellerCatalogOptions = {},
+) {
+  return useQuery({
+    queryKey: [RESELLER_CATALOG_KEY, resellerId, filters],
+    queryFn: () => listResellerCatalog(resellerId, filters),
+    placeholderData: keepPreviousData,
+    gcTime: 1000 * 60 * 30,
+    staleTime: 1000 * 30,
+    ...(options.initialData ? { initialData: options.initialData } : {}),
+  });
 }

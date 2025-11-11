@@ -19,8 +19,12 @@ Dokumen ini jadi pegangan untuk merapikan fitur Resellers supaya konsisten denga
 
 ### 1. Backend / API
 - [x] Audit `GET /api/resellers` supaya menerima `status`, `search`, `page`, `pageSize` dan mengembalikan total yang benar. *(sudah comply via `/api/resellers` + helper `getResellersTableBootstrap`)*
-- [ ] Tambahkan dukungan search terindex jika diperlukan (cek TODO global untuk FTS/trigram).
+- [x] Tambahkan dukungan search terindex jika diperlukan (cek TODO global untuk FTS/trigram). *(lihat `supabase/migrations/2025110601_resellers_search_indexes.sql`)*
 - [ ] Pastikan mutasi (POST/PATCH/DELETE) menggunakan transaksi/RLS sesuai standar BFF.
+
+#### Detail View
+- [x] Tambah helper `getResellerDetail` + API `/api/resellers/[id]/orders|catalog` (DataTable shell).
+- [x] Halaman detail (`app/dashboard/resellers/[id]/page.tsx`) menampilkan ringkasan, informasi kontak/terms, riwayat transaksi, dan katalog bahan dengan komponen reusable.
 
 ### 2. Frontend Struktur & State
 - [x] Ikuti blueprint `docs/todos_tables_refactor.md` (DataTable shell reusable).

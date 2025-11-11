@@ -69,6 +69,23 @@ export const resellerFiltersSchema = z.object({
   status: z.enum(["all", "active", "inactive"]).default("all"),
 });
 
+export const resellerOrderFiltersSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(200).default(10),
+  paymentStatus: z.enum(["all", "paid", "unpaid", "void"]).default("all"),
+  search: z.string().trim().optional(),
+});
+
+export const resellerCatalogFiltersSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(100).default(8),
+  search: z.string().trim().optional(),
+});
+
 export type CreateResellerPayload = z.infer<typeof createResellerSchema>;
 export type UpdateResellerPayload = z.infer<typeof updateResellerSchema>;
 export type ResellerFilters = z.infer<typeof resellerFiltersSchema>;
+export type ResellerOrderFilters = z.infer<typeof resellerOrderFiltersSchema>;
+export type ResellerCatalogFilters = z.infer<
+  typeof resellerCatalogFiltersSchema
+>;

@@ -12,17 +12,10 @@ import {
 } from "@/components/tables/use-data-table-state";
 import { createResellerColumns } from "../columns";
 import { Button } from "@/components/ui/button";
-import {
-  InviteResellerSheet,
-  EditResellerSheet,
-  type InviteResellerFormValues,
-  type EditResellerFormValues,
+import type {
+  InviteResellerFormValues,
+  EditResellerFormValues,
 } from "./forms";
-import {
-  BulkDeleteDialog,
-  DeleteResellerDialog,
-  ToggleStatusDialog,
-} from "./dialogs";
 import type { ResellerListItem } from "@/features/resellers/types";
 import type { ResellerFilters } from "@/features/resellers/schemas";
 import type { ResellerListMeta } from "@/features/resellers/client";
@@ -261,7 +254,8 @@ export function useResellersTableController({
         );
       } finally {
         setPendingActions((prev) => {
-          const { [editingReseller.id]: _omit, ...rest } = prev;
+          const rest = { ...prev };
+          delete rest[editingReseller.id];
           return rest;
         });
       }
@@ -286,7 +280,8 @@ export function useResellersTableController({
         );
       } finally {
         setPendingActions((prev) => {
-          const { [reseller.id]: _omit, ...rest } = prev;
+          const rest = { ...prev };
+          delete rest[reseller.id];
           return rest;
         });
       }
@@ -308,7 +303,8 @@ export function useResellersTableController({
         );
       } finally {
         setPendingActions((prev) => {
-          const { [reseller.id]: _omit, ...rest } = prev;
+          const rest = { ...prev };
+          delete rest[reseller.id];
           return rest;
         });
       }
