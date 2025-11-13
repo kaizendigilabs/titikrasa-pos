@@ -20,6 +20,8 @@ export type PaginationFilters = {
 
 export type DataTableQueryMeta = {
   pagination?: {
+    page?: number;
+    pageSize?: number;
     total?: number;
   };
   [key: string]: unknown;

@@ -6,6 +6,17 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   useDeleteSupplierLinkMutation,
   useUpdateSupplierLinkMutation,
 } from '@/features/procurements/suppliers/hooks';
@@ -36,6 +47,7 @@ export function CatalogLinkEntry({ supplierId, link }: CatalogLinkEntryProps) {
   const router = useRouter();
   const updateMutation = useUpdateSupplierLinkMutation(supplierId);
   const deleteMutation = useDeleteSupplierLinkMutation(supplierId);
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   const handleSetPreferred = async () => {
     try {
@@ -52,10 +64,10 @@ export function CatalogLinkEntry({ supplierId, link }: CatalogLinkEntryProps) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Remove this ingredient link?')) return;
     try {
       await deleteMutation.mutateAsync(link.id);
       toast.success('Link removed');
+      setDeleteDialogOpen(false);
       router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to remove link';
@@ -87,15 +99,38 @@ export function CatalogLinkEntry({ supplierId, link }: CatalogLinkEntryProps) {
               Set preferred
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-          >
-            Remove
-          </Button>
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-destructive"
+                disabled={deleteMutation.isPending}
+              >
+                Remove
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove ingredient link?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will unlink the ingredient from the catalog item.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:ring-destructive/40"
+                  onClick={() => {
+                    void handleDelete();
+                  }}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? 'Removing…' : 'Remove'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       <div className="mt-2 space-y-1">

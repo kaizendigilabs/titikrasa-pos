@@ -41,7 +41,8 @@ Dokumen ini menjabarkan rancangan refactor komponen tabel supaya bisa dipakai li
    - [x] Users menjadi referensi:
      - Hook `useUsersTableController` menyuplai konfigurasi domain.
      - `app/dashboard/users/data-table.tsx` hanya meneruskan config ke shell.
-   - [ ] Terapkan pattern yang sama ke modul berikutnya (Resellers/Suppliers) setelah Users stabil.
+   - [x] Resellers & Suppliers list sudah mengikuti pola (kolom aksi via `createActionColumn`, forms di `renderAfterTable`).
+   - [x] Purchase Orders list + supplier transactions memakai shell yang sama, termasuk sheet/dialog reuse untuk create & delete.
 
 ## 🔗 Keterkaitan dengan `todos_users_refactor.md`
 - Checklist frontend di dokumen Users harus memakai komponen tabel baru ini.

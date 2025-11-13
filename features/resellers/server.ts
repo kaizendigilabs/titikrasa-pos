@@ -8,6 +8,7 @@ import type {
   ResellerOrder,
 } from "./types";
 import { parseContact, parseTerms } from "./types";
+import type { Json } from "@/lib/types/database";
 
 function mapRow(row: any): ResellerListItem {
   return {
@@ -64,8 +65,8 @@ export async function getResellersTableBootstrap(
 
 const MAX_CATALOG_SOURCE_ROWS = 400;
 
-function parseTotalsGrand(totals: Record<string, unknown> | null): number {
-  if (!totals || typeof totals !== "object") {
+function parseTotalsGrand(totals: Json | null): number {
+  if (!totals || typeof totals !== "object" || Array.isArray(totals)) {
     return 0;
   }
   const raw = (totals as Record<string, unknown>).grand;
@@ -164,11 +165,13 @@ export async function getResellerDetail(
 
   const reseller = mapRow(resellerRow);
 
-  const { count: totalOrders = 0, error: orderCountError } = await actor.supabase
+  const { count: totalOrdersRaw, error: orderCountError } = await actor.supabase
     .from("orders")
     .select("id", { count: "exact", head: true })
     .eq("channel", "reseller")
     .eq("reseller_id", resellerId);
+  const totalOrders =
+    typeof totalOrdersRaw === "number" ? totalOrdersRaw : 0;
 
   if (orderCountError) {
     throw appError(ERR.SERVER_ERROR, {
@@ -179,7 +182,7 @@ export async function getResellerDetail(
 
   const {
     data: unpaidRows,
-    count: unpaidCount = 0,
+    count: unpaidCountRaw,
     error: unpaidError,
   } = await actor.supabase
     .from("orders")
@@ -187,6 +190,8 @@ export async function getResellerDetail(
     .eq("channel", "reseller")
     .eq("reseller_id", resellerId)
     .eq("payment_status", "unpaid");
+  const unpaidCount =
+    typeof unpaidCountRaw === "number" ? unpaidCountRaw : 0;
 
   if (unpaidError) {
     throw appError(ERR.SERVER_ERROR, {

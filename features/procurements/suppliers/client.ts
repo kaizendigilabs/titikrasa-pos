@@ -6,10 +6,14 @@ import type {
   UpdateCatalogItemPayload,
   CreateSupplierLinkPayload,
   UpdateSupplierLinkPayload,
+  SupplierOrderFilters,
+  SupplierCatalogFilters,
 } from "./schemas";
 import type {
   SupplierListItem,
   SupplierCatalogItem,
+  SupplierOrder,
+  SupplierCatalogWithLinks,
 } from "./types";
 import { parseSupplierContact } from "./types";
 import { AppError, ERR } from "@/lib/utils/errors";
@@ -34,6 +38,10 @@ type SupplierListMeta = {
 export type SupplierListResult = {
   items: SupplierListItem[];
   meta: SupplierListMeta | null;
+};
+
+type SupplierOrdersResponse = {
+  items: SupplierOrder[];
 };
 
 async function request<T>(input: string, init: RequestInit) {
@@ -135,12 +143,45 @@ export async function deleteSupplier(supplierId: string): Promise<void> {
   });
 }
 
-export async function listCatalogItems(supplierId: string): Promise<SupplierCatalogItem[]> {
-  const { data } = await request<{ items: any[] }>(
-    `${SUPPLIERS_ENDPOINT}/${supplierId}/catalog`,
+export async function listCatalogItems(
+  supplierId: string,
+  filters: SupplierCatalogFilters,
+) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(filters.page));
+  searchParams.set("pageSize", String(filters.pageSize));
+  if (filters.status && filters.status !== "all") {
+    searchParams.set("status", filters.status);
+  }
+  if (filters.search?.trim()) {
+    searchParams.set("search", filters.search.trim());
+  }
+
+  const response = await request<{ items: any[] }>(
+    `${SUPPLIERS_ENDPOINT}/${supplierId}/catalog?${searchParams.toString()}`,
     { method: "GET" },
   );
-  return data.items.map(transformCatalogItem);
+
+  return {
+    items: response.data.items.map((item) => ({
+      ...transformCatalogItem(item),
+      links: Array.isArray(item.ingredient_supplier_links)
+        ? item.ingredient_supplier_links.map((link: any) => ({
+            id: String(link.id ?? ""),
+            storeIngredientId: String(link.store_ingredient_id ?? ""),
+            ingredientName: link.store_ingredients?.name ?? "—",
+            baseUom: link.store_ingredients?.base_uom ?? null,
+            preferred: Boolean(link.preferred),
+            lastPurchasePrice:
+              typeof link.last_purchase_price === "number"
+                ? link.last_purchase_price
+                : null,
+            lastPurchasedAt: link.last_purchased_at ?? null,
+          }))
+        : [],
+    })) as SupplierCatalogWithLinks[],
+    meta: (response.meta as SupplierListMeta | null) ?? null,
+  };
 }
 
 export async function createCatalogItem(
@@ -187,6 +228,31 @@ export async function deleteCatalogItem(
     `${SUPPLIERS_ENDPOINT}/${supplierId}/catalog/${catalogItemId}`,
     { method: "DELETE" },
   );
+}
+
+export async function listSupplierOrders(
+  supplierId: string,
+  filters: SupplierOrderFilters,
+) {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(filters.page));
+  searchParams.set("pageSize", String(filters.pageSize));
+  if (filters.status && filters.status !== "all") {
+    searchParams.set("status", filters.status);
+  }
+  if (filters.search?.trim()) {
+    searchParams.set("search", filters.search.trim());
+  }
+
+  const response = await request<SupplierOrdersResponse>(
+    `${SUPPLIERS_ENDPOINT}/${supplierId}/transactions?${searchParams.toString()}`,
+    { method: "GET" },
+  );
+
+  return {
+    items: response.data.items,
+    meta: (response.meta as SupplierListMeta | null) ?? null,
+  };
 }
 
 export async function createSupplierLink(

@@ -236,7 +236,8 @@ export function useUsersTableController({
         toast.error(getErrorMessage(error, `Failed to ${actionLabel} user`));
       } finally {
         setPendingActions((prev) => {
-          const { [user.user_id]: _removed, ...rest } = prev;
+          const rest = { ...prev };
+          delete rest[user.user_id];
           return rest;
         });
       }
@@ -269,7 +270,8 @@ export function useUsersTableController({
         toast.error(getErrorMessage(error, "Failed to delete user"));
       } finally {
         setPendingActions((prev) => {
-          const { [user.user_id]: _removed, ...rest } = prev;
+          const rest = { ...prev };
+          delete rest[user.user_id];
           return rest;
         });
       }
@@ -307,7 +309,8 @@ export function useUsersTableController({
         toast.error(getErrorMessage(error, "Failed to update user"));
       } finally {
         setPendingActions((prev) => {
-          const { [targetId]: _removed, ...rest } = prev;
+          const rest = { ...prev };
+          delete rest[targetId];
           return rest;
         });
       }

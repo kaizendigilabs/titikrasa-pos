@@ -12,11 +12,41 @@ export type PurchaseOrderItem = {
   price: number;
 };
 
+export type PurchaseOrderCatalogLink = {
+  id: string;
+  storeIngredientId: string;
+  ingredientName: string;
+  baseUom: string | null;
+  preferred: boolean;
+  lastPurchasePrice: number | null;
+  lastPurchasedAt: string | null;
+};
+
+export type PurchaseOrderCatalogItem = {
+  id: string;
+  supplier_id: string;
+  name: string;
+  base_uom: string;
+  purchase_price: number;
+  is_active: boolean;
+  created_at: string;
+  links?: PurchaseOrderCatalogLink[];
+};
+
+export type PurchaseOrderSupplierOption = {
+  id: string;
+  name: string;
+  is_active: boolean;
+};
+
 export type PurchaseOrderListItem = {
   id: string;
   status: PurchaseOrderStatus;
   items: PurchaseOrderItem[];
   totals: Record<string, unknown>;
+  supplier_id: string;
+  supplier_name: string;
+  grand_total: number;
   issued_at: string | null;
   completed_at: string | null;
   created_at: string;
@@ -66,4 +96,18 @@ export function parsePurchaseOrderItems(payload: Json | null): PurchaseOrderItem
       } satisfies PurchaseOrderItem;
     })
     .filter((item): item is PurchaseOrderItem => Boolean(item));
+}
+
+export function parseGrandTotal(
+  totals: Json | Record<string, unknown> | null,
+): number {
+  if (!totals || typeof totals !== "object") return 0;
+  const source = totals as Record<string, unknown>;
+  const raw = source.grand_total ?? source.grandTotal ?? source.grand;
+  if (typeof raw === "number") return raw;
+  if (typeof raw === "string") {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
 }

@@ -4,7 +4,7 @@ import type {
   UpdatePurchaseOrderPayload,
 } from "./schemas";
 import type { PurchaseOrderListItem } from "./types";
-import { parsePurchaseOrderItems } from "./types";
+import { parsePurchaseOrderItems, parseGrandTotal } from "./types";
 import { AppError, ERR } from "@/lib/utils/errors";
 
 const ENDPOINT = "/api/procurements/purchase-orders" as const;
@@ -15,13 +15,21 @@ type ApiResponse<T> = {
   meta: Record<string, unknown> | null;
 };
 
-type PurchaseOrderListMeta = {
+type PurchaseOrderListFiltersMeta = {
+  status: string;
+  search: string | null;
+  supplierId: string | null;
+  issuedFrom: string | null;
+  issuedTo: string | null;
+};
+
+export type PurchaseOrderListMeta = {
   pagination: {
     page: number;
     pageSize: number;
     total: number;
   };
-  filters: Record<string, unknown> | null;
+  filters: PurchaseOrderListFiltersMeta | null;
 };
 
 export type PurchaseOrderListResult = {
@@ -61,12 +69,26 @@ async function request<T>(input: string, init: RequestInit) {
   };
 }
 
+function extractSupplierName(raw: any): string {
+  const supplierData = raw.suppliers;
+  if (Array.isArray(supplierData)) {
+    return supplierData[0]?.name ?? "Unknown supplier";
+  }
+  if (supplierData && typeof supplierData === "object") {
+    return supplierData.name ?? "Unknown supplier";
+  }
+  return raw.supplier_name ?? "Unknown supplier";
+}
+
 function transformPurchaseOrder(raw: any): PurchaseOrderListItem {
   return {
     id: raw.id,
     status: raw.status,
     items: parsePurchaseOrderItems(raw.items ?? []),
     totals: typeof raw.totals === "object" && raw.totals !== null ? raw.totals : {},
+    supplier_id: raw.supplier_id ?? "",
+    supplier_name: extractSupplierName(raw),
+    grand_total: parseGrandTotal(raw.totals ?? null),
     issued_at: raw.issued_at ?? null,
     completed_at: raw.completed_at ?? null,
     created_at: raw.created_at ?? new Date().toISOString(),
@@ -84,6 +106,15 @@ export async function listPurchaseOrders(
   }
   if (filters.search) {
     searchParams.set("search", filters.search);
+  }
+  if (filters.supplierId) {
+    searchParams.set("supplierId", filters.supplierId);
+  }
+  if (filters.issuedFrom) {
+    searchParams.set("issuedFrom", filters.issuedFrom);
+  }
+  if (filters.issuedTo) {
+    searchParams.set("issuedTo", filters.issuedTo);
   }
 
   const response = await request<{ purchaseOrders: any[] }>(

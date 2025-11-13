@@ -6,6 +6,7 @@ import {
   updatePurchaseOrderSchema,
 } from "@/features/procurements/purchase-orders/schemas";
 import {
+  parseGrandTotal,
   parsePurchaseOrderItems,
   type PurchaseOrderListItem,
 } from "@/features/procurements/purchase-orders/types";
@@ -22,6 +23,9 @@ function mapPurchaseOrder(row: any): PurchaseOrderListItem {
     status: row.status,
     items: parsePurchaseOrderItems(row.items ?? []),
     totals: typeof row.totals === "object" && row.totals !== null ? row.totals : {},
+    supplier_id: row.supplier_id ?? "",
+    supplier_name: row.supplier_name ?? row.suppliers?.name ?? "Unknown supplier",
+    grand_total: parseGrandTotal(row.totals ?? null),
     issued_at: row.issued_at ?? null,
     completed_at: row.completed_at ?? null,
     created_at: row.created_at ?? new Date().toISOString(),

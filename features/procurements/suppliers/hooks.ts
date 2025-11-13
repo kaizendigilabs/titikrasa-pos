@@ -11,6 +11,7 @@ import {
   deleteCatalogItem,
   deleteSupplier,
   listCatalogItems,
+  listSupplierOrders,
   listSuppliers,
   toggleCatalogItem,
   updateCatalogItem,
@@ -23,19 +24,24 @@ import {
 import type {
   CreateCatalogItemPayload,
   SupplierFilters,
+  SupplierOrderFilters,
+  SupplierCatalogFilters,
   UpdateCatalogItemPayload,
   UpdateSupplierPayload,
   CreateSupplierLinkPayload,
   UpdateSupplierLinkPayload,
 } from "./schemas";
 import type {
-  SupplierCatalogItem,
+  SupplierCatalogWithLinks,
   SupplierListItem,
+  SupplierOrder,
 } from "./types";
 import { createBrowserClient } from "@/lib/supabase/client";
+import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
 
 const SUPPLIERS_KEY = "suppliers";
 const SUPPLIER_CATALOG_KEY = "supplierCatalog";
+const SUPPLIER_ORDERS_KEY = "supplierOrders";
 
 type SuppliersQuerySnapshot = {
   items: SupplierListItem[];
@@ -107,39 +113,12 @@ export function useDeleteSupplierMutation() {
   });
 }
 
-type CatalogOptions = {
-  supplierId: string;
-  enabled?: boolean;
-};
-
-export function useSupplierCatalog({ supplierId, enabled = true }: CatalogOptions) {
-  return useQuery({
-    queryKey: [SUPPLIER_CATALOG_KEY, supplierId],
-    queryFn: () => listCatalogItems(supplierId),
-    enabled,
-  });
-}
-
-function updateCatalogCache(
-  queryClient: ReturnType<typeof useQueryClient>,
-  supplierId: string,
-  updater: (current: SupplierCatalogItem[]) => SupplierCatalogItem[],
-) {
-  queryClient.setQueryData<SupplierCatalogItem[] | undefined>(
-    [SUPPLIER_CATALOG_KEY, supplierId],
-    (current) => {
-      if (!current) return current;
-      return updater(current);
-    },
-  );
-}
-
 export function useCreateCatalogItemMutation(supplierId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateCatalogItemPayload) => createCatalogItem(payload),
-    onSuccess: (item) => {
-      updateCatalogCache(queryClient, supplierId, (current) => [item, ...current]);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
     },
   });
 }
@@ -149,10 +128,8 @@ export function useUpdateCatalogItemMutation(supplierId: string) {
   return useMutation({
     mutationFn: ({ catalogItemId, payload }: { catalogItemId: string; payload: UpdateCatalogItemPayload }) =>
       updateCatalogItem(supplierId, catalogItemId, payload),
-    onSuccess: (item) => {
-      updateCatalogCache(queryClient, supplierId, (current) =>
-        current.map((existing) => (existing.id === item.id ? item : existing)),
-      );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
     },
   });
 }
@@ -162,10 +139,8 @@ export function useToggleCatalogItemMutation(supplierId: string) {
   return useMutation({
     mutationFn: ({ catalogItemId, isActive }: { catalogItemId: string; isActive: boolean }) =>
       toggleCatalogItem(supplierId, catalogItemId, isActive),
-    onSuccess: (item) => {
-      updateCatalogCache(queryClient, supplierId, (current) =>
-        current.map((existing) => (existing.id === item.id ? item : existing)),
-      );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
     },
   });
 }
@@ -174,10 +149,8 @@ export function useDeleteCatalogItemMutation(supplierId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (catalogItemId: string) => deleteCatalogItem(supplierId, catalogItemId),
-    onSuccess: (_result, catalogItemId) => {
-      updateCatalogCache(queryClient, supplierId, (current) =>
-        current.filter((existing) => existing.id !== catalogItemId),
-      );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
     },
   });
 }
@@ -248,4 +221,42 @@ export function useSuppliersRealtime({ enabled = true }: SupplierRealtimeOptions
       void supabase.removeChannel(channel);
     };
   }, [enabled, queryClient]);
+}
+
+type UseSupplierOrdersOptions = {
+  initialData?: DataTableQueryResult<SupplierOrder>;
+};
+
+export function useSupplierOrders(
+  supplierId: string,
+  filters: SupplierOrderFilters,
+  options: UseSupplierOrdersOptions = {},
+) {
+  return useQuery({
+    queryKey: [SUPPLIER_ORDERS_KEY, supplierId, filters],
+    queryFn: () => listSupplierOrders(supplierId, filters),
+    placeholderData: keepPreviousData,
+    gcTime: 1000 * 60 * 30,
+    staleTime: 1000 * 30,
+    ...(options.initialData ? { initialData: options.initialData } : {}),
+  });
+}
+
+type UseSupplierCatalogOptions = {
+  initialData?: DataTableQueryResult<SupplierCatalogWithLinks>;
+};
+
+export function useSupplierCatalogList(
+  supplierId: string,
+  filters: SupplierCatalogFilters,
+  options: UseSupplierCatalogOptions = {},
+) {
+  return useQuery({
+    queryKey: [SUPPLIER_CATALOG_KEY, supplierId, filters],
+    queryFn: () => listCatalogItems(supplierId, filters),
+    placeholderData: keepPreviousData,
+    gcTime: 1000 * 60 * 30,
+    staleTime: 1000 * 30,
+    ...(options.initialData ? { initialData: options.initialData } : {}),
+  });
 }

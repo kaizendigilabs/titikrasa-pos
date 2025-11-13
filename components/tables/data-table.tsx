@@ -7,7 +7,6 @@ import { DataTablePagination } from "./data-table-pagination";
 import {
   useDataTableState,
   type DataTableQueryHook,
-  type DataTableQueryResult,
   type PaginationFilters,
   type UseDataTableStateOptions,
   type UseDataTableStateResult,

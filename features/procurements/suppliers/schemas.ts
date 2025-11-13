@@ -38,6 +38,20 @@ export const supplierFiltersSchema = z.object({
   status: z.enum(["all", "active", "inactive"]).default("all"),
 });
 
+export const supplierOrderFiltersSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(200).default(10),
+  status: z.enum(["all", "draft", "pending", "complete"]).default("all"),
+  search: z.string().trim().optional(),
+});
+
+export const supplierCatalogFiltersSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(100).default(8),
+  status: z.enum(["all", "active", "inactive"]).default("all"),
+  search: z.string().trim().optional(),
+});
+
 const baseUomEnum = z.enum(["gr", "ml", "pcs"]);
 
 export const createCatalogItemSchema = z.object({
@@ -66,6 +80,8 @@ export const updateSupplierLinkSchema = z.object({
 export type CreateSupplierPayload = z.infer<typeof createSupplierSchema>;
 export type UpdateSupplierPayload = z.infer<typeof updateSupplierSchema>;
 export type SupplierFilters = z.infer<typeof supplierFiltersSchema>;
+export type SupplierOrderFilters = z.infer<typeof supplierOrderFiltersSchema>;
+export type SupplierCatalogFilters = z.infer<typeof supplierCatalogFiltersSchema>;
 export type CreateCatalogItemPayload = z.infer<typeof createCatalogItemSchema>;
 export type UpdateCatalogItemPayload = z.infer<typeof updateCatalogItemSchema>;
 export type CreateSupplierLinkPayload = z.infer<typeof createSupplierLinkSchema>;

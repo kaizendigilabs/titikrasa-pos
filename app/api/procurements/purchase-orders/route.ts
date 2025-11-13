@@ -7,6 +7,7 @@ import {
   purchaseOrderFiltersSchema,
 } from "@/features/procurements/purchase-orders/schemas";
 import {
+  parseGrandTotal,
   parsePurchaseOrderItems,
   type PurchaseOrderListItem,
   type PurchaseOrderRow,
@@ -20,12 +21,26 @@ import type { TablesInsert } from "@/lib/types/database";
 
 const MAX_PAGE_SIZE = 200;
 
+function getSupplierName(row: any): string {
+  const supplierData = row.suppliers;
+  if (Array.isArray(supplierData)) {
+    return supplierData[0]?.name ?? "Unknown supplier";
+  }
+  if (supplierData && typeof supplierData === "object") {
+    return supplierData.name ?? "Unknown supplier";
+  }
+  return row.supplier_name ?? "Unknown supplier";
+}
+
 function mapPurchaseOrder(row: any): PurchaseOrderListItem {
   return {
     id: row.id,
     status: row.status,
     items: parsePurchaseOrderItems(row.items ?? []),
     totals: typeof row.totals === "object" && row.totals !== null ? row.totals : {},
+    supplier_id: row.supplier_id ?? "",
+    supplier_name: getSupplierName(row),
+    grand_total: parseGrandTotal(row.totals ?? null),
     issued_at: row.issued_at ?? null,
     completed_at: row.completed_at ?? null,
     created_at: row.created_at ?? new Date().toISOString(),
@@ -46,12 +61,24 @@ export async function GET(request: NextRequest) {
 
     let query = actor.supabase
       .from("purchase_orders")
-      .select("*", { count: "exact" })
+      .select("*, suppliers(name)", { count: "exact" })
       .order("issued_at", { ascending: false, nullsFirst: false })
       .range(from, to);
 
     if (filters.status !== "all") {
       query = query.eq("status", filters.status as PurchaseOrderRow["status"]);
+    }
+
+    if (filters.supplierId) {
+      query = query.eq("supplier_id", filters.supplierId);
+    }
+
+    if (filters.issuedFrom) {
+      query = query.gte("issued_at", filters.issuedFrom);
+    }
+
+    if (filters.issuedTo) {
+      query = query.lte("issued_at", filters.issuedTo);
     }
 
     if (filters.search) {
@@ -81,6 +108,9 @@ export async function GET(request: NextRequest) {
           filters: {
             status: filters.status,
             search: filters.search ?? null,
+            supplierId: filters.supplierId ?? null,
+            issuedFrom: filters.issuedFrom ?? null,
+            issuedTo: filters.issuedTo ?? null,
           },
         },
       },

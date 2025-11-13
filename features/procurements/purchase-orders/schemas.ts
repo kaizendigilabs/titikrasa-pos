@@ -26,11 +26,23 @@ export const updatePurchaseOrderSchema = z
     message: "No changes provided",
   });
 
+const dateFilterSchema = z
+  .string()
+  .trim()
+  .optional()
+  .refine(
+    (value) => !value || !Number.isNaN(Date.parse(value)),
+    "Invalid date value",
+  );
+
 export const purchaseOrderFiltersSchema = z.object({
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(200).default(50),
   status: z.enum(["all", "draft", "pending", "complete"]).default("all"),
   search: z.string().trim().optional(),
+  supplierId: z.string().uuid().optional(),
+  issuedFrom: dateFilterSchema,
+  issuedTo: dateFilterSchema,
 });
 
 export type PurchaseOrderItemPayload = z.infer<typeof purchaseOrderItemSchema>;

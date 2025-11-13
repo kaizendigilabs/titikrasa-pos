@@ -1,29 +1,18 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { IconDotsVertical, IconLoader2 } from '@tabler/icons-react';
-import Link from 'next/link';
-
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/tables/data-table-column-header';
+import { createActionColumn } from '@/components/tables/create-action-column';
 import type { SupplierListItem } from '@/features/procurements/suppliers/types';
+import Link from 'next/link';
 
 type SupplierActionHandlers = {
   onEdit: (supplier: SupplierListItem) => void;
   onToggleStatus: (supplier: SupplierListItem) => void;
   onDelete: (supplier: SupplierListItem) => void;
-  onManageCatalog: (supplier: SupplierListItem) => void;
-  pendingActions: Record<string, 'toggle' | 'delete' | 'update' | 'catalog'>;
+  pendingActions: Record<string, 'toggle' | 'delete' | 'update'>;
   canManage: boolean;
 };
 
@@ -31,7 +20,6 @@ export function createSupplierColumns({
   onEdit,
   onToggleStatus,
   onDelete,
-  onManageCatalog,
   pendingActions,
   canManage,
 }: SupplierActionHandlers): ColumnDef<SupplierListItem>[] {
@@ -64,10 +52,7 @@ export function createSupplierColumns({
         <DataTableColumnHeader column={column} title="Name" />
       ),
       cell: ({ row }) => (
-        <Link
-          href={`/dashboard/procurements/suppliers/${row.original.id}`}
-          className="block"
-        >
+        <Link href={`/dashboard/procurements/suppliers/${row.original.id}`}>
           <p className="font-medium text-foreground">
             {row.original.name ?? '—'}
           </p>
@@ -113,87 +98,30 @@ export function createSupplierColumns({
     return baseColumns;
   }
 
-  const actionColumn: ColumnDef<SupplierListItem> = {
-    id: 'actions',
-    cell: ({ row }) => {
-      const supplier = row.original;
-      const pendingState = pendingActions[supplier.id] ?? null;
-      const isRowPending = Boolean(pendingState);
-      const isTogglePending = pendingState === 'toggle';
-      const isDeletePending = pendingState === 'delete';
-      const isUpdatePending = pendingState === 'update';
-      const toggleLabel = supplier.is_active ? 'Deactivate' : 'Activate';
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              disabled={isRowPending}
-            >
-              <span className="sr-only">Open menu</span>
-              {isRowPending ? (
-                <IconLoader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <IconDotsVertical className="h-4 w-4" />
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Supplier Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => onEdit(supplier)}
-              disabled={isRowPending}
-            >
-              {isUpdatePending ? (
-                <span className="flex items-center gap-2">
-                  <IconLoader2 className="h-4 w-4 animate-spin" />
-                  Updating…
-                </span>
-              ) : (
-                'Edit Details'
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onManageCatalog(supplier)}
-              disabled={isRowPending}
-            >
-              Manage Catalog
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => onToggleStatus(supplier)}
-              disabled={isRowPending}
-            >
-              {isTogglePending ? (
-                <span className="flex items-center gap-2">
-                  <IconLoader2 className="h-4 w-4 animate-spin" />
-                  Updating status…
-                </span>
-              ) : (
-                toggleLabel
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onDelete(supplier)}
-              className="text-destructive focus:text-destructive"
-              disabled={isRowPending}
-            >
-              {isDeletePending ? (
-                <span className="flex items-center gap-2">
-                  <IconLoader2 className="h-4 w-4 animate-spin" />
-                  Deleting…
-                </span>
-              ) : (
-                'Delete'
-              )}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  };
+  const actionColumn = createActionColumn<SupplierListItem>({
+    getIsRowPending: (supplier) => Boolean(pendingActions[supplier.id]),
+    actions: [
+      { type: 'label', label: 'Supplier Actions' },
+      {
+        label: 'Edit details',
+        onSelect: onEdit,
+        isPending: (supplier) => pendingActions[supplier.id] === 'update',
+      },
+      { type: 'separator' },
+      {
+        label: (supplier) => (supplier.is_active ? 'Deactivate' : 'Activate'),
+        onSelect: onToggleStatus,
+        isPending: (supplier) => pendingActions[supplier.id] === 'toggle',
+      },
+      { type: 'separator' },
+      {
+        label: 'Delete',
+        onSelect: onDelete,
+        destructive: true,
+        isPending: (supplier) => pendingActions[supplier.id] === 'delete',
+      },
+    ],
+  });
 
   return [...baseColumns, actionColumn];
 }

@@ -28,7 +28,10 @@ export type SupplierCatalogItem = {
   purchase_price: number;
   is_active: boolean;
   created_at: string;
-  links?: IngredientSupplierLink[];
+};
+
+export type SupplierCatalogWithLinks = SupplierCatalogItem & {
+  links: IngredientSupplierLink[];
 };
 
 export function parseSupplierContact(contact: Json | null): SupplierContact {
@@ -53,4 +56,34 @@ export type IngredientSupplierLink = {
   preferred: boolean;
   lastPurchasePrice: number | null;
   lastPurchasedAt: string | null;
+};
+
+export type SupplierOrder = {
+  id: string;
+  status: string;
+  issuedAt: string | null;
+  completedAt: string | null;
+  itemCount: number;
+  totalAmount: number;
+};
+
+export type SupplierDetailStats = {
+  totalPurchaseOrders: number;
+  pendingPurchaseOrders: number;
+  totalSpend: number;
+  activeCatalogItems: number;
+};
+
+export type StoreIngredientOption = {
+  id: string;
+  name: string;
+  baseUom: string;
+};
+
+export type SupplierDetailBootstrap = {
+  supplier: SupplierListItem;
+  stats: SupplierDetailStats;
+  orders: SupplierOrder[];
+  catalog: SupplierCatalogWithLinks[];
+  storeIngredients: StoreIngredientOption[];
 };
