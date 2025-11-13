@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { StoreIngredientsTable } from "./StoreIngredientsTable";
-import { fetchStoreIngredients } from "@/features/inventory/store-ingredients/server";
-import { storeIngredientFiltersSchema } from "@/features/inventory/store-ingredients/schemas";
+import { getStoreIngredientsTableBootstrap } from "@/features/inventory/store-ingredients/server";
 import { requireActor } from "@/features/users/server";
 
 export const dynamic = "force-dynamic";
@@ -10,44 +9,24 @@ export const dynamic = "force-dynamic";
 const DEFAULT_PAGE_SIZE = 25;
 
 export default async function InventoryPage() {
-  const filters = storeIngredientFiltersSchema.parse({
-    page: "1",
-    pageSize: String(DEFAULT_PAGE_SIZE),
-    status: "all",
-    lowStockOnly: "false",
-  });
-
-  let initialItems:
-    | Awaited<ReturnType<typeof fetchStoreIngredients>>["items"]
-    | undefined;
-  let result: Awaited<ReturnType<typeof fetchStoreIngredients>> | null = null;
   let actor: Awaited<ReturnType<typeof requireActor>> | null = null;
+  let bootstrap: Awaited<
+    ReturnType<typeof getStoreIngredientsTableBootstrap>
+  > | null = null;
 
   try {
     actor = await requireActor();
-    result = await fetchStoreIngredients(filters);
-    initialItems = result.items;
+    bootstrap = await getStoreIngredientsTableBootstrap(actor, {
+      pageSize: DEFAULT_PAGE_SIZE,
+    });
   } catch (error) {
     console.error("[INVENTORY_PAGE_ERROR]", error);
     redirect("/dashboard");
   }
 
-  if (!result || !initialItems || !actor) {
+  if (!actor || !bootstrap) {
     redirect("/dashboard");
   }
-
-  const initialMeta = {
-    pagination: {
-      page: filters.page,
-      pageSize: result.limit,
-      total: result.total,
-    },
-    filters: {
-      search: filters.search ?? null,
-      status: filters.status,
-      lowStockOnly: Boolean(filters.lowStockOnly),
-    },
-  };
 
   const canManage = actor.roles.isAdmin || actor.roles.isManager;
 
@@ -60,8 +39,8 @@ export default async function InventoryPage() {
         </p>
       </div>
       <StoreIngredientsTable
-        initialItems={initialItems}
-        initialMeta={initialMeta}
+        initialItems={bootstrap.initialItems}
+        initialMeta={bootstrap.initialMeta}
         canManage={canManage}
       />
     </div>

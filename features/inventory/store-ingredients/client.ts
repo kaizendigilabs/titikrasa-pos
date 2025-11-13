@@ -32,6 +32,20 @@ export type StoreIngredientListResult = {
   meta: StoreIngredientListMeta | null;
 };
 
+export type PurchaseHistoryMeta = {
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+  };
+  filters: {
+    supplierId: string | null;
+    from: string | null;
+    to: string | null;
+    search: string | null;
+  };
+};
+
 async function request<T>(input: string, init?: RequestInit) {
   const response = await fetch(input, {
     ...init,
@@ -100,7 +114,7 @@ export async function listPurchaseHistory(
   filters: PurchaseHistoryFilters,
 ): Promise<{
   items: PurchaseHistoryEntry[];
-  meta: StoreIngredientListMeta | null;
+  meta: PurchaseHistoryMeta | null;
 }> {
   const params = buildSearchParams(filters);
   const { data, meta } = await request<{ purchases: PurchaseHistoryEntry[] }>(
@@ -108,7 +122,7 @@ export async function listPurchaseHistory(
   );
   return {
     items: data.purchases,
-    meta: (meta as StoreIngredientListMeta | null) ?? null,
+    meta: (meta as PurchaseHistoryMeta | null) ?? null,
   };
 }
 

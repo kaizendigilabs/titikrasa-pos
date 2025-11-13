@@ -18,6 +18,7 @@ export const purchaseHistoryFiltersSchema = z.object({
   supplierId: z.string().uuid().optional(),
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),
+  search: z.string().trim().optional(),
 });
 
 export type StoreIngredientFilters = z.infer<typeof storeIngredientFiltersSchema>;

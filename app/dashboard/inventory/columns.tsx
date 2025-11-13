@@ -5,8 +5,8 @@ import { IconAlertTriangle, IconPencil } from '@tabler/icons-react';
 import Link from 'next/link';
 
 import { DataTableColumnHeader } from '@/components/tables/data-table-column-header';
+import { createActionColumn } from '@/components/tables/create-action-column';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters';
 import type { StoreIngredientListItem } from '@/features/inventory/store-ingredients/types';
@@ -16,15 +16,15 @@ function isLowStock(item: StoreIngredientListItem) {
 }
 
 type ColumnOptions = {
-  onEdit: (ingredient: StoreIngredientListItem) => void;
-  canManage: boolean;
+  onEdit?: (ingredient: StoreIngredientListItem) => void;
+  canManage?: boolean;
 };
 
 export function createStoreIngredientColumns({
   onEdit,
   canManage,
 }: ColumnOptions): ColumnDef<StoreIngredientListItem>[] {
-  return [
+  const columns: ColumnDef<StoreIngredientListItem>[] = [
     {
       accessorKey: 'name',
       header: ({ column }) => (
@@ -128,23 +128,21 @@ export function createStoreIngredientColumns({
           </Badge>
         ),
     },
-    {
-      id: 'actions',
-      enableHiding: false,
-      header: () => <span className="sr-only">Actions</span>,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Edit ingredient"
-            onClick={() => onEdit(row.original)}
-            disabled={!canManage}
-          >
-            <IconPencil className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
   ];
+
+  if (onEdit) {
+    columns.push(
+      createActionColumn<StoreIngredientListItem>({
+        actions: [
+          {
+            label: "Edit ingredient",
+            onSelect: onEdit,
+            disabled: !canManage,
+          },
+        ],
+      }),
+    );
+  }
+
+  return columns;
 }

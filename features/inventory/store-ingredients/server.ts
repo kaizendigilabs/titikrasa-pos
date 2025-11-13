@@ -1,16 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  purchaseHistoryFiltersSchema,
+  storeIngredientFiltersSchema,
+} from "./schemas";
 import type {
   PurchaseHistoryFilters,
   StoreIngredientFilters,
   UpdateStoreIngredientInput,
-} from "./schemas.ts";
+} from "./schemas";
 import type {
   PurchaseHistoryEntry,
   StoreIngredientDetail,
   StoreIngredientListItem,
   StoreIngredientRow,
-} from "./types.ts";
+} from "./types";
 import { adminClient, ensureAdminOrManager } from "@/features/users/server";
 import type { ActorContext } from "@/features/users/server";
 import type { Database } from "@/lib/types/database";
@@ -73,6 +77,7 @@ function mapToListItem(
 ): StoreIngredientListItem {
   const link = linkMap.get(row.id);
   const supplierName = link?.supplier_catalog_items?.suppliers?.name ?? null;
+  const supplierId = link?.supplier_catalog_items?.supplier_id ?? null;
 
   return {
     id: row.id,
@@ -86,6 +91,7 @@ function mapToListItem(
     lastPurchasePrice: link?.last_purchase_price ?? null,
     lastPurchaseAt: link?.last_purchased_at ?? null,
     lastSupplierName: supplierName,
+    lastSupplierId: supplierId,
   };
 }
 
@@ -170,6 +176,50 @@ export async function fetchStoreIngredients(
   };
 }
 
+export type StoreIngredientsTableBootstrap = {
+  initialItems: StoreIngredientListItem[];
+  initialMeta: {
+    pagination: { page: number; pageSize: number; total: number };
+    filters: {
+      status: StoreIngredientFilters["status"];
+      search: string | null;
+      lowStockOnly: boolean;
+    };
+  };
+};
+
+export async function getStoreIngredientsTableBootstrap(
+  actor: ActorContext,
+  options: { pageSize?: number } = {},
+): Promise<StoreIngredientsTableBootstrap> {
+  // only ensure authenticated (already via requireActor), no role restriction
+  const pageSize = options.pageSize ?? 25;
+  const filters = storeIngredientFiltersSchema.parse({
+    page: "1",
+    pageSize: String(pageSize),
+    status: "all",
+    lowStockOnly: "false",
+  });
+
+  const result = await fetchStoreIngredients(filters);
+
+  return {
+    initialItems: result.items,
+    initialMeta: {
+      pagination: {
+        page: filters.page,
+        pageSize: filters.pageSize,
+        total: result.total,
+      },
+      filters: {
+        status: filters.status,
+        search: filters.search ?? null,
+        lowStockOnly: Boolean(filters.lowStockOnly),
+      },
+    },
+  };
+}
+
 export async function fetchStoreIngredientDetail(
   ingredientId: string,
   client?: AdminSupabase,
@@ -251,6 +301,11 @@ export async function fetchPurchaseHistory(
     query = query.lte("completed_at", filters.to);
   }
 
+  if (filters.search && filters.search.trim().length > 0) {
+    const pattern = `%${filters.search.trim()}%`;
+    query = query.ilike("purchase_order_id", pattern);
+  }
+
   const { data, error, count } = await query;
   if (error) {
     throw appError(ERR.SERVER_ERROR, {
@@ -301,6 +356,84 @@ export async function fetchPurchaseHistory(
     total: count ?? items.length,
     limit,
     offset,
+  };
+}
+
+export type IngredientSupplierOption = {
+  id: string;
+  name: string;
+};
+
+export type StoreIngredientDetailBootstrap = {
+  detail: StoreIngredientDetail;
+  suppliers: IngredientSupplierOption[];
+  history: {
+    items: PurchaseHistoryEntry[];
+    meta: {
+      pagination: { page: number; pageSize: number; total: number };
+      filters: {
+        supplierId: string | null;
+        from: string | null;
+        to: string | null;
+        search: string | null;
+      };
+    };
+  };
+};
+
+export async function getStoreIngredientDetailBootstrap(
+  actor: ActorContext,
+  ingredientId: string,
+  options: { historyPageSize?: number } = {},
+): Promise<StoreIngredientDetailBootstrap> {
+  const detail = await fetchStoreIngredientDetail(ingredientId);
+
+  const historyFilters = purchaseHistoryFiltersSchema.parse({
+    page: "1",
+    pageSize: String(options.historyPageSize ?? 25),
+  });
+
+  const history = await fetchPurchaseHistory(ingredientId, historyFilters);
+
+  const supabase = adminClient();
+  const { data: supplierRows, error: supplierError } = await supabase
+    .from("suppliers")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (supplierError) {
+    throw appError(ERR.SERVER_ERROR, {
+      message: "Failed to load suppliers",
+      details: { hint: supplierError.message },
+    });
+  }
+
+  const suppliers: IngredientSupplierOption[] =
+    supplierRows?.map((row) => ({
+      id: row.id,
+      name: row.name,
+    })) ?? [];
+
+  return {
+    detail,
+    suppliers,
+    history: {
+      items: history.items,
+      meta: {
+        pagination: {
+          page: historyFilters.page,
+          pageSize: historyFilters.pageSize,
+          total: history.total,
+        },
+        filters: {
+          supplierId: historyFilters.supplierId ?? null,
+          from: historyFilters.from ?? null,
+          to: historyFilters.to ?? null,
+          search: historyFilters.search ?? null,
+        },
+      },
+    },
   };
 }
 

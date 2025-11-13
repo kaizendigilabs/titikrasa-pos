@@ -14,6 +14,7 @@ export type StoreIngredientListItem = {
   lastPurchasePrice: number | null;
   lastPurchaseAt: string | null;
   lastSupplierName: string | null;
+  lastSupplierId: string | null;
 };
 
 export type StoreIngredientDetail = StoreIngredientListItem & {

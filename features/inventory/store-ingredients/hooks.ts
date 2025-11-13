@@ -13,13 +13,14 @@ import {
   listStoreIngredients,
   updateStoreIngredient,
   type StoreIngredientListResult,
+  type PurchaseHistoryMeta,
 } from "./client";
 import type {
   PurchaseHistoryFilters,
   StoreIngredientFilters,
   UpdateStoreIngredientInput,
 } from "./schemas";
-import type { PurchaseHistoryEntry } from "./types";
+import type { PurchaseHistoryEntry, StoreIngredientDetail } from "./types";
 import { createBrowserClient } from "@/lib/supabase/client";
 
 const STORE_INGREDIENTS_KEY = "storeIngredients";
@@ -53,10 +54,27 @@ export function useStoreIngredient(ingredientId: string) {
   });
 }
 
+type UseStoreIngredientDetailOptions = {
+  initialData?: StoreIngredientDetail;
+};
+
+export function useStoreIngredientDetail(
+  ingredientId: string,
+  options: UseStoreIngredientDetailOptions = {},
+) {
+  return useQuery({
+    queryKey: [STORE_INGREDIENT_DETAIL_KEY, ingredientId],
+    queryFn: () => getStoreIngredient(ingredientId),
+    enabled: Boolean(ingredientId),
+    gcTime: 1000 * 60 * 5,
+    ...(options.initialData ? { initialData: options.initialData } : {}),
+  });
+}
+
 type PurchaseHistoryOptions = {
   initialData?: {
     items: PurchaseHistoryEntry[];
-    meta: StoreIngredientListResult["meta"];
+    meta: PurchaseHistoryMeta | null;
   };
 };
 

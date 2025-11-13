@@ -43,6 +43,7 @@ Dokumen ini menjabarkan rancangan refactor komponen tabel supaya bisa dipakai li
      - `app/dashboard/users/data-table.tsx` hanya meneruskan config ke shell.
    - [x] Resellers & Suppliers list sudah mengikuti pola (kolom aksi via `createActionColumn`, forms di `renderAfterTable`).
    - [x] Purchase Orders list + supplier transactions memakai shell yang sama, termasuk sheet/dialog reuse untuk create & delete.
+   - [x] Inventory: store ingredients list (`/dashboard/inventory`), ingredient purchase history, dan stock adjustments sekarang memakai controller + shell generik dengan TanStack Form.
 
 ## 🔗 Keterkaitan dengan `todos_users_refactor.md`
 - Checklist frontend di dokumen Users harus memakai komponen tabel baru ini.

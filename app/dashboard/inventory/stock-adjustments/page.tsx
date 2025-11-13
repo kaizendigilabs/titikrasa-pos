@@ -1,18 +1,12 @@
 import { redirect } from "next/navigation";
 
 import { StockOpnameForm } from "./stock-opname-form";
+import type { StockOpnameIngredientRow } from "./_components/use-stock-opname";
 import { adminClient, requireActor } from "@/features/users/server";
-import type { Tables } from "@/lib/types/database";
 
 export const dynamic = "force-dynamic";
 
-type IngredientSnapshot = {
-  id: string;
-  name: string;
-  currentStock: number;
-  minStock: number;
-  baseUom: Tables<"store_ingredients">["base_uom"];
-};
+type IngredientSnapshot = StockOpnameIngredientRow;
 
 export default async function StockAdjustmentsPage() {
   try {

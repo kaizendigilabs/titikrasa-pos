@@ -13,19 +13,14 @@ export async function GET(
   try {
     await requireActor();
     const { id } = await params;
-
     if (!id) {
       throw appError(ERR.BAD_REQUEST, { message: "Missing ingredient id" });
     }
 
-    const queryParams = Object.fromEntries(request.nextUrl.searchParams.entries());
-    if (queryParams.format === "csv") {
-      throw appError(ERR.BAD_REQUEST, {
-        message: "Purchase history export is not yet available",
-      });
-    }
+    const filters = purchaseHistoryFiltersSchema.parse(
+      Object.fromEntries(request.nextUrl.searchParams.entries()),
+    );
 
-    const filters = purchaseHistoryFiltersSchema.parse(queryParams);
     const result = await fetchPurchaseHistory(id, filters);
 
     return ok(
@@ -41,6 +36,7 @@ export async function GET(
             supplierId: filters.supplierId ?? null,
             from: filters.from ?? null,
             to: filters.to ?? null,
+            search: filters.search ?? null,
           },
         },
       },
