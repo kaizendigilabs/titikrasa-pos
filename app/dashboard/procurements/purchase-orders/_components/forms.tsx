@@ -108,7 +108,7 @@ export function PurchaseOrderCreateSheet({
 
   React.useEffect(() => {
     resetFormState(prefill?.supplierId);
-  }, [prefill?.version, resetFormState]);
+  }, [prefill?.supplierId, prefill?.version, resetFormState]);
 
   const updateItems = React.useCallback(
     (

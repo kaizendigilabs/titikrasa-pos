@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import type { ReactFormExtendedApi } from "@tanstack/react-form";
 import { toast } from "sonner";
 
@@ -103,13 +103,17 @@ export function useStockOpnameController({
     defaultValues: buildDefaults(),
   }) as StockOpnameFormApi;
 
+  const formValues = useStore(
+    form.store,
+    (state) => state.values as StockOpnameFormValues,
+  );
+
   React.useEffect(() => {
     form.reset(buildDefaults());
   }, [buildDefaults, form]);
 
   const rows = React.useMemo<ParsedRow[]>(() => {
-    const values = form.state.values as StockOpnameFormValues;
-    return values.items.map((item) => {
+    return formValues.items.map((item) => {
       const parsedActual = Number.parseInt(item.actual || "0", 10);
       const actual = Number.isFinite(parsedActual) ? Math.max(0, parsedActual) : 0;
       const delta = actual - (item.currentStock ?? 0);
@@ -123,7 +127,7 @@ export function useStockOpnameController({
         minStock: item.minStock,
       };
     });
-  }, [form.state.values.items]);
+  }, [formValues.items]);
 
   const outstandingCount = React.useMemo(
     () => rows.filter((row) => row.delta !== 0).length,
@@ -132,9 +136,8 @@ export function useStockOpnameController({
 
   const buildPayload = React.useCallback(
     (commit: boolean): CreateStockAdjustmentPayload => {
-      const values = form.state.values as StockOpnameFormValues;
       return {
-        notes: values.notes.trim(),
+        notes: formValues.notes.trim(),
         commit,
         items: rows.map((row) => ({
           ingredientId: row.ingredientId,
@@ -142,14 +145,13 @@ export function useStockOpnameController({
         })),
       };
     },
-    [rows],
+    [rows, formValues.notes],
   );
 
   const submit = React.useCallback(
     async (commit: boolean) => {
       setStatusMessage(null);
-      const values = form.state.values as StockOpnameFormValues;
-      const notes = values.notes.trim();
+      const notes = formValues.notes.trim();
       if (!notes) {
         setError("Notes are required for stock opname");
         return;
@@ -166,7 +168,7 @@ export function useStockOpnameController({
         form.setFieldValue("notes", "");
         form.setFieldValue(
           "items",
-          values.items.map((item, index) => ({
+          formValues.items.map((item, index) => ({
             ...item,
             actual: rows[index]?.actual.toString() ?? item.actual,
             currentStock: rows[index]?.actual ?? item.currentStock,
@@ -178,29 +180,28 @@ export function useStockOpnameController({
         toast.error(message);
       }
     },
-    [buildPayload, form, mutation, rows],
+    [buildPayload, form, formValues.items, formValues.notes, mutation, rows],
   );
 
   const resetCounts = React.useCallback(() => {
     setStatusMessage(null);
-    const values = form.state.values as StockOpnameFormValues;
     form.setFieldValue(
       "items",
-      values.items.map((item) => ({
+      formValues.items.map((item) => ({
         ...item,
         actual: String(item.currentStock ?? 0),
       })),
     );
-  }, [form]);
+  }, [form, formValues.items]);
 
   return {
     form,
-        rows,
-        outstandingCount,
-        isSubmitting: mutation.isPending,
-        error,
-        statusMessage,
-        resetCounts,
+    rows,
+    outstandingCount,
+    isSubmitting: mutation.isPending,
+    error,
+    statusMessage,
+    resetCounts,
     submit: () => submit(commitMode === "commit"),
     commitMode,
     setCommitMode: (mode) => {

@@ -8,19 +8,16 @@ import { AppError, ERR } from "@/lib/utils/errors";
 export const dynamic = "force-dynamic";
 
 export default async function MenuCategoriesPage() {
+  let actor!: Awaited<ReturnType<typeof requireActor>>;
+  let bootstrap!: Awaited<
+    ReturnType<typeof getMenuCategoriesBootstrap>
+  >;
+
   try {
-    const actor = await requireActor();
+    actor = await requireActor();
     ensureAdminOrManager(actor.roles);
 
-    const bootstrap = await getMenuCategoriesBootstrap(actor.supabase);
-
-    return (
-      <MenuCategoriesTable
-        initialCategories={bootstrap.initialCategories}
-        initialMeta={bootstrap.initialMeta}
-        canManage={actor.roles.isAdmin || actor.roles.isManager}
-      />
-    );
+    bootstrap = await getMenuCategoriesBootstrap(actor.supabase);
   } catch (error) {
     if (
       error instanceof AppError &&
@@ -39,4 +36,12 @@ export default async function MenuCategoriesPage() {
     console.error("[MENU_CATEGORIES_PAGE_ERROR]", error);
     redirect("/dashboard");
   }
+
+  return (
+    <MenuCategoriesTable
+      initialCategories={bootstrap.initialCategories}
+      initialMeta={bootstrap.initialMeta}
+      canManage={actor.roles.isAdmin || actor.roles.isManager}
+    />
+  );
 }
