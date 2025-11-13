@@ -8,7 +8,8 @@ import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
 
 const listSchema = recipeFiltersSchema.extend({
-  limit: z.coerce.number().int().min(1).max(500).default(200),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(200).default(50),
 });
 
 export async function GET(request: NextRequest) {
@@ -17,12 +18,13 @@ export async function GET(request: NextRequest) {
     ensureAdminOrManager(actor.roles);
 
     const params = Object.fromEntries(request.nextUrl.searchParams.entries());
-    const { search, menuId, limit } = listSchema.parse(params);
+    const { search, menuId, page, pageSize } = listSchema.parse(params);
 
-    const recipes = await fetchRecipes(actor.supabase, {
+    const { recipes, total, filters } = await fetchRecipes(actor.supabase, {
       search,
       menuId,
-      limit,
+      page,
+      pageSize,
     });
 
     return ok(
@@ -30,13 +32,13 @@ export async function GET(request: NextRequest) {
       {
         meta: {
           filters: {
-            search: search ?? null,
-            menuId: menuId ?? null,
+            search: filters.search,
+            menuId: filters.menuId,
           },
           pagination: {
-            page: 1,
-            pageSize: recipes.length,
-            total: recipes.length,
+            page: filters.page,
+            pageSize: filters.pageSize,
+            total,
           },
         },
       },

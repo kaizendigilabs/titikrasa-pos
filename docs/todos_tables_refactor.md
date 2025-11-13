@@ -45,6 +45,7 @@ Dokumen ini menjabarkan rancangan refactor komponen tabel supaya bisa dipakai li
    - [x] Purchase Orders list + supplier transactions memakai shell yang sama, termasuk sheet/dialog reuse untuk create & delete.
    - [x] Inventory: store ingredients list (`/dashboard/inventory`), ingredient purchase history, dan stock adjustments sekarang memakai controller + shell generik dengan TanStack Form.
    - [x] Menu management: halaman `/dashboard/menus` & `/dashboard/menus/categories` sekarang memakai `DataTable` shell + TanStack Form sheet (`MenuFormSheet`, `CategoryFormSheet`) dengan controller domain (`use-menus-table`, `use-menu-categories-table`).
+   - [x] Recipes list/detail telah dipindahkan ke shell (controller `use-recipes-table`, detail & form sheet terpisah).
 
 ## 🔗 Keterkaitan dengan `todos_users_refactor.md`
 - Checklist frontend di dokumen Users harus memakai komponen tabel baru ini.

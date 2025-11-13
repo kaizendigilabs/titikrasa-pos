@@ -12,6 +12,8 @@ function buildParams(filters: RecipeFilters): string {
   const params = new URLSearchParams();
   if (filters.search) params.set("search", filters.search);
   if (filters.menuId) params.set("menuId", filters.menuId);
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
   return params.toString();
 }
 

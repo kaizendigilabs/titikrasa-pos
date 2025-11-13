@@ -32,13 +32,31 @@ const RECIPE_SELECT_FIELDS = `
 
 type AnyClient = SupabaseClient<Database>;
 
+export type RecipesTableBootstrap = {
+  initialRecipes: RecipeListItem[];
+  initialMeta: {
+    pagination: { page: number; pageSize: number; total: number };
+    filters: { search: string | null; menuId: string | null };
+  };
+  menus: Array<{ id: string; name: string }>;
+  ingredients: Array<{ id: string; name: string; baseUom: string }>;
+};
+
 function normalizeFilters(filters: RecipeFilters | undefined) {
+  const pageSize =
+    filters?.pageSize && Number.isFinite(filters.pageSize)
+      ? Math.min(Math.max(filters.pageSize, 1), 200)
+      : 50;
+  const page =
+    filters?.page && Number.isFinite(filters.page)
+      ? Math.max(filters.page, 1)
+      : 1;
+
   return {
     search: filters?.search?.trim() ?? null,
     menuId: filters?.menuId ?? null,
-    limit: filters?.limit && Number.isFinite(filters.limit)
-      ? Math.min(Math.max(filters.limit, 1), 500)
-      : 200,
+    page,
+    pageSize,
   };
 }
 
@@ -103,23 +121,36 @@ async function resolveIngredientLookup(client: AnyClient, ids: Set<string>): Pro
   return lookup;
 }
 
+type NormalizedRecipeFilters = ReturnType<typeof normalizeFilters>;
+
 export async function fetchRecipes(
   client: AnyClient,
   filters: RecipeFilters | undefined,
-): Promise<RecipeListItem[]> {
-  const { search, menuId, limit } = normalizeFilters(filters);
+): Promise<{
+  recipes: RecipeListItem[];
+  total: number;
+  filters: NormalizedRecipeFilters;
+}> {
+  const normalized = normalizeFilters(filters);
+  const { search, menuId, page, pageSize } = normalized;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
   let query = client
     .from("recipes")
-    .select(RECIPE_SELECT_FIELDS)
+    .select(RECIPE_SELECT_FIELDS, { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(from, to);
 
   if (menuId) {
     query = query.eq("menu_id", menuId);
   }
 
-  const { data: recipeRows, error: recipeError } = await query.returns<RawRecipeRow[]>();
+  const {
+    data: recipeRows,
+    error: recipeError,
+    count,
+  } = await query;
 
   if (recipeError) {
     throw appError(ERR.SERVER_ERROR, {
@@ -160,9 +191,13 @@ export async function fetchRecipes(
     );
   }
 
-  return recipes.map((row) =>
-    mapRecipeRow(row, lookup, overrideRows ?? []),
-  );
+  return {
+    recipes: recipes.map((row) =>
+      mapRecipeRow(row, lookup, overrideRows ?? []),
+    ),
+    total: count ?? recipes.length,
+    filters: normalized,
+  };
 }
 
 async function fetchRecipeRowById(
@@ -205,6 +240,67 @@ async function fetchOverridesForRecipe(
   }
 
   return data ?? [];
+}
+
+export async function getRecipesTableBootstrap(
+  client: AnyClient,
+  options: { pageSize?: number } = {},
+): Promise<RecipesTableBootstrap> {
+  const pageSize = options.pageSize ?? 50;
+  const { recipes, total, filters } = await fetchRecipes(client, {
+    page: 1,
+    pageSize,
+  });
+
+  const { data: menusData, error: menusError } = await client
+    .from("menus")
+    .select("id, name")
+    .order("name", { ascending: true });
+
+  if (menusError) {
+    throw appError(ERR.SERVER_ERROR, {
+      message: "Failed to load menus",
+      details: { hint: menusError.message },
+    });
+  }
+
+  const { data: ingredientsData, error: ingredientsError } = await client
+    .from("store_ingredients")
+    .select("id, name, base_uom")
+    .order("name", { ascending: true });
+
+  if (ingredientsError) {
+    throw appError(ERR.SERVER_ERROR, {
+      message: "Failed to load ingredients",
+      details: { hint: ingredientsError.message },
+    });
+  }
+
+  return {
+    initialRecipes: recipes,
+    initialMeta: {
+      pagination: {
+        page: filters.page,
+        pageSize: filters.pageSize,
+        total,
+      },
+      filters: {
+        search: filters.search,
+        menuId: filters.menuId,
+      },
+    },
+    menus:
+      menusData?.map((menu) => ({
+        id: menu.id,
+        name: menu.name,
+      })) ?? [],
+    ingredients:
+      ingredientsData?.map((item) => ({
+        id: item.id,
+        name: item.name,
+        baseUom: item.base_uom ?? "",
+      })) ?? [],
+  };
 }
 
 export async function fetchRecipeById(

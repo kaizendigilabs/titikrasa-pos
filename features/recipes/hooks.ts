@@ -89,53 +89,39 @@ export function useRecipesRealtime(
   }, [enabled, normalized, queryClient]);
 }
 
-export function useCreateRecipeMutation(filters: RecipeFilters) {
+export function useCreateRecipeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createRecipe,
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: [RECIPES_QUERY_KEY, normalizeFilters(filters)],
+        queryKey: [RECIPES_QUERY_KEY],
       });
     },
   });
 }
 
-export function useUpdateRecipeMutation(filters: RecipeFilters) {
+export function useUpdateRecipeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ recipeId, input }: { recipeId: string; input: Partial<RecipeInput> }) =>
       updateRecipe(recipeId, input),
-    onSuccess: (recipe) => {
-      queryClient.setQueryData<RecipesQueryResult | undefined>(
-        [RECIPES_QUERY_KEY, normalizeFilters(filters)],
-        (current) => {
-          if (!current) return current;
-          return {
-            ...current,
-            recipes: current.recipes.map((item) => (item.id === recipe.id ? recipe : item)),
-          };
-        },
-      );
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [RECIPES_QUERY_KEY],
+      });
     },
   });
 }
 
-export function useDeleteRecipeMutation(filters: RecipeFilters) {
+export function useDeleteRecipeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (recipeId: string) => deleteRecipe(recipeId),
-    onSuccess: (_result, recipeId) => {
-      queryClient.setQueryData<RecipesQueryResult | undefined>(
-        [RECIPES_QUERY_KEY, normalizeFilters(filters)],
-        (current) => {
-          if (!current) return current;
-          return {
-            ...current,
-            recipes: current.recipes.filter((recipe) => recipe.id !== recipeId),
-          };
-        },
-      );
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [RECIPES_QUERY_KEY],
+      });
     },
   });
 }

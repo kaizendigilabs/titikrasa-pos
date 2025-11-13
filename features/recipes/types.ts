@@ -33,7 +33,8 @@ export type RecipeListItem = {
 export type RecipeFilters = {
   search?: string | null;
   menuId?: string | null;
-  limit?: number;
+  page?: number;
+  pageSize?: number;
 };
 
 export type RecipeListResponse = {
