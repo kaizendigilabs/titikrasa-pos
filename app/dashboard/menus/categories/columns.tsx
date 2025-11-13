@@ -1,33 +1,17 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import {
-  IconDotsVertical,
-  IconLoader2,
-  IconPencil,
-  IconTrash,
-} from '@tabler/icons-react';
-
 import { DataTableColumnHeader } from '@/components/tables/data-table-column-header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Switch } from '@/components/ui/switch';
+import { createActionColumn } from '@/components/tables/create-action-column';
 import type { MenuCategory } from '@/features/menu-categories/types';
 
 type CategoryHandlers = {
   onEdit: (category: MenuCategory) => void;
   onToggle: (category: MenuCategory) => void;
   onDelete: (category: MenuCategory) => void;
-  pending: Record<string, 'toggle' | 'delete' | 'update'>;
+  pendingActions: Record<string, 'toggle' | 'delete' | 'update'>;
   canManage: boolean;
 };
 
@@ -42,7 +26,7 @@ export function createCategoryColumns({
   onEdit,
   onToggle,
   onDelete,
-  pending,
+  pendingActions,
   canManage,
 }: CategoryHandlers): ColumnDef<MenuCategory>[] {
   const columns: ColumnDef<MenuCategory>[] = [
@@ -101,73 +85,33 @@ export function createCategoryColumns({
     return columns;
   }
 
-  columns.splice(2, 0, {
-    id: 'toggle',
-    header: 'Aktif',
-    cell: ({ row }) => {
-      const category = row.original;
-      const state = pending[category.id];
-      const isPending = state === 'toggle';
-      return (
-        <Switch
-          checked={category.is_active}
-          onCheckedChange={() => onToggle(category)}
-          disabled={isPending}
-          aria-label={`Toggle status ${category.name}`}
-        />
-      );
-    },
-    enableSorting: false,
+  const actionColumn = createActionColumn<MenuCategory>({
+    getIsRowPending: (category) => Boolean(pendingActions[category.id]),
+    triggerLabel: 'Menu category actions',
+    actions: [
+      { type: 'label', label: 'Aksi Kategori' },
+      {
+        label: (category) => `Edit ${category.name}`,
+        onSelect: onEdit,
+        isPending: (category) => pendingActions[category.id] === 'update',
+      },
+      { type: 'separator' },
+      {
+        label: (category) => (category.is_active ? 'Nonaktifkan' : 'Aktifkan'),
+        onSelect: onToggle,
+        isPending: (category) => pendingActions[category.id] === 'toggle',
+      },
+      { type: 'separator' },
+      {
+        label: 'Hapus',
+        onSelect: onDelete,
+        destructive: true,
+        isPending: (category) => pendingActions[category.id] === 'delete',
+      },
+    ],
   });
 
-  columns.push({
-    id: 'actions',
-    cell: ({ row }) => {
-      const category = row.original;
-      const state = pending[category.id];
-      const isRowPending = Boolean(state);
-      const isDeletePending = state === 'delete';
-      const isUpdatePending = state === 'update';
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              disabled={isRowPending}
-            >
-              <span className="sr-only">Aksi kategori</span>
-              {isRowPending ? (
-                <IconLoader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <IconDotsVertical className="h-4 w-4" />
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => onEdit(category)}
-              disabled={isRowPending}
-            >
-              <IconPencil className="mr-2 h-4 w-4" />
-              {isUpdatePending ? 'Memperbarui…' : 'Edit'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => onDelete(category)}
-              disabled={isRowPending}
-              className="text-destructive"
-            >
-              <IconTrash className="mr-2 h-4 w-4" />
-              {isDeletePending ? 'Menghapus…' : 'Hapus'}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  });
+  columns.push(actionColumn);
 
   return columns;
 }

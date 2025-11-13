@@ -15,9 +15,7 @@ import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
 
-const listSchema = menuCategoryFiltersSchema.extend({
-  limit: z.coerce.number().int().min(1).max(500).default(200),
-});
+const listSchema = menuCategoryFiltersSchema;
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,7 +23,7 @@ export async function GET(request: NextRequest) {
     ensureAdminOrManager(actor.roles);
 
     const params = Object.fromEntries(request.nextUrl.searchParams.entries());
-    const { search, status, limit } = listSchema.parse(params);
+    const { search, status, page, pageSize } = listSchema.parse(params);
 
     let query = actor.supabase
       .from("categories")
@@ -39,10 +37,10 @@ export async function GET(request: NextRequest) {
         icon_url,
         created_at
       `,
-      )
+      { count: "exact" },
+    )
       .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .order("created_at", { ascending: false });
 
     if (search) {
       const pattern = `%${search}%`;
@@ -55,7 +53,12 @@ export async function GET(request: NextRequest) {
       query = query.eq("is_active", false);
     }
 
-    const { data, error } = await query;
+    const currentPage = page ?? 1;
+    const currentPageSize = pageSize ?? 50;
+    const from = (currentPage - 1) * currentPageSize;
+    const to = from + currentPageSize - 1;
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error) {
       throw appError(ERR.SERVER_ERROR, {
@@ -75,9 +78,9 @@ export async function GET(request: NextRequest) {
             search: search ?? null,
           },
           pagination: {
-            page: 1,
-            pageSize: items.length,
-            total: items.length,
+            page: currentPage,
+            pageSize: currentPageSize,
+            total: count ?? items.length,
           },
         },
       },

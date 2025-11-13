@@ -7,6 +7,13 @@ export const menuFiltersSchema = z.object({
   status: z.enum(["all", "active", "inactive"]).default("all"),
   categoryId: z.string().uuid().optional(),
   type: z.enum(["all", "simple", "variant"]).default("all"),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(200)
+    .default(50),
 });
 
 const skuRegex = /^[A-Za-z0-9_-]*$/;

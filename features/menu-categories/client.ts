@@ -16,6 +16,8 @@ export async function listMenuCategories(filters: MenuCategoryFilters = {}) {
   const searchParams = new URLSearchParams();
   if (filters.search) searchParams.set("search", filters.search);
   if (filters.status) searchParams.set("status", filters.status);
+  if (filters.page) searchParams.set("page", String(filters.page));
+  if (filters.pageSize) searchParams.set("pageSize", String(filters.pageSize));
 
   const query = searchParams.toString();
   const url = `/api/menu-categories${query ? `?${query}` : ""}`;

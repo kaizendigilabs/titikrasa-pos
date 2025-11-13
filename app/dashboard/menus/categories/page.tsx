@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { CategoriesTable } from "./CategoriesTable";
-import { mapCategoryRow } from "@/features/menu-categories/mappers";
+import { MenuCategoriesTable } from "./data-table";
+import { getMenuCategoriesBootstrap } from "@/features/menu-categories/server";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { AppError, ERR } from "@/lib/utils/errors";
 
@@ -12,45 +12,12 @@ export default async function MenuCategoriesPage() {
     const actor = await requireActor();
     ensureAdminOrManager(actor.roles);
 
-    const { data, error } = await actor.supabase
-      .from("categories")
-      .select(
-        `
-        id,
-        name,
-        slug,
-        sort_order,
-        is_active,
-        icon_url,
-        created_at
-      `,
-      )
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    if (error) {
-      throw error;
-    }
-
-    const items = (data ?? []).map(mapCategoryRow);
-
-    const initialMeta = {
-      pagination: {
-        page: 1,
-        pageSize: items.length,
-        total: items.length,
-      },
-      filters: {
-        status: "all" as const,
-        search: null as string | null,
-      },
-    };
+    const bootstrap = await getMenuCategoriesBootstrap(actor.supabase);
 
     return (
-      <CategoriesTable
-        initialItems={items}
-        initialMeta={initialMeta}
+      <MenuCategoriesTable
+        initialCategories={bootstrap.initialCategories}
+        initialMeta={bootstrap.initialMeta}
         canManage={actor.roles.isAdmin || actor.roles.isManager}
       />
     );

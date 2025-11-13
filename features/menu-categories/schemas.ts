@@ -3,6 +3,13 @@ import { z } from "zod";
 export const menuCategoryFiltersSchema = z.object({
   search: z.string().trim().min(1).optional(),
   status: z.enum(["all", "active", "inactive"]).default("all"),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(200)
+    .default(50),
 });
 
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

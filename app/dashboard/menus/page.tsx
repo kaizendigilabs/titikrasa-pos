@@ -1,82 +1,27 @@
 import { redirect } from "next/navigation";
 
-import { MenusTable } from "./MenusTable";
-import { mapMenuRow } from "@/features/menus/mappers";
-import { ensureAdminOrManager, requireActor } from "@/features/users/server";
+import { MenusTable } from "./data-table";
+import {
+  getMenusTableBootstrap,
+  type MenusTableBootstrap,
+} from "@/features/menus/server";
+import {
+  ensureAdminOrManager,
+  requireActor,
+  type ActorContext,
+} from "@/features/users/server";
 import { AppError, ERR } from "@/lib/utils/errors";
 
 export const dynamic = "force-dynamic";
 
 export default async function MenusPage() {
+  let actor!: ActorContext;
+  let bootstrap!: MenusTableBootstrap;
+
   try {
-    const actor = await requireActor();
+    actor = await requireActor();
     ensureAdminOrManager(actor.roles);
-
-    const [{ data: menuData, error: menuError }, { data: categoryData, error: categoryError }] =
-      await Promise.all([
-        actor.supabase
-          .from("menus")
-          .select(
-            `
-            id,
-            name,
-            sku,
-            category_id,
-            categories (
-              id,
-              name,
-              icon_url
-            ),
-            price,
-            reseller_price,
-            is_active,
-            thumbnail_url,
-            variants,
-            created_at
-          `,
-          )
-          .order("created_at", { ascending: false })
-          .limit(200),
-        actor.supabase
-          .from("categories")
-          .select("id, name")
-          .eq("is_active", true)
-          .order("sort_order", { ascending: true })
-          .order("name", { ascending: true }),
-      ]);
-
-    if (menuError) throw menuError;
-    if (categoryError) throw categoryError;
-
-    const items = (menuData ?? []).map(mapMenuRow);
-    const categories =
-      categoryData?.map((category) => ({
-        id: category.id,
-        name: category.name,
-      })) ?? [];
-
-    const initialMeta = {
-      pagination: {
-        page: 1,
-        pageSize: items.length,
-        total: items.length,
-      },
-      filters: {
-        status: "all" as const,
-        type: "all" as const,
-        categoryId: null as string | null,
-        search: null as string | null,
-      },
-    };
-
-    return (
-      <MenusTable
-        initialItems={items}
-        initialMeta={initialMeta}
-        categories={categories}
-        canManage={actor.roles.isAdmin || actor.roles.isManager}
-      />
-    );
+    bootstrap = await getMenusTableBootstrap(actor.supabase);
   } catch (error) {
     if (
       error instanceof AppError &&
@@ -95,4 +40,13 @@ export default async function MenusPage() {
     console.error("[MENUS_PAGE_ERROR]", error);
     redirect("/dashboard");
   }
+
+  return (
+    <MenusTable
+      initialMenus={bootstrap.initialMenus}
+      initialMeta={bootstrap.initialMeta}
+      categories={bootstrap.categories}
+      canManage={actor.roles.isAdmin || actor.roles.isManager}
+    />
+  );
 }

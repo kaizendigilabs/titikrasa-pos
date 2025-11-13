@@ -10,9 +10,7 @@ import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
 import type { Database } from "@/lib/types/database";
 
-const listSchema = menuFiltersSchema.extend({
-  limit: z.coerce.number().int().min(1).max(500).default(200),
-});
+const listSchema = menuFiltersSchema;
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +18,7 @@ export async function GET(request: NextRequest) {
     ensureAdminOrManager(actor.roles);
 
     const params = Object.fromEntries(request.nextUrl.searchParams.entries());
-    const { search, status, categoryId, type, limit } =
+    const { search, status, categoryId, type, page, pageSize } =
       listSchema.parse(params);
 
     let query = actor.supabase
@@ -43,9 +41,9 @@ export async function GET(request: NextRequest) {
         variants,
         created_at
       `,
-      )
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      { count: "exact" },
+    )
+      .order("created_at", { ascending: false });
 
     if (search) {
       const pattern = `%${search}%`;
@@ -68,7 +66,12 @@ export async function GET(request: NextRequest) {
       query = query.not("variants", "is", null);
     }
 
-    const { data, error } = await query;
+    const currentPage = page ?? 1;
+    const currentPageSize = pageSize ?? 50;
+    const from = (currentPage - 1) * currentPageSize;
+    const to = from + currentPageSize - 1;
+
+    const { data, error, count } = await query.range(from, to);
     if (error) {
       throw appError(ERR.SERVER_ERROR, {
         message: "Gagal memuat daftar menu",
@@ -89,9 +92,9 @@ export async function GET(request: NextRequest) {
             type,
           },
           pagination: {
-            page: 1,
-            pageSize: items.length,
-            total: items.length,
+            page: currentPage,
+            pageSize: currentPageSize,
+            total: count ?? items.length,
           },
         },
       },

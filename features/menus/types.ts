@@ -41,6 +41,8 @@ export type MenuListItem = {
 };
 
 export type MenuFilters = {
+  page?: number;
+  pageSize?: number;
   search?: string | null;
   status?: "all" | "active" | "inactive";
   categoryId?: string | null;

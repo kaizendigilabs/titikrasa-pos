@@ -18,6 +18,8 @@ export async function listMenus(filters: MenuFilters = {}) {
   if (filters.status) searchParams.set("status", filters.status);
   if (filters.categoryId) searchParams.set("categoryId", filters.categoryId);
   if (filters.type) searchParams.set("type", filters.type);
+  if (filters.page) searchParams.set("page", String(filters.page));
+  if (filters.pageSize) searchParams.set("pageSize", String(filters.pageSize));
 
   const query = searchParams.toString();
   const url = `/api/menus${query ? `?${query}` : ""}`;

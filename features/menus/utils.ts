@@ -1,9 +1,12 @@
 import {
+  MENU_SIZES,
+  MENU_TEMPERATURES,
   type MenuVariantsConfig,
   type MenuSize,
   type MenuTemperature,
 } from "./types";
 import type { MenuVariantsInput } from "./schemas";
+import { formatCurrency } from "@/lib/utils/formatters";
 
 type PersistedMenuVariants = {
   allowed_sizes: MenuSize[];
@@ -41,6 +44,42 @@ export function toPersistedVariants(
       ),
     },
   };
+}
+
+export const MENU_SIZE_LABELS: Record<MenuSize, string> = {
+  s: "Small (S)",
+  m: "Medium (M)",
+  l: "Large (L)",
+};
+
+export const MENU_TEMPERATURE_LABELS: Record<MenuTemperature, string> = {
+  hot: "Hot",
+  ice: "Ice",
+};
+
+export function getVariantLabel(
+  size: MenuSize,
+  temperature?: MenuTemperature | null,
+  options?: { separator?: string },
+) {
+  const separator = options?.separator ?? "·";
+  const sizeLabel = MENU_SIZE_LABELS[size] ?? size.toUpperCase();
+  if (!temperature) {
+    return sizeLabel;
+  }
+  const tempLabel =
+    MENU_TEMPERATURE_LABELS[temperature] ?? temperature.toUpperCase();
+  return `${sizeLabel} ${separator} ${tempLabel}`;
+}
+
+export function formatMenuPrice(
+  value: number | null | undefined,
+  options?: { fallback?: string },
+) {
+  if (value == null) {
+    return options?.fallback ?? "Belum diatur";
+  }
+  return formatCurrency(value);
 }
 
 export function cloneVariantsConfig(

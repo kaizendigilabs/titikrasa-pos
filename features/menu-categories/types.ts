@@ -13,6 +13,8 @@ export type MenuCategoryListResponse = {
 };
 
 export type MenuCategoryFilters = {
+  page?: number;
+  pageSize?: number;
   search?: string | null;
   status?: "all" | "active" | "inactive";
 };

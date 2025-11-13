@@ -136,7 +136,7 @@ function createColumns(): ColumnDef<PurchaseHistoryEntry>[] {
 function usePurchaseHistoryQuery(
   ingredientId: string,
 ): DataTableQueryHook<PurchaseHistoryEntry, PurchaseHistoryTableFilters> {
-  return (filters, options) => {
+  return function usePurchaseHistoryDataHook(filters, options) {
     const queryFilters: PurchaseHistoryFilters = {
       page: filters.page,
       pageSize: filters.pageSize,
@@ -321,7 +321,7 @@ export function usePurchaseHistoryTableController({
         ),
       };
     },
-    [exportMutation, suppliers],
+    [exportMutation, rangePreset, suppliers],
   );
 
   return {
