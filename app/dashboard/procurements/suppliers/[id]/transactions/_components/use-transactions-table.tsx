@@ -120,13 +120,13 @@ export function useSupplierTransactionsDataTableQuery(
   filters: SupplierTransactionsFilters,
   options?: { initialData?: DataTableQueryResult<SupplierOrder> },
 ) {
+  const normalizedStatus = filters.status ?? "all";
+  const trimmedSearch = filters.search.trim();
   const queryFilters: SupplierOrderFilters = {
     page: filters.page,
     pageSize: filters.pageSize,
-    ...(filters.status !== "all" ? { status: filters.status } : {}),
-    ...(filters.search.trim().length > 0
-      ? { search: filters.search.trim() }
-      : {}),
+    status: normalizedStatus,
+    ...(trimmedSearch.length > 0 ? { search: trimmedSearch } : {}),
   };
 
   const hookOptions = options?.initialData

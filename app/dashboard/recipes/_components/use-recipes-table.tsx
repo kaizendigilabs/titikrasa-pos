@@ -356,7 +356,7 @@ export function useRecipesDataTableQuery(
           meta: result.data.meta ?? null,
         }
       : undefined,
-  } as UseQueryResult<DataTableQueryResult<RecipeListItem>>;
+  } as unknown as UseQueryResult<DataTableQueryResult<RecipeListItem>>;
 }
 
 export function RecipesRealtimeBridge({

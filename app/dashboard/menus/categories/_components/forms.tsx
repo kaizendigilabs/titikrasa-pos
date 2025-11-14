@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useForm } from '@tanstack/react-form';
+import { useForm, type ReactFormExtendedApi } from '@tanstack/react-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,7 +51,21 @@ export function CategoryFormSheet({
   isSubmitting,
 }: CategoryFormSheetProps) {
   const [slugEdited, setSlugEdited] = React.useState(false);
-  const form = useForm<CategoryFormValues>({
+  type CategoryFormApi = ReactFormExtendedApi<
+    CategoryFormValues,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any
+  >;
+  const form = useForm({
     defaultValues: initialValues,
     onSubmit: async ({ value }) => {
       try {
@@ -66,7 +80,7 @@ export function CategoryFormSheet({
         throw error;
       }
     },
-  });
+  }) as CategoryFormApi;
 
   React.useEffect(() => {
     form.reset(initialValues);

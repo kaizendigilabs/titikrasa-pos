@@ -13,7 +13,7 @@ import {
 import { ensureStaffOrAbove, requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
-import { fetchOrderById } from "@/features/orders/server";
+import { fetchOrderById, ORDER_SELECT } from "@/features/orders/server";
 import type { RawOrderRow } from "@/features/orders/types";
 import type { Database, Json } from "@/lib/types/database";
 
@@ -140,7 +140,17 @@ export async function POST(request: NextRequest) {
     ensureStaffOrAbove(actor.roles);
 
     const payload = await request.json();
+    if (payload && typeof payload === "object" && payload.client_id && !payload.clientId) {
+      payload.clientId = payload.client_id;
+    }
     const parsed = createOrderSchema.parse(payload);
+
+    if (parsed.clientId) {
+      const existing = await findOrderByClientRef(actor.supabase, parsed.clientId);
+      if (existing) {
+        return ok(existing);
+      }
+    }
 
     const itemsWithId = parsed.items.map((item) => ({
       ...item,
@@ -201,6 +211,7 @@ export async function POST(request: NextRequest) {
       created_by: actor.user.id,
       items: orderItemsPayload,
       ticket_items: ticketItems,
+      client_ref: parsed.clientId ?? null,
     };
 
     const { error: checkoutError } = await actor.supabase.rpc("pos_checkout", {
@@ -236,6 +247,29 @@ export async function POST(request: NextRequest) {
   }
 }
 
+async function findOrderByClientRef(
+  supabase: Awaited<ReturnType<typeof requireActor>>["supabase"],
+  clientRef: string,
+) {
+  const { data, error } = await supabase
+    .from("orders")
+    .select(ORDER_SELECT)
+    .eq("client_ref", clientRef)
+    .maybeSingle();
+
+  if (error && error.code !== "PGRST116") {
+    throw appError(ERR.SERVER_ERROR, {
+      message: "Gagal memeriksa duplikasi order POS",
+      details: { hint: error.message },
+    });
+  }
+
+  if (!data) {
+    return null;
+  }
+  return mapOrderRow(data as RawOrderRow);
+}
+
 function isCheckoutFunctionMissing(error: PostgrestError) {
   if (!error) return false;
   if (error.code === "42883") return true;
@@ -258,6 +292,7 @@ async function manualCheckout(
     totals: Record<string, unknown>;
     paid_at: string | null;
     created_by: string;
+    client_ref: string | null;
     items: Array<{
       id: string;
       menu_id: string;
@@ -293,6 +328,7 @@ async function manualCheckout(
     totals: checkoutPayload.totals as Json,
     paid_at: checkoutPayload.paid_at,
     created_by: checkoutPayload.created_by,
+    client_ref: checkoutPayload.client_ref,
   };
 
   const { error: orderError } = await supabase.from("orders").insert(orderInsert);

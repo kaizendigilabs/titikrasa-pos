@@ -25,6 +25,14 @@ export const discountInputSchema = z.object({
   value: z.number().min(0).default(0),
 });
 
+const clientRefSchema = z
+  .string()
+  .min(8)
+  .max(64)
+  .regex(/^[A-Za-z0-9_-]+$/, {
+    message: "clientId hanya boleh mengandung huruf, angka, underscore, atau dash",
+  });
+
 export const createOrderSchema = z
   .object({
     channel: z.enum(CHANNEL_VALUES).default("pos"),
@@ -34,6 +42,7 @@ export const createOrderSchema = z
     dueDate: z.string().transform((value) => (value ? value : null)).nullable().optional(),
     note: z.string().max(500).optional().default(""),
     customerName: z.string().max(140).optional().default(""),
+    clientId: clientRefSchema.optional(),
     items: z.array(orderItemInputSchema).min(1),
     discount: discountInputSchema.default({ type: "amount", value: 0 }),
     taxRate: z.number().min(0).max(1).default(0.11),

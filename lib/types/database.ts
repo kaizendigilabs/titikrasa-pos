@@ -279,6 +279,7 @@ export type Database = {
       orders: {
         Row: {
           channel: Database["public"]["Enums"]["channel"]
+          client_ref: string | null
           created_at: string
           created_by: string | null
           customer_note: string | null
@@ -294,6 +295,7 @@ export type Database = {
         }
         Insert: {
           channel: Database["public"]["Enums"]["channel"]
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           customer_note?: string | null
@@ -309,6 +311,7 @@ export type Database = {
         }
         Update: {
           channel?: Database["public"]["Enums"]["channel"]
+          client_ref?: string | null
           created_at?: string
           created_by?: string | null
           customer_note?: string | null
@@ -383,6 +386,7 @@ export type Database = {
           issued_at: string | null
           items: Json
           status: Database["public"]["Enums"]["po_status"]
+          supplier_id: string | null
           totals: Json
         }
         Insert: {
@@ -392,6 +396,7 @@ export type Database = {
           issued_at?: string | null
           items?: Json
           status?: Database["public"]["Enums"]["po_status"]
+          supplier_id?: string | null
           totals?: Json
         }
         Update: {
@@ -401,6 +406,7 @@ export type Database = {
           issued_at?: string | null
           items?: Json
           status?: Database["public"]["Enums"]["po_status"]
+          supplier_id?: string | null
           totals?: Json
         }
         Relationships: [
@@ -410,6 +416,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
           },
         ]
       }
