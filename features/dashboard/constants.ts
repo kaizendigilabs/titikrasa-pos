@@ -1,0 +1,1 @@
+export const DASHBOARD_ORDER_HISTORY_PAGE_SIZE = 8;

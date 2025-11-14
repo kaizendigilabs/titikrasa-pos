@@ -67,3 +67,12 @@ export type DashboardSummary = {
   receivables: DashboardReceivable[];
   pendingPurchaseOrders: DashboardPendingPO[];
 };
+
+export type DashboardOrdersListResult = {
+  items: DashboardTransaction[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+  };
+};

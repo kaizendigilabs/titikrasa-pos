@@ -3,6 +3,7 @@ import { format, startOfDay, startOfHour, startOfMonth } from "date-fns";
 import type { ActorContext } from "@/features/users/server";
 import { parseTicketItems, parseTotals } from "@/features/orders/types";
 import type { Json, Database } from "@/lib/types/database";
+import { appError, ERR } from "@/lib/utils/errors";
 import type {
   DashboardSummary,
   DashboardMetricSummary,
@@ -12,12 +13,81 @@ import type {
   DashboardReceivable,
   DashboardPendingPO,
   DashboardRangePayload,
+  DashboardOrdersListResult,
 } from "./types";
 
 type RawDashboardOrder = Database["public"]["Tables"]["orders"]["Row"] & {
   resellers?: { id: string; name: string } | null;
   kds_tickets: Array<{ items: Json; created_at: string }>;
 };
+
+type TransactionOrderRow = Pick<
+  RawDashboardOrder,
+  "id" | "number" | "channel" | "payment_status" | "totals" | "created_at"
+>;
+
+function mapOrderToTransaction(order: TransactionOrderRow): DashboardTransaction {
+  const totals = parseTotals(order.totals as Json);
+  return {
+    id: order.id,
+    number: order.number,
+    channel: order.channel,
+    paymentStatus: order.payment_status,
+    createdAt: order.created_at,
+    grandTotal: totals.grand,
+  };
+}
+
+export async function fetchDashboardOrders(
+  actor: ActorContext,
+  options: {
+    payload: DashboardRangePayload;
+    page?: number;
+    pageSize?: number;
+  },
+): Promise<DashboardOrdersListResult> {
+  const page = Math.max(options.page ?? 1, 1);
+  const pageSize = Math.min(Math.max(options.pageSize ?? 10, 1), 50);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await actor.supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      number,
+      channel,
+      payment_status,
+      totals,
+      created_at
+    `,
+      { count: "exact" },
+    )
+    .gte("created_at", options.payload.start)
+    .lte("created_at", options.payload.end)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    throw appError(ERR.SERVER_ERROR, {
+      message: "Gagal memuat riwayat order dashboard",
+      details: { hint: error.message },
+    });
+  }
+
+  const orders = (data ?? []) as TransactionOrderRow[];
+  const items = orders.map(mapOrderToTransaction);
+
+  return {
+    items,
+    pagination: {
+      page,
+      pageSize,
+      total: count ?? items.length,
+    },
+  };
+}
 
 function createEmptyMetrics(): DashboardMetricSummary {
   return {
@@ -116,14 +186,7 @@ export async function fetchDashboardSummary(
   for (const order of orders) {
     const totals = parseTotals(order.totals as Json);
     const createdAt = new Date(order.created_at);
-    transactions.push({
-      id: order.id,
-      number: order.number,
-      channel: order.channel,
-      paymentStatus: order.payment_status,
-      createdAt: order.created_at,
-      grandTotal: totals.grand,
-    });
+    transactions.push(mapOrderToTransaction(order));
 
     if (order.payment_status === "paid") {
       metrics.paidOrders += 1;
