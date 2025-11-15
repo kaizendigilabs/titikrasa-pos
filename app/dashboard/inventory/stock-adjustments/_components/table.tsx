@@ -52,8 +52,9 @@ export function StockOpnameTable({ controller }: StockOpnameTableProps) {
                   <form.Field name={`items[${index}].actual`}>
                     {(field: any) => (
                       <Input
-                        type="number"
-                        min={0}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Contoh: 100"
                         value={(field.state.value as string) ?? ""}
                         onChange={(event) => field.handleChange(event.target.value)}
                         onBlur={field.handleBlur}

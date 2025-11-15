@@ -130,6 +130,7 @@ export function ReceiptNumberForm({ receiptNumbering }: ReceiptNumberFormProps) 
                   inputMode="numeric"
                   min={3}
                   max={6}
+                  placeholder="Contoh: 4"
                   value={field.state.value}
                   onChange={(event) => field.handleChange(event.target.value.replace(/[^0-9]/g, ""))}
                   onBlur={field.handleBlur}

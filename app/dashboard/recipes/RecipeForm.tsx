@@ -219,8 +219,9 @@ export function RecipeForm({
             <Label htmlFor="recipe-version">Version</Label>
             <Input
               id="recipe-version"
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
+              placeholder="Contoh: 1"
               value={values.version}
               onChange={(event) =>
                 setValues((prev) => ({ ...prev, version: event.target.value }))
@@ -272,9 +273,9 @@ export function RecipeForm({
                 <div className="space-y-2">
                   <Label>Quantity</Label>
                   <Input
-                    type="number"
-                    min="0"
-                    step="0.001"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="Contoh: 10"
                     value={item.quantity}
                     onChange={(event) => handleIngredientChange(index, 'quantity', event.target.value)}
                   />
@@ -318,8 +319,9 @@ export function RecipeForm({
                 <div className="space-y-2">
                   <Label>Step</Label>
                   <Input
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Contoh: 1"
                     value={step.stepNo}
                     onChange={(event) => handleMethodStepChange(index, 'stepNo', event.target.value)}
                   />

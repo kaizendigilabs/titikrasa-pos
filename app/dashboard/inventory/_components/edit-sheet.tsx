@@ -90,8 +90,9 @@ export function StoreIngredientEditSheet({
                 <Label htmlFor="ingredient-min-stock">Minimum Stock</Label>
                 <Input
                   id="ingredient-min-stock"
-                  type="number"
-                  min={0}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Contoh: 50"
                   value={field.state.value}
                   onChange={(event) => field.handleChange(event.target.value)}
                   onBlur={field.handleBlur}

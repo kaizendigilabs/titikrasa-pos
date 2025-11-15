@@ -233,12 +233,16 @@ export function CartPanel({
                       </Button>
                       <Input
                         className="h-8 w-16 rounded-full border-muted-foreground/20 text-center"
-                        type="number"
-                        min={1}
-                        value={line.qty}
-                        onChange={(event) =>
-                          onChangeQuantity(line.lineId, Number(event.target.value) || 1)
-                        }
+                        type="text"
+                        inputMode="numeric"
+                        value={String(line.qty)}
+                        onChange={(event) => {
+                          const sanitized = event.target.value.replace(/[^0-9]/g, "");
+                          if (!sanitized) {
+                            return;
+                          }
+                          onChangeQuantity(line.lineId, Math.max(1, parseInt(sanitized, 10)));
+                        }}
                       />
                       <Button
                         variant="outline"
@@ -288,10 +292,19 @@ export function CartPanel({
             <div className="rounded-2xl border border-muted-foreground/20 bg-background/90 px-4 py-3">
               <Label className="text-xs font-semibold uppercase text-muted-foreground">Uang Diterima</Label>
               <Input
-                type="number"
-                min={0}
-                value={paymentValues.amountReceived}
-                onChange={(event) => onAmountReceivedChange(Number(event.target.value) || 0)}
+                type="text"
+                inputMode="decimal"
+                placeholder="Contoh: 100000"
+                value={
+                  paymentValues.amountReceived === 0
+                    ? ""
+                    : String(paymentValues.amountReceived)
+                }
+                onChange={(event) => {
+                  const sanitized = event.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+                  const parsed = sanitized.length ? Number(sanitized) : 0;
+                  onAmountReceivedChange(Math.max(0, Number.isNaN(parsed) ? 0 : parsed));
+                }}
                 className="mt-2 h-10 rounded-xl"
               />
               <p className="mt-1 text-xs text-muted-foreground">

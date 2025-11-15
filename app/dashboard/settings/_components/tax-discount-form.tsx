@@ -127,7 +127,7 @@ export function TaxDiscountForm({ tax, discount }: TaxDiscountFormProps) {
                   min={0}
                   max={30}
                   step="0.1"
-                  placeholder="0"
+                  placeholder="Contoh: 11"
                   value={field.state.value}
                   onChange={(event) =>
                     field.handleChange(event.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))
@@ -204,7 +204,11 @@ export function TaxDiscountForm({ tax, discount }: TaxDiscountFormProps) {
                   inputMode="decimal"
                   min={0}
                   step="0.1"
-                  placeholder="0"
+                  placeholder={
+                    formValues.discountMode === "percentage"
+                      ? "Contoh: 5"
+                      : "Contoh: 5000"
+                  }
                   value={field.state.value}
                   onChange={(event) =>
                     field.handleChange(event.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))

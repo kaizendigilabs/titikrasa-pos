@@ -590,7 +590,7 @@ function PriceMatrixEditor({
                             field.handleChange(event.target.value)
                           }
                           onBlur={field.handleBlur}
-                          placeholder="0"
+                          placeholder="Contoh: 25000"
                         />
                       </div>
                     )}

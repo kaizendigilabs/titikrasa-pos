@@ -144,8 +144,9 @@ export function CatalogItemEditSheet({
                     <Label htmlFor="catalog-edit-price">Purchase price (IDR)</Label>
                     <Input
                       id="catalog-edit-price"
-                      type="number"
-                      min={0}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Contoh: 185000"
                       value={field.state.value}
                       onChange={(event) => field.handleChange(event.target.value)}
                       onBlur={field.handleBlur}

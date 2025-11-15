@@ -103,8 +103,9 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
             <div className="flex gap-2">
               <Input
                 id="catalog-price"
-                type="number"
-                min={0}
+                type="text"
+                inputMode="decimal"
+                placeholder="Contoh: 185000"
                 value={field.state.value}
                 onChange={(event) => field.handleChange(event.target.value)}
                 onBlur={field.handleBlur}

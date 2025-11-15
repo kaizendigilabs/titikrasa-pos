@@ -167,11 +167,12 @@ export function CategoryFormSheet({
                 <Label htmlFor="category-sort">Urutan (opsional)</Label>
                 <Input
                   id="category-sort"
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={field.state.value}
                   onChange={(event) => field.handleChange(event.target.value)}
                   onBlur={field.handleBlur}
-                  placeholder="1"
+                  placeholder="Contoh: 1"
                 />
                 <p className="text-xs text-muted-foreground">
                   Semakin kecil semakin prioritas di daftar.

@@ -304,9 +304,9 @@ export function PurchaseOrderCreateSheet({
                       <div className="space-y-2">
                         <Label>Quantity ({catalog.base_uom.toUpperCase()})</Label>
                         <Input
-                          type="number"
-                          min={1}
-                          step={1}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Contoh: 10"
                           value={item.qty}
                           onChange={(event) =>
                             updateItemField(index, "qty", event.target.value)
