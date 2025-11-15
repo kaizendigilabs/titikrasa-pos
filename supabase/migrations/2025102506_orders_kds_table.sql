@@ -2,6 +2,7 @@
 create table if not exists orders (
   id              uuid primary key default gen_random_uuid(),
   number          text not null unique,
+  client_ref      text,
   channel         channel not null,
   reseller_id     uuid references resellers(id) on delete set null,
   payment_method  payment_method not null,
@@ -19,6 +20,9 @@ create table if not exists orders (
 create index if not exists idx_orders_created_at on orders(created_at desc);
 create index if not exists idx_orders_channel on orders(channel);
 create index if not exists idx_orders_payment_status on orders(payment_status);
+create unique index if not exists idx_orders_client_ref_not_null
+  on orders(client_ref)
+  where client_ref is not null;
 
 -- Order Items
 create table if not exists order_items (
@@ -143,3 +147,233 @@ $$;
 
 alter table kds_tickets
   add constraint kds_items_status_check check (kds_items_check(items));
+
+-- POS checkout helper (inserts order + line items + optional KDS ticket)
+create or replace function public.pos_checkout(payload jsonb)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order_id uuid := coalesce((payload->>'order_id')::uuid, gen_random_uuid());
+  v_number text := payload->>'number';
+  v_channel channel := (payload->>'channel')::channel;
+  v_reseller_id uuid := (payload->>'reseller_id')::uuid;
+  v_payment_method payment_method := (payload->>'payment_method')::payment_method;
+  v_payment_status payment_status := (payload->>'payment_status')::payment_status;
+  v_status order_status := (payload->>'status')::order_status;
+  v_due_date date := (payload->>'due_date')::date;
+  v_customer_note text := payload->>'customer_note';
+  v_totals jsonb := coalesce(payload->'totals', '{}'::jsonb);
+  v_paid_at timestamptz := (payload->>'paid_at')::timestamptz;
+  v_created_by uuid := (payload->>'created_by')::uuid;
+  v_ticket_items jsonb := payload->'ticket_items';
+  v_client_ref text := payload->>'client_ref';
+begin
+  if v_number is null then
+    raise exception 'Order number is required';
+  end if;
+
+  insert into public.orders (
+    id,
+    number,
+    channel,
+    reseller_id,
+    payment_method,
+    payment_status,
+    due_date,
+    customer_note,
+    status,
+    totals,
+    paid_at,
+    created_by,
+    client_ref
+  )
+  values (
+    v_order_id,
+    v_number,
+    v_channel,
+    v_reseller_id,
+    v_payment_method,
+    v_payment_status,
+    v_due_date,
+    v_customer_note,
+    v_status,
+    v_totals,
+    v_paid_at,
+    v_created_by,
+    v_client_ref
+  );
+
+  insert into public.order_items (
+    id,
+    order_id,
+    menu_id,
+    qty,
+    price,
+    discount,
+    tax,
+    variant
+  )
+  select
+    coalesce((item->>'id')::uuid, gen_random_uuid()),
+    v_order_id,
+    (item->>'menu_id')::uuid,
+    coalesce((item->>'qty')::int, 0),
+    coalesce((item->>'price')::int, 0),
+    coalesce((item->>'discount')::int, 0),
+    coalesce((item->>'tax')::int, 0),
+    item->>'variant'
+  from jsonb_array_elements(coalesce(payload->'items', '[]'::jsonb)) as item;
+
+  if v_ticket_items is not null then
+    insert into public.kds_tickets (order_id, items)
+    values (v_order_id, v_ticket_items);
+  end if;
+
+  return v_order_id;
+end;
+$$;
+
+alter table public.orders enable row level security;
+alter table public.order_items enable row level security;
+alter table public.kds_tickets enable row level security;
+
+drop policy if exists "orders_select" on public.orders;
+drop policy if exists "orders_insert" on public.orders;
+drop policy if exists "orders_update" on public.orders;
+drop policy if exists "orders_delete" on public.orders;
+
+create policy "orders_select"
+on public.orders
+for select
+to authenticated
+using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "orders_insert"
+on public.orders
+for insert
+to authenticated
+with check (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "orders_update"
+on public.orders
+for update
+to authenticated
+using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+)
+with check (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "orders_delete"
+on public.orders
+for delete
+to authenticated
+using (public.has_role(auth.uid(),'admin'));
+
+drop policy if exists "order_items_select" on public.order_items;
+drop policy if exists "order_items_insert" on public.order_items;
+drop policy if exists "order_items_update" on public.order_items;
+drop policy if exists "order_items_delete" on public.order_items;
+
+create policy "order_items_select"
+on public.order_items
+for select
+to authenticated
+using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "order_items_insert"
+on public.order_items
+for insert
+to authenticated
+with check (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "order_items_update"
+on public.order_items
+for update
+to authenticated
+using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+)
+with check (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "order_items_delete"
+on public.order_items
+for delete
+to authenticated
+using (public.has_role(auth.uid(),'admin'));
+
+drop policy if exists "kds_tickets_select" on public.kds_tickets;
+drop policy if exists "kds_tickets_insert" on public.kds_tickets;
+drop policy if exists "kds_tickets_update" on public.kds_tickets;
+drop policy if exists "kds_tickets_delete" on public.kds_tickets;
+
+create policy "kds_tickets_select"
+on public.kds_tickets
+for select
+to authenticated
+using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "kds_tickets_insert"
+on public.kds_tickets
+for insert
+to authenticated
+with check (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "kds_tickets_update"
+on public.kds_tickets
+for update
+to authenticated
+using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+)
+with check (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "kds_tickets_delete"
+on public.kds_tickets
+for delete
+to authenticated
+using (public.has_role(auth.uid(),'admin'));

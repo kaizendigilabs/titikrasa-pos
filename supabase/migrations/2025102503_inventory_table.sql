@@ -11,6 +11,30 @@ create table if not exists store_ingredients (
   created_at     timestamptz not null default now()
 );
 create index if not exists idx_si_name on store_ingredients(name);
+alter table public.store_ingredients enable row level security;
+
+drop policy if exists "store_ingredients_select" on public.store_ingredients;
+drop policy if exists "store_ingredients_write" on public.store_ingredients;
+drop policy if exists "store_ingredients_update" on public.store_ingredients;
+drop policy if exists "store_ingredients_delete" on public.store_ingredients;
+
+create policy "store_ingredients_select" on public.store_ingredients for select to authenticated using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "store_ingredients_write" on public.store_ingredients for insert to authenticated with check (
+  public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager')
+);
+
+create policy "store_ingredients_update" on public.store_ingredients for update to authenticated using (
+  public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager')
+) with check (
+  public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager')
+);
+
+create policy "store_ingredients_delete" on public.store_ingredients for delete to authenticated using (public.has_role(auth.uid(),'admin'));
 
 -- Stock Ledger (sale, po, adjust, waste)
 create table if not exists stock_ledger (
@@ -24,6 +48,16 @@ create table if not exists stock_ledger (
   at             timestamptz not null default now()
 );
 create index if not exists idx_ledger_ing_at on stock_ledger(ingredient_id, at desc);
+alter table public.stock_ledger enable row level security;
+
+drop policy if exists "stock_ledger_read" on public.stock_ledger;
+drop policy if exists "stock_ledger_write_block" on public.stock_ledger;
+create policy "stock_ledger_read" on public.stock_ledger for select to authenticated using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+create policy "stock_ledger_write_block" on public.stock_ledger for all to authenticated using (false) with check (false);
 
 -- Stock Adjustments (stock opname)
 create table if not exists public.stock_adjustments (
@@ -36,6 +70,30 @@ create table if not exists public.stock_adjustments (
   created_at  timestamptz not null default now(),
   approved_at timestamptz
 );
+alter table public.stock_adjustments enable row level security;
+
+drop policy if exists "stock_adjust_select" on public.stock_adjustments;
+drop policy if exists "stock_adjust_write" on public.stock_adjustments;
+drop policy if exists "stock_adjust_update" on public.stock_adjustments;
+drop policy if exists "stock_adjust_delete" on public.stock_adjustments;
+
+create policy "stock_adjust_select" on public.stock_adjustments for select to authenticated using (
+  public.has_role(auth.uid(),'admin')
+  or public.has_role(auth.uid(),'manager')
+  or public.has_role(auth.uid(),'staff')
+);
+
+create policy "stock_adjust_write" on public.stock_adjustments for insert to authenticated with check (
+  public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager')
+);
+
+create policy "stock_adjust_update" on public.stock_adjustments for update to authenticated using (
+  public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager')
+) with check (
+  public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager')
+);
+
+create policy "stock_adjust_delete" on public.stock_adjustments for delete to authenticated using (public.has_role(auth.uid(),'admin'));
 
 -- Committer: memindahkan items ke stock_ledger saat status berubah ke approved
 create or replace function public.apply_stock_adjustment()

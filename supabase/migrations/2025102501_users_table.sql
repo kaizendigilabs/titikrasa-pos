@@ -73,6 +73,19 @@ create unique index if not exists idx_profiles_email_unique
   on public.profiles((lower(email)))
   where email is not null and email <> '';
 
+-- Accelerate fuzzy search for Users table filters
+create index if not exists idx_profiles_name_trgm
+  on public.profiles
+  using gin (name gin_trgm_ops);
+
+create index if not exists idx_profiles_email_trgm
+  on public.profiles
+  using gin (email gin_trgm_ops);
+
+create index if not exists idx_profiles_phone_trgm
+  on public.profiles
+  using gin (phone gin_trgm_ops);
+
 create or replace function public.tg_profiles_set_updated_at()
 returns trigger language plpgsql as $$
 begin
