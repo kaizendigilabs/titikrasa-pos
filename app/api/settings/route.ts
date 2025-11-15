@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { getSettings, updateSettings } from "@/features/settings/server";
 import { settingsUpdateSchema } from "@/features/settings/schemas";
+import type { SettingsUpdateInput } from "@/features/settings/types";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError, ERR, appError } from "@/lib/utils/errors";
@@ -30,8 +31,28 @@ export async function PUT(request: NextRequest) {
 
     const payload = await request.json();
     const parsed = settingsUpdateSchema.parse(payload);
+    const normalized: SettingsUpdateInput = {};
 
-    const settings = await updateSettings(actor, parsed);
+    if (parsed.tax) {
+      normalized.tax = parsed.tax;
+    }
+    if (parsed.discount) {
+      normalized.discount = parsed.discount;
+    }
+    if (parsed.storeProfile) {
+      normalized.storeProfile = {
+        name: parsed.storeProfile.name,
+        address: parsed.storeProfile.address,
+        phone: parsed.storeProfile.phone,
+        logoUrl: parsed.storeProfile.logoUrl ?? null,
+        footerNote: parsed.storeProfile.footerNote ?? null,
+      };
+    }
+    if (parsed.receiptNumbering) {
+      normalized.receiptNumbering = parsed.receiptNumbering;
+    }
+
+    const settings = await updateSettings(actor, normalized);
     return ok({ settings });
   } catch (error) {
     if (error instanceof AppError) {

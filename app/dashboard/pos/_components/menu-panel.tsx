@@ -167,9 +167,6 @@ export function MenuPanel({
                   <Badge variant="secondary" className="rounded-full px-3 py-1 text-[10px] font-medium">
                     {menu.category_name ?? "General"}
                   </Badge>
-                  <Badge variant="outline" className="rounded-full px-3 py-1 text-[10px]">
-                    {menu.variants ? "Varian" : "Single"}
-                  </Badge>
                 </div>
                 <div className="space-y-2">
                   <p className="text-base font-semibold text-foreground">

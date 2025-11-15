@@ -55,10 +55,6 @@ export function PaymentDrawer({
   onDueDateChange,
 }: PaymentDrawerProps) {
   const isReseller = mode === "reseller";
-  const changeDue =
-    paymentValues.paymentMethod === "cash"
-      ? Math.max(paymentValues.amountReceived - totals.grand, 0)
-      : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,10 +135,16 @@ export function PaymentDrawer({
               </p>
             ) : null}
             {paymentValues.paymentMethod === "cash" ? (
-              <p>
-                Uang diterima: <span className="font-medium">{formatCurrency(paymentValues.amountReceived)}</span>
-                {" "}· Kembalian {formatCurrency(changeDue)}
-              </p>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span>Uang diterima</span>
+                  <span>{formatCurrency(paymentValues.amountReceived)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Uang kembalian</span>
+                  <span>{formatCurrency(Math.max(paymentValues.amountReceived - totals.grand, 0))}</span>
+                </div>
+              </div>
             ) : null}
           </div>
 
@@ -187,7 +189,11 @@ export function PaymentDrawer({
               </div>
               <div className="flex justify-between">
                 <dt>Diskon</dt>
-                <dd>-{formatCurrency(totals.discount)}</dd>
+                <dd>
+                  {totals.discount > 0
+                    ? `-${formatCurrency(totals.discount)}`
+                    : formatCurrency(0)}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt>Tax</dt>

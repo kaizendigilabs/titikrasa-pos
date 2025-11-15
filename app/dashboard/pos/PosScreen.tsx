@@ -95,7 +95,7 @@ export function PosScreen({
   return (
     <div className="space-y-5">
       <div
-        className="grid gap-5 lg:grid-cols-[1.7fr_1fr] xl:grid-cols-[2fr_1.1fr]"
+        className="grid gap-5 lg:grid-cols-[2fr_1fr] xl:grid-cols-[2fr_1fr]"
       >
         <MenuPanel
           searchInputRef={searchInputRef}
@@ -120,13 +120,6 @@ export function PosScreen({
             grandTotal={controller.grandTotal}
             onChangeQuantity={(lineId, qty) => controller.updateCartQuantity(lineId, qty)}
             onRemove={controller.removeCartLine}
-            onClear={controller.handleClearCart}
-            onDiscountTypeChange={(type) =>
-              controller.handleDiscountChange({ type, value: controller.cartState.discount.value })
-            }
-            onDiscountValueChange={(value) =>
-              controller.handleDiscountChange({ type: controller.cartState.discount.type, value })
-            }
             onOpenPayment={() => controller.setPaymentDrawerOpen(true)}
             canSubmit={Boolean(controller.canSubmit)}
             isSubmitting={controller.isSubmittingOrder}

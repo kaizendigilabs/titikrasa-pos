@@ -15,10 +15,7 @@ export const receiptAutoResetSchema: z.ZodType<ReceiptAutoReset> = z.enum([
 
 export const taxSettingsSchema = z.object({
   rate: z
-    .number({
-      required_error: "Tarif pajak wajib diisi",
-      invalid_type_error: "Tarif pajak tidak valid",
-    })
+    .number()
     .min(0, "Tarif pajak minimal 0%")
     .max(0.3, "Tarif pajak maksimal 30%"),
   autoApply: z.boolean().default(true),
@@ -27,10 +24,7 @@ export const taxSettingsSchema = z.object({
 export const discountSettingsSchema = z.object({
   mode: discountModeSchema,
   value: z
-    .number({
-      required_error: "Nilai diskon wajib diisi",
-      invalid_type_error: "Nilai diskon tidak valid",
-    })
+    .number()
     .min(0, "Nilai diskon tidak boleh negatif"),
 });
 
@@ -54,10 +48,7 @@ export const receiptNumberingSettingsSchema = z.object({
     .max(6, "Maksimal 6 karakter")
     .regex(/^[A-Z0-9]+$/, "Gunakan huruf kapital/angka"),
   padding: z
-    .number({
-      required_error: "Digit nomor wajib diisi",
-      invalid_type_error: "Digit nomor tidak valid",
-    })
+    .number()
     .int()
     .min(3, "Minimal 3 digit")
     .max(6, "Maksimal 6 digit"),

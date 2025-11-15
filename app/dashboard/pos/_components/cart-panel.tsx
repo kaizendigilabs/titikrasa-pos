@@ -5,7 +5,7 @@ import {
   IconMinus,
   IconPlus,
   IconTrash,
-  IconFileInvoice,
+  IconCheck,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -75,16 +75,18 @@ export function CartPanel({
   isLoading = false,
 }: CartPanelProps) {
   const totalItems = cart.lines.reduce((sum, line) => sum + line.qty, 0);
-  const changeDue =
-    paymentValues.paymentMethod === "cash"
-      ? Math.max(paymentValues.amountReceived - grandTotal, 0)
-      : 0;
   const filteredResellers =
     mode === "reseller" && resellerQuery.trim().length > 0
       ? resellers.filter((reseller) =>
           reseller.name.toLowerCase().includes(resellerQuery.trim().toLowerCase()),
         )
       : [];
+  const shouldShowSuggestions =
+    selectedResellerId == null && filteredResellers.length > 0;
+  const changeDue =
+    paymentValues.paymentMethod === "cash"
+      ? Math.max(paymentValues.amountReceived - grandTotal, 0)
+      : 0;
 
   if (isLoading) {
     return (
@@ -151,34 +153,37 @@ export function CartPanel({
             ) : (
               <div className="space-y-2">
                 <Label>Cari Reseller</Label>
-                <Input
-                  value={resellerQuery}
-                  onChange={(event) => onResellerQueryChange(event.target.value)}
-                  placeholder="Ketik nama reseller"
-                  className="h-10 rounded-xl"
-                />
-                {filteredResellers.length > 0 ? (
-                  <div className="max-h-32 overflow-y-auto rounded-xl border border-dashed border-muted-foreground/30 bg-background/60">
-                    <ul className="text-sm">
-                      {filteredResellers.slice(0, 6).map((reseller) => (
-                        <li key={reseller.id}>
-                          <button
-                            type="button"
-                            className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-muted"
-                            onClick={() => onSelectReseller(reseller.id)}
-                          >
-                            <span>{reseller.name}</span>
-                            {selectedResellerId === reseller.id ? (
-                              <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px]">
-                                Dipilih
-                              </Badge>
-                            ) : null}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
+                <div className="relative">
+                  <Input
+                    value={resellerQuery}
+                    onChange={(event) => onResellerQueryChange(event.target.value)}
+                    placeholder="Ketik nama reseller"
+                    className="h-10 rounded-xl pr-10"
+                  />
+                  {selectedResellerId ? (
+                    <IconCheck className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+                  ) : null}
+                  {shouldShowSuggestions ? (
+                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-40 overflow-y-auto rounded-2xl border border-border/30 bg-background/95 shadow-xl">
+                      <ul className="text-sm">
+                        {filteredResellers.slice(0, 6).map((reseller) => (
+                          <li key={reseller.id}>
+                            <button
+                              type="button"
+                              className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-muted"
+                              onClick={() => onSelectReseller(reseller.id)}
+                            >
+                              <span>{reseller.name}</span>
+                              {selectedResellerId === reseller.id ? (
+                                <IconCheck className="h-4 w-4 text-emerald-500" />
+                              ) : null}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
                 {mode === "reseller" && !selectedResellerId ? (
                   <p className="text-xs text-destructive">Pilih reseller untuk melanjutkan transaksi.</p>
                 ) : null}
@@ -188,15 +193,12 @@ export function CartPanel({
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-muted-foreground/20 bg-background/80 p-4">
-          <div className="flex items-center justify-between text-sm font-semibold text-foreground">
-            <span>Item Dipesan</span>
-          </div>
           {cart.lines.length === 0 ? (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
               Belum ada item di keranjang.
             </div>
           ) : (
-            <div className="mt-3 flex-1 min-h-[180px] space-y-3 overflow-y-auto pr-2">
+            <div className="flex-1 min-h-[180px] space-y-3 overflow-y-auto pr-2">
               {cart.lines.map((line) => (
                 <div
                   key={line.lineId}
@@ -263,63 +265,61 @@ export function CartPanel({
         <div />
       </div>
 
-      <div className="shrink-0 space-y-4 rounded-3xl border border-muted-foreground/20 bg-card/90 p-4">
-        <div className="space-y-4 text-sm">
-          <div className="flex items-center justify-between rounded-2xl border border-muted-foreground/20 bg-background/90 px-4 py-3">
-            <div>
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Metode Pembayaran</p>
-              <p className="text-sm font-semibold text-foreground">
-                {paymentValues.paymentMethod === "cash" ? "Cash" : "Transfer"}
-              </p>
+      <div className="shrink-0 space-y-4 rounded-3xl border border-muted-foreground/20 bg-card/90 p-6">
+        <div className="space-y-2 text-sm">
+          <div className="flex gap-3">
+            <div className="rounded-2xl w-56">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Pembayaran</p>
+              <Select
+                value={paymentValues.paymentMethod}
+                onValueChange={(value) =>
+                  onPaymentMethodChange(value as PaymentFormValues["paymentMethod"])
+                }
+              >
+                <SelectTrigger className="mt-3 h-9 rounded-full text-xs font-semibold w-full">
+                  <SelectValue placeholder="Pilih metode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="transfer">Transfer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select
-              value={paymentValues.paymentMethod}
-              onValueChange={(value) =>
-                onPaymentMethodChange(value as PaymentFormValues["paymentMethod"])
-              }
-            >
-              <SelectTrigger className="h-9 w-[140px] rounded-full text-xs font-semibold">
-                <SelectValue placeholder="Pilih metode" />
-              </SelectTrigger>
-              <SelectContent>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="transfer">Transfer</SelectItem>
-            </SelectContent>
-          </Select>
+
+            {paymentValues.paymentMethod === "cash" ? (
+              <div className="rounded-2xl w-full">
+                <Label className="text-xs font-semibold uppercase text-muted-foreground">Uang Diterima</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Contoh: 100000"
+                  value={
+                    paymentValues.amountReceived === 0
+                      ? ""
+                      : String(paymentValues.amountReceived)
+                  }
+                  onChange={(event) => {
+                    const sanitized = event.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+                    const parsed = sanitized.length ? Number(sanitized) : 0;
+                    onAmountReceivedChange(Math.max(0, Number.isNaN(parsed) ? 0 : parsed));
+                  }}
+                  className="mt-2 h-10 rounded-xl"
+                />
+              </div>
+            ) : (
+              <div className="rounded-2xl w-full">
+                <p className="text-xs font-semibold uppercase text-muted-foreground">Uang Diterima</p>
+                <p className="text-xs text-muted-foreground mt-2">Tidak perlu input untuk transfer.</p>
+              </div>
+            )}
           </div>
 
-          {paymentValues.paymentMethod === "cash" ? (
-            <div className="rounded-2xl border border-muted-foreground/20 bg-background/90 px-4 py-3">
-              <Label className="text-xs font-semibold uppercase text-muted-foreground">Uang Diterima</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                placeholder="Contoh: 100000"
-                value={
-                  paymentValues.amountReceived === 0
-                    ? ""
-                    : String(paymentValues.amountReceived)
-                }
-                onChange={(event) => {
-                  const sanitized = event.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
-                  const parsed = sanitized.length ? Number(sanitized) : 0;
-                  onAmountReceivedChange(Math.max(0, Number.isNaN(parsed) ? 0 : parsed));
-                }}
-                className="mt-2 h-10 rounded-xl"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Kembalian · {formatCurrency(changeDue)}
-              </p>
-            </div>
-          ) : null}
-
-          <div className="rounded-2xl border border-muted-foreground/20 bg-background/90 px-4 py-3">
-            <Label className="text-xs font-semibold uppercase text-muted-foreground">Catatan (opsional)</Label>
+          <div className="rounded-2xl py-3">
             <Input
               value={paymentValues.note}
               onChange={(event) => onNoteChange(event.target.value)}
-              placeholder="Instruksi dapur/KDS"
-              className="mt-2 h-10 rounded-xl"
+              placeholder="Catatan (Opsional)"
+              className="h-10 rounded-xl"
             />
           </div>
 
@@ -330,7 +330,11 @@ export function CartPanel({
             </div>
             <div className="flex justify-between">
               <span>Diskon</span>
-              <span>-{formatCurrency(discountAmount)}</span>
+              <span>
+                {discountAmount > 0
+                  ? `-${formatCurrency(discountAmount)}`
+                  : formatCurrency(0)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Tax</span>
@@ -342,18 +346,20 @@ export function CartPanel({
               <span>{formatCurrency(grandTotal)}</span>
             </div>
             {paymentValues.paymentMethod === "cash" ? (
-              <p className="text-xs text-muted-foreground">Kembalian · {formatCurrency(changeDue)}</p>
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Uang kembalian</span>
+                <span className='text-green-500'>{formatCurrency(changeDue)}</span>
+              </div>
             ) : null}
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 pt-4">
           <Button
             className="h-12 w-full rounded-full text-base font-semibold"
             disabled={!canSubmit || isSubmitting || cart.lines.length === 0}
             onClick={onOpenPayment}
           >
-            <IconFileInvoice className="mr-2 h-4 w-4" />
             {isSubmitting ? "Memproses..." : "Lanjut Bayar"}
           </Button>
         </div>
