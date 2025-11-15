@@ -1,13 +1,14 @@
 import { LoginForm } from "@/components/shared/LoginForm";
 
 type LoginPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     returnTo?: string;
-  };
+  }>;
 };
 
-export default function Page({ searchParams }: LoginPageProps) {
-  const returnTo = searchParams?.returnTo ?? null;
+export default async function Page({ searchParams }: LoginPageProps) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const returnTo = resolvedSearchParams.returnTo ?? null;
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
