@@ -9,6 +9,7 @@ import { mapOrderRow } from "@/features/orders/mappers";
 import type { RawOrderRow, OrderFilters } from "@/features/orders/types";
 import { appError, ERR } from "@/lib/utils/errors";
 import type { ActorContext } from "@/features/users/server";
+import { getSettings } from "@/features/settings/server";
 
 const DEFAULT_TAX_RATE = 0.11;
 const DEFAULT_ORDER_LIMIT = 20;
@@ -118,10 +119,11 @@ export async function getPosBootstrap(
 ): Promise<PosBootstrap> {
   const orderLimit = options.orderLimit ?? DEFAULT_ORDER_LIMIT;
 
-  const [menus, resellers, orderRows] = await Promise.all([
+  const [menus, resellers, orderRows, settings] = await Promise.all([
     loadMenus(actor.supabase),
     loadResellers(actor.supabase),
     loadOrders(actor.supabase, orderLimit),
+    getSettings(actor),
   ]);
 
   const orderFilters: OrderFilters = {
@@ -138,7 +140,7 @@ export async function getPosBootstrap(
       items: orderRows.map(mapOrderRow),
       meta: { filters: orderFilters },
     },
-    defaultTaxRate: DEFAULT_TAX_RATE,
+    defaultTaxRate: settings.tax.rate ?? DEFAULT_TAX_RATE,
   };
 }
 

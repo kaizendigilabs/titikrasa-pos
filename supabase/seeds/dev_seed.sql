@@ -522,7 +522,33 @@ begin
   -- ===== Settings =====
   insert into public.settings (key, value)
   values
-    ('pos.tax_rate', jsonb_build_object('value', 0.1, 'label', 'PPN 10%')),
+    (
+      'pos.tax_rate',
+      jsonb_build_object('rate', 0.11, 'autoApply', true, 'label', 'PPN 11%')
+    ),
+    (
+      'pos.default_discount',
+      jsonb_build_object('mode', 'none', 'value', 0)
+    ),
+    (
+      'store.profile',
+      jsonb_build_object(
+        'name', 'Titikrasa Coffee',
+        'address', 'Jl. Contoh No. 123, Bandung',
+        'phone', '+62-812-0000-0000',
+        'logoUrl', null,
+        'footerNote', 'Terima kasih telah berbelanja'
+      )
+    ),
+    (
+      'pos.receipt_numbering',
+      jsonb_build_object(
+        'posPrefix', 'POS',
+        'resellerPrefix', 'RES',
+        'padding', 4,
+        'autoReset', 'daily'
+      )
+    ),
     ('pos.next_order_number', jsonb_build_object('pos', 120, 'reseller', 48))
   on conflict (key) do update set value = excluded.value;
 
