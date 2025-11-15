@@ -1,0 +1,21 @@
+-- Enable RLS for all base tables; skip views explicitly
+alter table if exists public.audit_logs enable row level security;
+alter table if exists public.categories enable row level security;
+alter table if exists public.ingredient_supplier_links enable row level security;
+alter table if exists public.kds_tickets enable row level security;
+alter table if exists public.menus enable row level security;
+alter table if exists public.order_items enable row level security;
+alter table if exists public.orders enable row level security;
+alter table if exists public.profiles enable row level security;
+alter table if exists public.purchase_orders enable row level security;
+alter table if exists public.recipe_variant_overrides enable row level security;
+alter table if exists public.recipes enable row level security;
+alter table if exists public.resellers enable row level security;
+alter table if exists public.roles enable row level security;
+alter table if exists public.settings enable row level security;
+alter table if exists public.stock_adjustments enable row level security;
+alter table if exists public.stock_ledger enable row level security;
+alter table if exists public.store_ingredients enable row level security;
+alter table if exists public.supplier_catalog_items enable row level security;
+alter table if exists public.suppliers enable row level security;
+alter table if exists public.user_roles enable row level security;
