@@ -35,15 +35,6 @@ export type ResellerOrder = {
   paidAt: string | null;
 };
 
-export type ResellerCatalogEntry = {
-  menuId: string;
-  menuName: string;
-  thumbnailUrl: string | null;
-  totalQty: number;
-  lastOrderAt: string | null;
-  lastPrice: number | null;
-};
-
 export type ResellerDetailStats = {
   totalOrders: number;
   unpaidCount: number;
@@ -54,7 +45,6 @@ export type ResellerDetailBootstrap = {
   reseller: ResellerListItem;
   stats: ResellerDetailStats;
   recentOrders: ResellerOrder[];
-  catalogHighlights: ResellerCatalogEntry[];
 };
 
 export function parseContact(contact: Json | null): ResellerContact {

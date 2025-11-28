@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type {
   PurchaseOrderCatalogItem,
   PurchaseOrderSupplierOption,
@@ -27,7 +27,7 @@ export type PurchaseOrderFormValues = {
   items: Array<{ catalogItemId: string; qty: number }>;
 };
 
-export type PurchaseOrderCreateSheetProps = {
+export type PurchaseOrderCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: PurchaseOrderFormValues) => Promise<void>;
@@ -54,7 +54,7 @@ const STATUS_OPTIONS: Array<{ label: string; value: PurchaseOrderStatus }> = [
   { label: "Complete", value: "complete" },
 ];
 
-export function PurchaseOrderCreateSheet({
+export function PurchaseOrderCreateDialog({
   open,
   onOpenChange,
   onSubmit,
@@ -62,7 +62,7 @@ export function PurchaseOrderCreateSheet({
   suppliers,
   catalogItems,
   prefill,
-}: PurchaseOrderCreateSheetProps) {
+}: PurchaseOrderCreateDialogProps) {
   const form = useForm({
     defaultValues: DEFAULT_VALUES,
     onSubmit: async ({ value }) => {
@@ -172,11 +172,11 @@ export function PurchaseOrderCreateSheet({
   const isBusy = isSubmitting || form.state.isSubmitting;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full max-w-3xl flex-col">
-        <SheetHeader className="border-b pb-4">
-          <SheetTitle>Buat Purchase Order</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-3xl flex-col">
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle>Buat Purchase Order</DialogTitle>
+        </DialogHeader>
         <form
           className="flex flex-1 flex-col gap-6 overflow-y-auto px-1 py-4"
           onSubmit={(event) => {
@@ -335,7 +335,7 @@ export function PurchaseOrderCreateSheet({
             </div>
           </div>
 
-          <SheetFooter>
+          <DialogFooter className="mt-2">
             <Button
               type="submit"
               className="w-full"
@@ -348,9 +348,9 @@ export function PurchaseOrderCreateSheet({
             >
               {isBusy ? "Menyimpan..." : "Simpan purchase order"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

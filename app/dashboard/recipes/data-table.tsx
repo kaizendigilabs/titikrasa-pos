@@ -8,7 +8,7 @@ import {
   type RecipesTableFilters,
   type UseRecipesTableControllerArgs,
 } from './_components/use-recipes-table';
-import { RecipeFormSheet } from './_components/recipe-form-sheet';
+import { RecipeFormDialog } from './_components/recipe-form-sheet';
 import { RecipeDetail } from './_components/recipe-detail';
 import {
   Sheet,
@@ -64,7 +64,7 @@ export function RecipesTable(props: RecipesTableProps) {
             </SheetContent>
           </Sheet>
 
-          <RecipeFormSheet {...controller.formSheetProps} />
+          <RecipeFormDialog {...controller.formDialogProps} />
 
           <AlertDialog
             open={Boolean(controller.deleteDialog.state)}

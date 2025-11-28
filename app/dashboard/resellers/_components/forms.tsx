@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { ResellerListItem } from "@/features/resellers/types";
 
@@ -33,14 +33,14 @@ export type EditResellerFormValues = {
   isActive: boolean;
 };
 
-type InviteResellerSheetProps = {
+type InviteResellerDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: InviteResellerFormValues) => Promise<void>;
   isSubmitting: boolean;
 };
 
-type EditResellerSheetProps = {
+type EditResellerDialogProps = {
   reseller: ResellerListItem | null;
   onOpenChange: (reseller: ResellerListItem | null) => void;
   onSubmit: (values: EditResellerFormValues) => Promise<void>;
@@ -68,12 +68,12 @@ function buildEditDefaults(
   };
 }
 
-export function InviteResellerSheet({
+export function InviteResellerDialog({
   open,
   onOpenChange,
   onSubmit,
   isSubmitting,
-}: InviteResellerSheetProps) {
+}: InviteResellerDialogProps) {
   const inviteForm = useForm({
     defaultValues: INVITE_DEFAULTS,
     onSubmit: async ({ value }) => {
@@ -90,11 +90,11 @@ export function InviteResellerSheet({
   }, [inviteForm, open]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>Invite Reseller</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite Reseller</DialogTitle>
+        </DialogHeader>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -177,7 +177,7 @@ export function InviteResellerSheet({
               </div>
             )}
           </inviteForm.Field>
-          <SheetFooter>
+          <DialogFooter>
             <Button
               type="submit"
               disabled={isSubmitting || inviteForm.state.isSubmitting}
@@ -186,19 +186,19 @@ export function InviteResellerSheet({
                 ? "Creating..."
                 : "Create Reseller"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-export function EditResellerSheet({
+export function EditResellerDialog({
   reseller,
   onOpenChange,
   onSubmit,
   isSubmitting,
-}: EditResellerSheetProps) {
+}: EditResellerDialogProps) {
   const editForm = useForm({
     defaultValues: buildEditDefaults(reseller),
     onSubmit: async ({ value }) => {
@@ -223,11 +223,18 @@ export function EditResellerSheet({
   }
 
   return (
-    <Sheet open={Boolean(reseller)} onOpenChange={() => onOpenChange(null)}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>Edit Reseller</SheetTitle>
-        </SheetHeader>
+    <Dialog
+      open={Boolean(reseller)}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onOpenChange(null);
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Reseller</DialogTitle>
+        </DialogHeader>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -316,7 +323,7 @@ export function EditResellerSheet({
               </label>
             )}
           </editForm.Field>
-          <SheetFooter>
+          <DialogFooter>
             <Button
               type="submit"
               disabled={isSubmitting || editForm.state.isSubmitting}
@@ -325,9 +332,9 @@ export function EditResellerSheet({
                 ? "Saving..."
                 : "Save Changes"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

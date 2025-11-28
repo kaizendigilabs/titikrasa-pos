@@ -21,12 +21,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils/cn';
@@ -117,7 +117,7 @@ export type MenuFormValues = {
   variants: VariantFormState;
 };
 
-type MenuFormSheetProps = {
+type MenuFormDialogProps = {
   open: boolean;
   mode: 'create' | 'edit';
   categories: Array<{ id: string; name: string }>;
@@ -127,7 +127,7 @@ type MenuFormSheetProps = {
   isSubmitting: boolean;
 };
 
-export function MenuFormSheet({
+export function MenuFormDialog({
   open,
   mode,
   categories,
@@ -135,7 +135,7 @@ export function MenuFormSheet({
   onOpenChange,
   onSubmit,
   isSubmitting,
-}: MenuFormSheetProps) {
+}: MenuFormDialogProps) {
   const form = useForm({
     defaultValues: initialValues,
     onSubmit: async ({ value }) => {
@@ -207,13 +207,13 @@ export function MenuFormSheet({
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="max-w-2xl">
-        <SheetHeader>
-          <SheetTitle>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
             {mode === 'create' ? 'Menu Baru' : 'Edit Menu'}
-          </SheetTitle>
-        </SheetHeader>
+          </DialogTitle>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-6">
           <section className="space-y-4">
@@ -386,7 +386,7 @@ export function MenuFormSheet({
             )}
           </section>
 
-          <SheetFooter className="justify-end gap-2">
+          <DialogFooter className="justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -402,10 +402,10 @@ export function MenuFormSheet({
                 ? 'Menyimpan...'
                 : 'Simpan'}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 

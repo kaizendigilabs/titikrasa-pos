@@ -17,6 +17,7 @@ interface MetricCardProps {
     value: number;
     isUp: boolean;
   };
+  placeholderTrendLabel?: string;
   description?: string;
   className?: string;
 }
@@ -25,6 +26,7 @@ export function MetricCard({
   title,
   value,
   trend,
+  placeholderTrendLabel,
   description,
   className,
 }: MetricCardProps) {
@@ -44,17 +46,28 @@ export function MetricCard({
             </Badge>
           </CardAction>
         )}
+        {!trend && placeholderTrendLabel && (
+          <CardAction>
+            <Badge variant="outline">{placeholderTrendLabel}</Badge>
+          </CardAction>
+        )}
       </CardHeader>
       {description && (
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            {trend?.isUp ? "Trending up" : "Trending down"}{" "}
-            {trend?.isUp ? (
-              <IconTrendingUp className="size-4" />
-            ) : (
-              <IconTrendingDown className="size-4" />
-            )}
-          </div>
+          {trend ? (
+            <div className="line-clamp-1 flex gap-2 font-medium">
+              {trend.isUp ? "Trending up" : "Trending down"}{" "}
+              {trend.isUp ? (
+                <IconTrendingUp className="size-4" />
+              ) : (
+                <IconTrendingDown className="size-4" />
+              )}
+            </div>
+          ) : (
+            placeholderTrendLabel && (
+              <div className="text-muted-foreground">{placeholderTrendLabel}</div>
+            )
+          )}
           <div className="text-muted-foreground">{description}</div>
         </CardFooter>
       )}

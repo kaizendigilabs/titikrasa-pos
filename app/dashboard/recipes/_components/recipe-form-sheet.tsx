@@ -2,19 +2,19 @@
 
 import * as React from 'react';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 import { RecipeForm } from '../RecipeForm';
 import { mapRecipeToFormValues } from '@/features/recipes/utils';
 import type { RecipeListItem } from '@/features/recipes/types';
 import type { RecipeInput } from '@/features/recipes/client';
 
-type RecipeFormSheetProps = {
+type RecipeFormDialogProps = {
   open: boolean;
   mode: 'create' | 'edit';
   recipe: RecipeListItem | null;
@@ -25,7 +25,7 @@ type RecipeFormSheetProps = {
   onSubmit: (input: RecipeInput) => Promise<void>;
 };
 
-export function RecipeFormSheet({
+export function RecipeFormDialog({
   open,
   mode,
   recipe,
@@ -34,23 +34,23 @@ export function RecipeFormSheet({
   isSubmitting,
   onOpenChange,
   onSubmit,
-}: RecipeFormSheetProps) {
+}: RecipeFormDialogProps) {
   const initialValues = React.useMemo(
     () => (recipe ? mapRecipeToFormValues(recipe) : null),
     [recipe],
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-3xl">
-        <SheetHeader className="space-y-1">
-          <SheetTitle>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader className="space-y-1">
+          <DialogTitle>
             {mode === 'create' ? 'Create Recipe' : 'Edit Recipe'}
-          </SheetTitle>
-          <SheetDescription>
+          </DialogTitle>
+          <DialogDescription>
             Update recipe details, ingredients, and method steps for the selected menu item.
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <RecipeForm
           mode={mode}
@@ -61,7 +61,7 @@ export function RecipeFormSheet({
           onCancel={() => onOpenChange(false)}
           initialValues={initialValues}
         />
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

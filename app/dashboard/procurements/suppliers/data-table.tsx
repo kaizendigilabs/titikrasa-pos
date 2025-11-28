@@ -4,8 +4,8 @@ import { DataTable } from "@/components/tables/data-table";
 import { DataTableToolbar } from "@/components/tables/data-table-toolbar";
 
 import {
-  InviteSupplierSheet,
-  EditSupplierSheet,
+  InviteSupplierDialog,
+  EditSupplierDialog,
 } from "./_components/forms";
 import {
   BulkDeleteDialog,
@@ -38,8 +38,8 @@ export function SuppliersTable(props: SuppliersTableProps) {
         <>
           {props.canManage ? (
             <>
-              <InviteSupplierSheet {...controller.inviteSheetProps} />
-              <EditSupplierSheet {...controller.editSheetProps} />
+              <InviteSupplierDialog {...controller.inviteSheetProps} />
+              <EditSupplierDialog {...controller.editSheetProps} />
             </>
           ) : null}
           <ToggleStatusDialog {...controller.dialogs.toggle} />

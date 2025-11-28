@@ -30,14 +30,14 @@ Dokumen ini melacak pekerjaan untuk merapikan modul Menu (daftar menu, kategori,
 - [x] Ganti `MenusTable.tsx` dengan struktur: `data-table.tsx` (client) + `_components/use-menus-table.ts`.
   - Hook mengelola `filters`, TanStack Query, realtime, state sheet/dialog, pending states.
   - `renderToolbar`: search, status/type select, category select, tombol reset + CTA “Menu Baru”.
-  - `renderAfterTable`: `MenuFormSheet`, delete dialog, status dialog, realtime listener.
+  - `renderAfterTable`: `MenuFormDialog`, delete dialog, status dialog, realtime listener.
 - [x] `createMenuColumns` gunakan `createActionColumn` (View/Edit/Delete/Toggle).
 - [x] Pagination & sorting pindah ke `useDataTableState` (tidak manual `useReactTable`).
 
 ### 3. Menu Form & Variant Builder
 - [x] Pindahkan ke TanStack Form:
   - Schema: `menuFormSchema` (Zod) untuk simple & variant. *(validasi ringan masih di form controller; bisa dipadukan dengan schema bila dibutuhkan)*.
-  - Komponen `MenuFormSheet` menampung form + steps (Info umum, Harga, Variant).
+  - Komponen `MenuFormDialog` menampung form + steps (Info umum, Harga, Variant).
 - [x] Reuse components:
   - `VariantSizeSelector`, `VariantTemperatureSelector`, `PriceMatrixTable`.
   - Validasi default size/temp otomatis + fallback.

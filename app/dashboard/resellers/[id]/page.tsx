@@ -11,15 +11,10 @@ import {
   requireActor,
 } from "@/features/users/server";
 import { getResellerDetail } from "@/features/resellers/server";
-import type {
-  ResellerCatalogEntry,
-  ResellerOrder,
-} from "@/features/resellers/types";
+import type { ResellerOrder } from "@/features/resellers/types";
 import { AppError, ERR } from "@/lib/utils/errors";
 import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
 
-import { CatalogHighlights } from "./_components/catalog-highlights";
-import { ResellerCatalogTable } from "./_components/catalog-table";
 import { ResellerInfoCards } from "./_components/info-cards";
 import { ResellerSummary } from "./_components/summary";
 import { ResellerTransactionsTable } from "./_components/orders-table";
@@ -73,17 +68,6 @@ export default async function ResellerDetailPage({
     },
   };
 
-  const initialCatalogData: DataTableQueryResult<ResellerCatalogEntry> = {
-    items: detail.catalogHighlights,
-    meta: {
-      pagination: {
-        page: 1,
-        pageSize: 8,
-        total: detail.catalogHighlights.length,
-      },
-    },
-  };
-
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-8 lg:py-10">
       <ResellerSummary
@@ -97,7 +81,7 @@ export default async function ResellerDetailPage({
         terms={detail.reseller.terms}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-1">
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Riwayat Transaksi</CardTitle>
@@ -109,20 +93,7 @@ export default async function ResellerDetailPage({
             />
           </CardContent>
         </Card>
-        <CatalogHighlights items={detail.catalogHighlights.slice(0, 5)} />
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Katalog Bahan / Menu</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0">
-          <ResellerCatalogTable
-            resellerId={detail.reseller.id}
-            initialData={initialCatalogData}
-          />
-        </CardContent>
-      </Card>
     </div>
   );
 }

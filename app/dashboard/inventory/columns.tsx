@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { IconAlertTriangle, IconPencil } from '@tabler/icons-react';
+import { IconAlertTriangle } from '@tabler/icons-react';
 import Link from 'next/link';
 
 import { DataTableColumnHeader } from '@/components/tables/data-table-column-header';

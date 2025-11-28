@@ -78,7 +78,7 @@ type UseMenuCategoriesTableControllerResult = {
   buildToolbarConfig: (
     context: DataTableRenderContext<MenuCategory, MenuCategoriesTableFilters>,
   ) => DataTableToolbarProps;
-  formSheetProps: CategoryFormController;
+  formDialogProps: CategoryFormController;
   dialogs: CategoryDialogs;
 };
 
@@ -299,7 +299,7 @@ export function useMenuCategoriesTableController({
     queryHook,
     getRowId: (row) => row.id,
     buildToolbarConfig,
-    formSheetProps: {
+    formDialogProps: {
       open: formState.open,
       mode: formState.mode,
       initialValues: formInitialValues,

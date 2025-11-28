@@ -62,7 +62,7 @@ export type RecipesTableControllerResult = {
     onEdit: () => void;
     onDelete: () => void;
   };
-  formSheetProps: {
+  formDialogProps: {
     open: boolean;
     mode: 'create' | 'edit';
     recipe: RecipeListItem | null;
@@ -299,7 +299,7 @@ export function useRecipesTableController({
       },
       canManage,
     },
-    formSheetProps: {
+    formDialogProps: {
       open: isFormOpen,
       mode: formMode,
       recipe: editingRecipe,

@@ -1,10 +1,4 @@
-import {
-  MENU_SIZES,
-  MENU_TEMPERATURES,
-  type MenuVariantsConfig,
-  type MenuSize,
-  type MenuTemperature,
-} from "./types";
+import { type MenuVariantsConfig, type MenuSize, type MenuTemperature } from "./types";
 import type { MenuVariantsInput } from "./schemas";
 import { formatCurrency } from "@/lib/utils/formatters";
 

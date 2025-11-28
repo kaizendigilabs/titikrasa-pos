@@ -51,6 +51,23 @@ export function SalesOverviewChart({
     );
   }
 
+  if (!isLoading && data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Sales Overview</CardTitle>
+          <CardDescription>Revenue trend for selected period</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-[300px] w-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+            <span>Tidak ada data pada rentang ini.</span>
+            <span className="text-xs">Coba ubah rentang tanggal atau tekan Refresh.</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

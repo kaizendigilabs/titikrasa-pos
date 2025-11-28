@@ -49,11 +49,11 @@ export type UseSupplierCatalogTableResult = {
   buildToolbarConfig: (
     context: DataTableRenderContext<SupplierCatalogWithLinks, SupplierCatalogTableFilters>,
   ) => DataTableToolbarProps;
-  createSheetProps?: {
+  createDialogProps?: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
   };
-  editSheetProps?: {
+  editDialogProps?: {
     supplierId: string;
     item: SupplierCatalogWithLinks;
     storeIngredients: StoreIngredientOption[];
@@ -362,13 +362,13 @@ export function useSupplierCatalogTableController({
     queryHook,
     getRowId: (row) => row.id,
     buildToolbarConfig,
-    createSheetProps: canManage
+    createDialogProps: canManage
       ? {
           open: createOpen,
           onOpenChange: setCreateOpen,
         }
       : undefined,
-    editSheetProps: editingItem
+    editDialogProps: editingItem
       ? {
           supplierId,
           item: editingItem,

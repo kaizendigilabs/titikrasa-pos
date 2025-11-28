@@ -47,6 +47,32 @@ export async function listRecipes(filters: RecipeFilters = {}) {
   };
 }
 
+export async function getRecipe(recipeId: string) {
+  const response = await fetch(`/api/recipes/${recipeId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  let payload: ApiEnvelope<{ recipe: RecipeListItem }> | null = null;
+  try {
+    payload = (await response.json()) as ApiEnvelope<{ recipe: RecipeListItem }>;
+  } catch (error) {
+    throw new AppError(
+      ERR.SERVER_ERROR.statusCode,
+      error instanceof Error ? error.message : "Unexpected response from server",
+    );
+  }
+
+  if (!response.ok || payload.error) {
+    throw new AppError(
+      payload.error?.code ?? response.status,
+      payload.error?.message ?? "Failed to load recipe",
+    );
+  }
+
+  return payload.data.recipe;
+}
+
 type RecipeInput = {
   menuId: string;
   version: number;

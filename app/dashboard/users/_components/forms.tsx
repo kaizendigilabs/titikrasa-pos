@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -39,7 +39,7 @@ export type InviteFormState = {
   password: string;
 };
 
-type InviteUserSheetProps = {
+type InviteUserDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: InviteFormState) => Promise<void>;
@@ -47,13 +47,13 @@ type InviteUserSheetProps = {
   roles: Array<{ id: string; name: string }>;
 };
 
-export function InviteUserSheet({
+export function InviteUserDialog({
   open,
   onOpenChange,
   onSubmit,
   isSubmitting,
   roles,
-}: InviteUserSheetProps) {
+}: InviteUserDialogProps) {
   const [showPassword, setShowPassword] = React.useState(false);
   const inviteForm = useForm({
     defaultValues: {
@@ -83,11 +83,11 @@ export function InviteUserSheet({
       : [...MANAGED_ROLES];
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>Invite User</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite User</DialogTitle>
+        </DialogHeader>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -202,7 +202,7 @@ export function InviteUserSheet({
               </div>
             )}
           </inviteForm.Field>
-          <SheetFooter>
+          <DialogFooter>
             <Button
               type="submit"
               disabled={isSubmitting || inviteForm.state.isSubmitting}
@@ -211,10 +211,10 @@ export function InviteUserSheet({
                 ? "Creating..."
                 : "Create User"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -225,7 +225,7 @@ export type EditFormState = {
   isActive: boolean;
 };
 
-type EditUserSheetProps = {
+type EditUserDialogProps = {
   user: UserListItem | null;
   onOpenChange: (user: UserListItem | null) => void;
   onSubmit: (payload: EditFormState) => Promise<void>;
@@ -233,13 +233,13 @@ type EditUserSheetProps = {
   roles: Array<{ id: string; name: string }>;
 };
 
-export function EditUserSheet({
+export function EditUserDialog({
   user,
   onOpenChange,
   onSubmit,
   isSubmitting,
   roles,
-}: EditUserSheetProps) {
+}: EditUserDialogProps) {
   const editForm = useForm({
     defaultValues: {
       name: user?.name ?? "",
@@ -282,11 +282,18 @@ export function EditUserSheet({
       : [...MANAGED_ROLES];
 
   return (
-    <Sheet open={Boolean(user)} onOpenChange={() => onOpenChange(null)}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>Edit User</SheetTitle>
-        </SheetHeader>
+    <Dialog
+      open={Boolean(user)}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onOpenChange(null);
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit User</DialogTitle>
+        </DialogHeader>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -364,7 +371,7 @@ export function EditUserSheet({
               </label>
             )}
           </editForm.Field>
-          <SheetFooter>
+          <DialogFooter>
             <Button
               type="submit"
               disabled={isSubmitting || editForm.state.isSubmitting}
@@ -373,9 +380,9 @@ export function EditUserSheet({
                 ? "Saving..."
                 : "Save Changes"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -4,7 +4,6 @@ import { SupplierTransactionsTable } from "./data-table";
 import { SupplierTransactionsActions } from "./_components/actions";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { getSupplierTransactionsBootstrap } from "@/features/procurements/suppliers/server";
-import { getPurchaseOrderFormOptions } from "@/features/procurements/purchase-orders/server";
 import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
 import type { SupplierOrder } from "@/features/procurements/suppliers/types";
 import { AppError, ERR } from "@/lib/utils/errors";
@@ -23,19 +22,13 @@ export default async function SupplierTransactionsPage({ params }: SupplierTrans
   let bootstrap:
     | Awaited<ReturnType<typeof getSupplierTransactionsBootstrap>>
     | null = null;
-  let formOptions: Awaited<ReturnType<typeof getPurchaseOrderFormOptions>> | null = null;
 
   try {
     actor = await requireActor();
     ensureAdminOrManager(actor.roles);
-    const [transactions, options] = await Promise.all([
-      getSupplierTransactionsBootstrap(actor, id, {
-        pageSize: DEFAULT_PAGE_SIZE,
-      }),
-      getPurchaseOrderFormOptions(actor),
-    ]);
-    bootstrap = transactions;
-    formOptions = options;
+    bootstrap = await getSupplierTransactionsBootstrap(actor, id, {
+      pageSize: DEFAULT_PAGE_SIZE,
+    });
   } catch (error) {
     if (error instanceof AppError && error.statusCode === ERR.FORBIDDEN.statusCode) {
       redirect(
@@ -51,7 +44,7 @@ export default async function SupplierTransactionsPage({ params }: SupplierTrans
     redirect("/dashboard/procurements/suppliers");
   }
 
-  if (!actor || !bootstrap || !formOptions) {
+  if (!actor || !bootstrap) {
     return null;
   }
 
@@ -62,7 +55,7 @@ export default async function SupplierTransactionsPage({ params }: SupplierTrans
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-8 lg:py-10">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-col">
           <h1 className="text-2xl font-semibold tracking-tight">
             {bootstrap.supplier.name} &mdash; Transactions
@@ -71,11 +64,7 @@ export default async function SupplierTransactionsPage({ params }: SupplierTrans
             Riwayat purchase order untuk supplier ini.
           </p>
         </div>
-        <SupplierTransactionsActions
-          supplierId={bootstrap.supplier.id}
-          suppliers={formOptions.suppliers}
-          catalogItems={formOptions.catalogItems}
-        />
+        <SupplierTransactionsActions supplierId={bootstrap.supplier.id} />
       </div>
 
       <SupplierTransactionsTable

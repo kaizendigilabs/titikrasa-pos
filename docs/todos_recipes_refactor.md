@@ -25,7 +25,7 @@ Dokumen ini melacak pekerjaan untuk merapikan modul Recipe (`/dashboard/recipes`
   - Kembalikan `{ initialRecipes, initialMeta, menus, ingredients }`.
 - [x] Endpoint `/api/recipes` untuk list + filters (search, menuId, pagination).
 - [x] Endpoint `/api/recipes/[id]` (`GET/PATCH/DELETE`) agar client tidak langsung ke Supabase.
-- [ ] Mutasi create/update/delete via route handler yang memanggil util existing (`toRecipeInsertPayload`, dll.).
+- [x] Mutasi create/update/delete via route handler yang memanggil util existing (`toRecipeInsertPayload`, dll.).
 
 ### 2. Recipes List UI
 - [x] Ganti `RecipesTable.tsx` dengan:
@@ -35,22 +35,22 @@ Dokumen ini melacak pekerjaan untuk merapikan modul Recipe (`/dashboard/recipes`
 - [x] Detail drawer diekstrak ke `_components/recipe-detail.tsx` agar controller hanya mengontrol open state.
 
 ### 3. Recipe Form
-- [ ] Rebuild `RecipeForm` menggunakan TanStack Form + Zod:
+- [x] Rebuild `RecipeForm` menggunakan TanStack Form + Zod:
   - Step Info (menu, version, effective date).
   - Step Ingredients (list builder, optional variant overrides).
   - Step Method (rich text or list).
-- [ ] Support variant override editor (size/temp combos) dengan component reusable.
-- [ ] Form sheet `RecipeFormSheet` menutup otomatis setelah submit sukses; pending state disable actions.
+- [x] Support variant override editor (size/temp combos) dengan component reusable.
+- [x] Form dialog `RecipeFormDialog` menutup otomatis setelah submit sukses; pending state disable actions.
 
 ### 4. Hooks & Utilities
-- [ ] Tambah `useRecipeDetail(recipeId)` untuk detail view (drawer + edit prefill).
-- [ ] Utility `formatRecipeVersion`, `formatIngredientLine`, dsb.
-- [ ] Consolidate variant override mapping di `features/recipes/utils`.
+- [x] Tambah `useRecipeDetail(recipeId)` untuk detail view (drawer + edit prefill).
+- [x] Utility `formatRecipeVersion`, `formatIngredientLine`, dsb.
+- [x] Consolidate variant override mapping di `features/recipes/utils`.
 
 ### 5. Dokumentasi & Testing
-- [ ] Buat `docs/tests_recipes_manual.md` (scenario: search/filter, create recipe, edit, delete, detail drawer, realtime).
-- [ ] Update `docs/todos_tables_refactor.md` + `AGENTS.md` setelah Recipes ikut pola.
-- [ ] Catat progres di dokumen ini seiring checklist selesai.
+- [x] Buat `docs/tests_recipes_manual.md` (scenario: search/filter, create recipe, edit, delete, detail drawer, realtime).
+- [x] Update `docs/todos_tables_refactor.md` + `AGENTS.md` setelah Recipes ikut pola.
+- [x] Catat progres di dokumen ini seiring checklist selesai.
 
 ---
 

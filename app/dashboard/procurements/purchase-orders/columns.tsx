@@ -48,18 +48,40 @@ export function createPurchaseOrderColumns(
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="PO ID" />
       ),
-      cell: ({ row }) => (
-        <span className="font-mono text-sm text-muted-foreground">{row.original.id}</span>
-      ),
+      cell: ({ row }) =>
+        actions?.onView ? (
+          <button
+            type="button"
+            onClick={() => actions.onView(row.original)}
+            className="font-mono text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {row.original.id}
+          </button>
+        ) : (
+          <span className="font-mono text-sm text-muted-foreground">
+            {row.original.id}
+          </span>
+        ),
     },
     {
       accessorKey: "supplier_name",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Supplier" />
       ),
-      cell: ({ row }) => (
-        <span className="text-sm text-foreground">{row.original.supplier_name}</span>
-      ),
+      cell: ({ row }) =>
+        actions?.onView ? (
+          <button
+            type="button"
+            onClick={() => actions.onView(row.original)}
+            className="text-sm text-left text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {row.original.supplier_name}
+          </button>
+        ) : (
+          <span className="text-sm text-foreground">
+            {row.original.supplier_name}
+          </span>
+        ),
     },
     {
       accessorKey: "status",

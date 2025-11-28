@@ -1,6 +1,7 @@
 import type { RecipeListItem } from "./types";
 import type { RecipeItem, RecipeMethodStep } from "./types";
 import type { TablesInsert } from "@/lib/types/database";
+import { formatCurrency } from "@/lib/utils/formatters";
 
 type RecipesTableInsert = TablesInsert<"recipes">;
 type VariantOverrideInsert = TablesInsert<"recipe_variant_overrides">;
@@ -99,4 +100,20 @@ function mapStepToForm(step: RecipeMethodStep) {
     stepNo: step.step_no,
     instruction: step.instruction,
   };
+}
+
+export function formatRecipeVersion(version: number) {
+  return `v${version}`;
+}
+
+export function formatIngredientLine(item: RecipeItem) {
+  return `${item.ingredientName ?? "Ingredient"} — ${item.quantity} ${item.uom}`;
+}
+
+export function summarizeRecipeCost(items: Array<{ quantity: number; price?: number }>) {
+  const total = items.reduce(
+    (sum, entry) => sum + entry.quantity * (entry.price ?? 0),
+    0,
+  );
+  return formatCurrency(total / 100);
 }

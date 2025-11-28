@@ -85,7 +85,7 @@ type UseMenusTableControllerResult = {
   buildToolbarConfig: (
     context: DataTableRenderContext<MenuListItem, MenusTableFilters>,
   ) => DataTableToolbarProps;
-  formSheetProps: MenuFormController;
+  formDialogProps: MenuFormController;
   dialogs: MenuDialogs;
 };
 
@@ -364,7 +364,7 @@ export function useMenusTableController({
     queryHook,
     getRowId: (row) => row.id,
     buildToolbarConfig,
-    formSheetProps: {
+    formDialogProps: {
       open: formState.open,
       mode: formState.mode,
       initialValues: formInitialValues,

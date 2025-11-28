@@ -2,7 +2,7 @@
 
 import { DataTable } from "@/components/tables/data-table";
 import { DataTableToolbar } from "@/components/tables/data-table-toolbar";
-import { InviteUserSheet, EditUserSheet } from "./_components/forms";
+import { InviteUserDialog, EditUserDialog } from "./_components/forms";
 import {
   BulkDeleteDialog,
   DeleteUserDialog,
@@ -35,8 +35,8 @@ export function UsersTable(props: UsersTableProps) {
         <>
           {props.canManage ? (
             <>
-              <InviteUserSheet {...controller.inviteSheetProps} />
-              <EditUserSheet {...controller.editSheetProps} />
+              <InviteUserDialog {...controller.inviteSheetProps} />
+              <EditUserDialog {...controller.editSheetProps} />
             </>
           ) : null}
           <ToggleStatusDialog {...controller.dialogs.toggle} />

@@ -14,6 +14,7 @@ import type {
   DashboardPendingPO,
   DashboardRangePayload,
   DashboardOrdersListResult,
+  DashboardSummaryResponse,
 } from "./types";
 
 type RawDashboardOrder = Database["public"]["Tables"]["orders"]["Row"] & {
@@ -25,6 +26,20 @@ type TransactionOrderRow = Pick<
   RawDashboardOrder,
   "id" | "number" | "channel" | "payment_status" | "totals" | "created_at"
 >;
+
+type NormalizedDashboardPayload = Omit<DashboardRangePayload, "limits"> & {
+  limits: {
+    orders: number;
+    transactions: number;
+    lowStock: number;
+    receivables: number;
+    pendingPurchaseOrders: number;
+  };
+  includeLowStock: boolean;
+  includeReceivables: boolean;
+  includePendingPurchaseOrders: boolean;
+  includeTransactions: boolean;
+};
 
 function mapOrderToTransaction(order: TransactionOrderRow): DashboardTransaction {
   const totals = parseTotals(order.totals as Json);
@@ -106,10 +121,28 @@ function createEmptyMetrics(): DashboardMetricSummary {
   };
 }
 
+function normalizePayload(payload: DashboardRangePayload): NormalizedDashboardPayload {
+  return {
+    ...payload,
+    limits: {
+      orders: payload.limits?.orders ?? 200,
+      transactions: payload.limits?.transactions ?? 8,
+      lowStock: payload.limits?.lowStock ?? 6,
+      receivables: payload.limits?.receivables ?? 6,
+      pendingPurchaseOrders: payload.limits?.pendingPurchaseOrders ?? 5,
+    },
+    includeLowStock: payload.includeLowStock ?? true,
+    includeReceivables: payload.includeReceivables ?? true,
+    includePendingPurchaseOrders: payload.includePendingPurchaseOrders ?? true,
+    includeTransactions: payload.includeTransactions ?? true,
+  };
+}
+
 export async function fetchDashboardSummary(
   actor: ActorContext,
   payload: DashboardRangePayload,
 ): Promise<DashboardSummary> {
+  const normalized = normalizePayload(payload);
   const metrics = createEmptyMetrics();
   const [ordersData, completedPoData, pipelinePoData, lowStockData, receivablesData] = await Promise.all([
     actor.supabase
@@ -132,32 +165,38 @@ export async function fetchDashboardSummary(
       .gte("created_at", payload.start)
       .lte("created_at", payload.end)
       .order("created_at", { ascending: false })
-      .limit(200),
+      .limit(normalized.limits.orders),
     actor.supabase
       .from("purchase_orders")
       .select("id, status, completed_at, totals")
       .eq("status", "complete")
       .gte("completed_at", payload.start)
       .lte("completed_at", payload.end),
-    actor.supabase
-      .from("purchase_orders")
-      .select("id, status, issued_at, totals")
-      .in("status", ["pending", "draft"])
-      .order("issued_at", { ascending: false })
-      .limit(10),
-    actor.supabase
-      .from("store_ingredients")
-      .select("id, name, current_stock, min_stock, base_uom")
-      .eq("is_active", true)
-      .order("current_stock", { ascending: true })
-      .limit(10),
-    actor.supabase
-      .from("orders")
-      .select("id, number, totals, due_date, reseller_id, resellers ( id, name ), payment_status, created_at")
-      .eq("channel", "reseller")
-      .eq("payment_status", "unpaid")
-      .order("due_date", { ascending: true })
-      .limit(20),
+    normalized.includePendingPurchaseOrders
+      ? actor.supabase
+          .from("purchase_orders")
+          .select("id, status, issued_at, totals")
+          .in("status", ["pending", "draft"])
+          .order("issued_at", { ascending: false })
+          .limit(normalized.limits.pendingPurchaseOrders)
+      : Promise.resolve({ data: [], error: null }),
+    normalized.includeLowStock
+      ? actor.supabase
+          .from("store_ingredients")
+          .select("id, name, current_stock, min_stock, base_uom")
+          .eq("is_active", true)
+          .order("current_stock", { ascending: true })
+          .limit(normalized.limits.lowStock)
+      : Promise.resolve({ data: [], error: null }),
+    normalized.includeReceivables
+      ? actor.supabase
+          .from("orders")
+          .select("id, number, totals, due_date, reseller_id, resellers ( id, name ), payment_status, created_at")
+          .eq("channel", "reseller")
+          .eq("payment_status", "unpaid")
+          .order("due_date", { ascending: true })
+          .limit(normalized.limits.receivables)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   if (ordersData.error) {
@@ -228,47 +267,68 @@ export async function fetchDashboardSummary(
 
   metrics.netProfit = metrics.revenue - metrics.expenses;
 
-  const lowStock: DashboardLowStock[] = (lowStockData.data ?? [])
-    .filter((item) => item.min_stock > 0 && item.current_stock <= item.min_stock)
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      currentStock: item.current_stock,
-      minStock: item.min_stock,
-      baseUom: item.base_uom,
-    }));
+  const lowStock: DashboardLowStock[] = normalized.includeLowStock
+    ? (lowStockData.data ?? [])
+        .filter((item) => item.min_stock > 0 && item.current_stock <= item.min_stock)
+        .map((item) => ({
+          id: item.id,
+          name: item.name,
+          currentStock: item.current_stock,
+          minStock: item.min_stock,
+          baseUom: item.base_uom,
+        }))
+    : [];
 
   metrics.lowStockCount = lowStock.length;
 
-  const receivables: DashboardReceivable[] = (receivablesData.data ?? []).map((order) => ({
-    id: order.id,
-    number: order.number,
-    resellerName: order.resellers?.name ?? null,
-    dueDate: order.due_date,
-    grandTotal: parseTotals(order.totals as Json).grand,
-  }));
+  const receivables: DashboardReceivable[] = normalized.includeReceivables
+    ? (receivablesData.data ?? []).map((order) => ({
+        id: order.id,
+        number: order.number,
+        resellerName: order.resellers?.name ?? null,
+        dueDate: order.due_date,
+        grandTotal: parseTotals(order.totals as Json).grand,
+      }))
+    : [];
 
   metrics.resellerReceivables = receivables.reduce((sum, item) => sum + item.grandTotal, 0);
 
-  const pendingPOs: DashboardPendingPO[] = pipelinePurchaseOrders
-    .slice(0, 5)
-    .map((po) => ({
-      id: po.id,
-      status: po.status,
-      issuedAt: po.issued_at,
-      totals: parseTotals(po.totals as Json).grand,
-    }));
+  const pendingPOs: DashboardPendingPO[] = normalized.includePendingPurchaseOrders
+    ? pipelinePurchaseOrders.slice(0, normalized.limits.pendingPurchaseOrders).map((po) => ({
+        id: po.id,
+        status: po.status,
+        issuedAt: po.issued_at,
+        totals: parseTotals(po.totals as Json).grand,
+      }))
+    : [];
 
   const summary: DashboardSummary = {
     metrics,
     chart,
-    transactions: transactions.slice(0, 8),
-    lowStock: lowStock.slice(0, 6),
-    receivables: receivables.slice(0, 6),
+    transactions: normalized.includeTransactions ? transactions.slice(0, normalized.limits.transactions) : [],
+    lowStock: lowStock.slice(0, normalized.limits.lowStock),
+    receivables: receivables.slice(0, normalized.limits.receivables),
     pendingPurchaseOrders: pendingPOs,
+    generatedAt: new Date().toISOString(),
   };
 
   return summary;
+}
+
+export async function getDashboardSummary(
+  actor: ActorContext,
+  payload: DashboardRangePayload,
+): Promise<DashboardSummaryResponse> {
+  const summary = await fetchDashboardSummary(actor, payload);
+  return {
+    data: { summary },
+    meta: {
+      range: payload.range,
+      start: payload.start,
+      end: payload.end,
+      generatedAt: summary.generatedAt,
+    },
+  };
 }
 
 function getBucketDate(date: Date, granularity: DashboardRangePayload["granularity"]): Date {

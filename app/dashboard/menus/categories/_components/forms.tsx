@@ -8,12 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { MenuCategory } from '@/features/menu-categories/types';
 import { toast } from 'sonner';
 
@@ -33,7 +33,7 @@ export type CategoryFormSubmitPayload = {
   isActive: boolean;
 };
 
-type CategoryFormSheetProps = {
+type CategoryFormDialogProps = {
   open: boolean;
   mode: 'create' | 'edit';
   initialValues: CategoryFormValues;
@@ -42,14 +42,14 @@ type CategoryFormSheetProps = {
   isSubmitting: boolean;
 };
 
-export function CategoryFormSheet({
+export function CategoryFormDialog({
   open,
   mode,
   initialValues,
   onOpenChange,
   onSubmit,
   isSubmitting,
-}: CategoryFormSheetProps) {
+}: CategoryFormDialogProps) {
   const [slugEdited, setSlugEdited] = React.useState(false);
   type CategoryFormApi = ReactFormExtendedApi<
     CategoryFormValues,
@@ -96,13 +96,13 @@ export function CategoryFormSheet({
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="max-w-xl">
-        <SheetHeader>
-          <SheetTitle>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>
             {mode === 'create' ? 'Kategori Baru' : 'Edit Kategori'}
-          </SheetTitle>
-        </SheetHeader>
+          </DialogTitle>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
           <form.Field name="name">
@@ -201,7 +201,7 @@ export function CategoryFormSheet({
             )}
           </form.Field>
 
-          <SheetFooter className="justify-end gap-2">
+          <DialogFooter className="justify-end gap-2">
             <Button
               type="button"
               variant="outline"
@@ -217,10 +217,10 @@ export function CategoryFormSheet({
                 ? 'Menyimpan...'
                 : 'Simpan'}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 

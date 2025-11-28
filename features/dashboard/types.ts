@@ -5,6 +5,17 @@ export type DashboardRangePayload = {
   start: string;
   end: string;
   granularity: "hourly" | "daily" | "monthly";
+  limits?: {
+    orders?: number;
+    transactions?: number;
+    lowStock?: number;
+    receivables?: number;
+    pendingPurchaseOrders?: number;
+  };
+  includeLowStock?: boolean;
+  includeReceivables?: boolean;
+  includePendingPurchaseOrders?: boolean;
+  includeTransactions?: boolean;
 };
 
 export type DashboardMetricSummary = {
@@ -66,6 +77,19 @@ export type DashboardSummary = {
   lowStock: DashboardLowStock[];
   receivables: DashboardReceivable[];
   pendingPurchaseOrders: DashboardPendingPO[];
+  generatedAt: string;
+};
+
+export type DashboardSummaryResponse = {
+  data: {
+    summary: DashboardSummary;
+  };
+  meta: {
+    range: DateRangeType;
+    start: string;
+    end: string;
+    generatedAt: string;
+  };
 };
 
 export type DashboardOrdersListResult = {

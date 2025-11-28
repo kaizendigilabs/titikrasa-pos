@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/tables/data-table-column-header";
 import { createActionColumn } from "@/components/tables/create-action-column";
 import type { UserListItem } from "@/features/users/types";
-import Link from "next/link";
 
 type UserActionHandlers = {
   onEdit: (user: UserListItem) => void;
@@ -55,14 +54,35 @@ export function createUserColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Name" />
       ),
-      cell: ({ row }) => (
-        <Link href={`/dashboard/users/${row.original.user_id}`}>
-          <p className="font-medium text-foreground">
-            {row.original.name ?? "—"}
-          </p>
-          <p className="text-sm text-muted-foreground">{row.original.email}</p>
-        </Link>
-      ),
+      cell: ({ row }) => {
+        const handleClick = () => {
+          if (!canManage) return;
+          onEdit(row.original);
+        };
+
+        const content = (
+          <>
+            <p className="font-medium text-foreground">
+              {row.original.name ?? "—"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {row.original.email}
+            </p>
+          </>
+        );
+
+        return canManage ? (
+          <button
+            type="button"
+            onClick={handleClick}
+            className="cursor-pointer text-left hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {content}
+          </button>
+        ) : (
+          content
+        );
+      },
     },
     {
       accessorKey: "role",

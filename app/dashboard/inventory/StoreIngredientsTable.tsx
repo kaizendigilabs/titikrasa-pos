@@ -2,10 +2,7 @@
 
 import { DataTable } from "@/components/tables/data-table";
 import { DataTableToolbar } from "@/components/tables/data-table-toolbar";
-import {
-  StoreIngredientEditSheet,
-  type StoreIngredientFormValues,
-} from "./_components/edit-sheet";
+import { StoreIngredientEditDialog } from "./_components/edit-sheet";
 import {
   useStoreIngredientsTableController,
   type UseStoreIngredientsTableControllerArgs,
@@ -29,8 +26,8 @@ export function StoreIngredientsTable(props: StoreIngredientsTableProps) {
         <DataTableToolbar {...controller.buildToolbarConfig(context)} />
       )}
       renderAfterTable={() =>
-        controller.editSheetProps ? (
-          <StoreIngredientEditSheet {...controller.editSheetProps} />
+        controller.editDialogProps ? (
+          <StoreIngredientEditDialog {...controller.editDialogProps} />
         ) : null
       }
     />

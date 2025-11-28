@@ -60,14 +60,53 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
         event.preventDefault();
         void form.handleSubmit();
       }}
-      className="grid gap-4 md:grid-cols-4"
+      className="flex flex-col gap-6"
     >
-      <form.Field name="name">
+      <div className="grid gap-4 md:grid-cols-2">
+        <form.Field name="name">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor="catalog-name">Item name</Label>
+              <Input
+                id="catalog-name"
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+                onBlur={field.handleBlur}
+                required
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="baseUom">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor="catalog-base-uom">Base UOM</Label>
+              <select
+                id="catalog-base-uom"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+                onBlur={field.handleBlur}
+              >
+                {BASE_UOMS.map((uom) => (
+                  <option key={uom} value={uom}>
+                    {uom.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </form.Field>
+      </div>
+      <form.Field name="purchasePrice">
         {(field) => (
           <div className="space-y-2">
-            <Label htmlFor="catalog-name">Item name</Label>
+            <Label htmlFor="catalog-price">Purchase price (IDR)</Label>
             <Input
-              id="catalog-name"
+              id="catalog-price"
+              type="text"
+              inputMode="decimal"
+              placeholder="Contoh: 185000"
               value={field.state.value}
               onChange={(event) => field.handleChange(event.target.value)}
               onBlur={field.handleBlur}
@@ -76,52 +115,14 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
           </div>
         )}
       </form.Field>
-      <form.Field name="baseUom">
-        {(field) => (
-          <div className="space-y-2">
-            <Label htmlFor="catalog-base-uom">Base UOM</Label>
-            <select
-              id="catalog-base-uom"
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={field.state.value}
-              onChange={(event) => field.handleChange(event.target.value)}
-              onBlur={field.handleBlur}
-            >
-              {BASE_UOMS.map((uom) => (
-                <option key={uom} value={uom}>
-                  {uom.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </form.Field>
-      <form.Field name="purchasePrice">
-        {(field) => (
-          <div className="space-y-2">
-            <Label htmlFor="catalog-price">Purchase price (IDR)</Label>
-            <div className="flex gap-2">
-              <Input
-                id="catalog-price"
-                type="text"
-                inputMode="decimal"
-                placeholder="Contoh: 185000"
-                value={field.state.value}
-                onChange={(event) => field.handleChange(event.target.value)}
-                onBlur={field.handleBlur}
-                required
-              />
-              <Button
-                type="submit"
-                className="shrink-0"
-                disabled={createMutation.isPending || form.state.isSubmitting}
-              >
-                {createMutation.isPending || form.state.isSubmitting ? 'Adding…' : 'Add'}
-              </Button>
-            </div>
-          </div>
-        )}
-      </form.Field>
+      <div className="flex justify-end border-t pt-4">
+        <Button
+          type="submit"
+          disabled={createMutation.isPending || form.state.isSubmitting}
+        >
+          {createMutation.isPending || form.state.isSubmitting ? "Adding…" : "Add item"}
+        </Button>
+      </div>
     </form>
   );
 }

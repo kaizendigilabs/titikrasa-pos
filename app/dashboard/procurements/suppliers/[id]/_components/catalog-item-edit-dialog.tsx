@@ -7,12 +7,12 @@ import { useForm } from "@tanstack/react-form";
 
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import type {
@@ -31,7 +31,7 @@ import { CatalogLinkEntry } from "../../CatalogLinkEntry";
 
 const BASE_UOMS = ["gr", "ml", "pcs"] as const;
 
-type CatalogItemEditSheetProps = {
+type CatalogItemEditDialogProps = {
   supplierId: string;
   item: SupplierCatalogWithLinks;
   storeIngredients: StoreIngredientOption[];
@@ -39,13 +39,13 @@ type CatalogItemEditSheetProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export function CatalogItemEditSheet({
+export function CatalogItemEditDialog({
   supplierId,
   item,
   storeIngredients,
   open,
   onOpenChange,
-}: CatalogItemEditSheetProps) {
+}: CatalogItemEditDialogProps) {
   const router = useRouter();
   const updateMutation = useUpdateCatalogItemMutation(supplierId);
 
@@ -90,12 +90,12 @@ export function CatalogItemEditSheet({
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="max-w-2xl">
-        <SheetHeader>
-          <SheetTitle>Edit Catalog Item</SheetTitle>
-        </SheetHeader>
-        <div className="mt-6 space-y-6">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit Catalog Item</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6">
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -156,7 +156,7 @@ export function CatalogItemEditSheet({
                 )}
               </form.Field>
             </div>
-            <SheetFooter>
+            <DialogFooter>
               <Button
                 type="submit"
                 disabled={updateMutation.isPending || form.state.isSubmitting}
@@ -165,7 +165,7 @@ export function CatalogItemEditSheet({
                   ? "Saving…"
                   : "Save changes"}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
 
           <div className="space-y-4">
@@ -196,7 +196,7 @@ export function CatalogItemEditSheet({
             </div>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

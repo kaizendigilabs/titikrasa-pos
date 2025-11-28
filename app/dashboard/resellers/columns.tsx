@@ -52,12 +52,15 @@ export function createResellerColumns({
         <DataTableColumnHeader column={column} title="Name" />
       ),
       cell: ({ row }) => (
-        <Link href={`/dashboard/resellers/${row.original.id}`}>
+        <Link
+          href={`/dashboard/resellers/${row.original.id}`}
+          className="text-left hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <p className="font-medium text-foreground">
-            {row.original.name ?? '—'}
+            {row.original.name ?? "—"}
           </p>
           <p className="text-sm text-muted-foreground">
-            {row.original.contact.email ?? '—'}
+            {row.original.contact.email ?? "—"}
           </p>
         </Link>
       ),

@@ -98,7 +98,7 @@ export function OrderHistoryTable({ range, pageSize = 8 }: OrderHistoryTableProp
           </p>
         </div>
         <Button asChild variant="outline" size="sm" className="h-8 rounded-full px-4 text-xs">
-          <Link href="/dashboard/pos">View POS</Link>
+          <Link href="/dashboard/pos">Lihat semua pesanan</Link>
         </Button>
       </div>
 

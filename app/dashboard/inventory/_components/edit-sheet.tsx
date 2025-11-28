@@ -4,12 +4,12 @@ import * as React from "react";
 import { useForm } from "@tanstack/react-form";
 
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -22,7 +22,7 @@ export type StoreIngredientFormValues = {
   isActive: boolean;
 };
 
-type StoreIngredientEditSheetProps = {
+type StoreIngredientEditDialogProps = {
   ingredient: StoreIngredientListItem | null;
   isSubmitting: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,12 +37,12 @@ const buildDefaults = (
   isActive: ingredient?.isActive ?? true,
 });
 
-export function StoreIngredientEditSheet({
+export function StoreIngredientEditDialog({
   ingredient,
   isSubmitting,
   onOpenChange,
   onSubmit,
-}: StoreIngredientEditSheetProps) {
+}: StoreIngredientEditDialogProps) {
   const form = useForm({
     defaultValues: buildDefaults(ingredient),
     onSubmit: async ({ value }) => {
@@ -57,11 +57,11 @@ export function StoreIngredientEditSheet({
   const open = Boolean(ingredient);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Edit Store Ingredient</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Store Ingredient</DialogTitle>
+        </DialogHeader>
         <form
           className="mt-4 flex flex-col gap-4"
           onSubmit={(event) => {
@@ -122,13 +122,13 @@ export function StoreIngredientEditSheet({
             )}
           </form.Field>
 
-          <SheetFooter>
+          <DialogFooter>
             <Button type="submit" disabled={isSubmitting || !ingredient}>
               {isSubmitting ? "Saving..." : "Save changes"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

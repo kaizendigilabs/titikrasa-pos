@@ -88,6 +88,11 @@ export function dashboardSummaryQueryOptions(range: DateRangeType) {
     queryKey: dashboardSummaryQueryKey(range),
     queryFn: () => fetchDashboardSummary(range),
     staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    retry: 1,
   });
 }
 

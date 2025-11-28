@@ -1,11 +1,6 @@
-import type {
-  ResellerCatalogEntry,
-  ResellerListItem,
-  ResellerOrder,
-} from "./types";
+import type { ResellerListItem, ResellerOrder } from "./types";
 import type {
   CreateResellerPayload,
-  ResellerCatalogFilters,
   ResellerFilters,
   ResellerOrderFilters,
   UpdateResellerPayload,
@@ -36,10 +31,6 @@ export type ResellerOrdersResponse = {
   items: ResellerOrder[];
 };
 
-export type ResellerCatalogResponse = {
-  items: ResellerCatalogEntry[];
-};
-
 function transformListItem(payload: any): ResellerListItem {
   return {
     id: payload.id,
@@ -62,17 +53,6 @@ function transformOrder(payload: any): ResellerOrder {
     totalAmount: payload.totalAmount ?? payload.total_amount ?? 0,
     createdAt: payload.createdAt ?? payload.created_at,
     paidAt: payload.paidAt ?? payload.paid_at ?? null,
-  };
-}
-
-function transformCatalogEntry(payload: any): ResellerCatalogEntry {
-  return {
-    menuId: payload.menuId ?? payload.menu_id,
-    menuName: payload.menuName ?? payload.menu_name ?? "Menu",
-    thumbnailUrl: payload.thumbnailUrl ?? payload.thumbnail_url ?? null,
-    totalQty: payload.totalQty ?? payload.total_qty ?? 0,
-    lastOrderAt: payload.lastOrderAt ?? payload.last_order_at ?? null,
-    lastPrice: payload.lastPrice ?? payload.last_price ?? null,
   };
 }
 
@@ -197,28 +177,6 @@ export async function listResellerOrders(
 
   return {
     items: response.data.items.map(transformOrder),
-    meta: (response.meta as ResellerListMeta | null) ?? null,
-  };
-}
-
-export async function listResellerCatalog(
-  resellerId: string,
-  filters: ResellerCatalogFilters,
-) {
-  const searchParams = new URLSearchParams();
-  searchParams.set("page", String(filters.page));
-  searchParams.set("pageSize", String(filters.pageSize));
-  if (filters.search?.trim()) {
-    searchParams.set("search", filters.search.trim());
-  }
-
-  const response = await request<ResellerCatalogResponse>(
-    `/api/resellers/${resellerId}/catalog?${searchParams.toString()}`,
-    { method: "GET" },
-  );
-
-  return {
-    items: response.data.items.map(transformCatalogEntry),
     meta: (response.meta as ResellerListMeta | null) ?? null,
   };
 }

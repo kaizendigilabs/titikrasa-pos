@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { toast } from "sonner";
 
 import type { DataTableRenderContext } from "@/components/tables/data-table";
 import {
@@ -12,14 +11,8 @@ import {
 } from "@/components/tables/use-data-table-state";
 import type { DataTableToolbarProps } from "@/components/tables/data-table-toolbar";
 import { Badge } from "@/components/ui/badge";
-import DateRangeFilter from "@/components/shared/DateRangeFilter";
-import type { DateRangeType } from "@/lib/utils/date-helpers";
-import { getDateRange } from "@/lib/utils/date-helpers";
 import type { PurchaseHistoryEntry } from "@/features/inventory/store-ingredients/types";
-import {
-  useExportPurchaseHistoryMutation,
-  usePurchaseHistory,
-} from "@/features/inventory/store-ingredients/hooks";
+import { usePurchaseHistory } from "@/features/inventory/store-ingredients/hooks";
 import type { PurchaseHistoryFilters } from "@/features/inventory/store-ingredients/schemas";
 import type { PurchaseHistoryMeta } from "@/features/inventory/store-ingredients/client";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/formatters";
@@ -178,10 +171,6 @@ export function usePurchaseHistoryTableController({
 
   const columns = React.useMemo(() => createColumns(), []);
   const queryHook = usePurchaseHistoryQuery(ingredientId);
-  const [rangePreset, setRangePreset] = React.useState<DateRangeType | null>(
-    null,
-  );
-  const exportMutation = useExportPurchaseHistoryMutation(ingredientId);
 
   const buildToolbarConfig = React.useCallback(
     (
@@ -192,46 +181,7 @@ export function usePurchaseHistoryTableController({
     ): DataTableToolbarProps => {
       const showReset =
         context.filters.search.trim().length > 0 ||
-        context.filters.supplierId !== "all" ||
-        Boolean(context.filters.from || context.filters.to);
-
-      const handleRangeChange = (preset: DateRangeType) => {
-        setRangePreset(preset);
-        const { start, end } = getDateRange(preset);
-        context.updateFilters(
-          {
-            from: start.toISOString(),
-            to: end.toISOString(),
-          },
-          { resetPage: true },
-        );
-      };
-
-      const handleExport = async () => {
-        try {
-          const filters: PurchaseHistoryFilters = {
-            page: context.filters.page,
-            pageSize: context.filters.pageSize,
-            supplierId:
-              context.filters.supplierId !== "all"
-                ? context.filters.supplierId
-                : undefined,
-            from: context.filters.from ?? undefined,
-            to: context.filters.to ?? undefined,
-            search: context.filters.search.trim()
-              ? context.filters.search.trim()
-              : undefined,
-          };
-          await exportMutation.mutateAsync(filters);
-          toast.success("Export started");
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Failed to export purchase history";
-          toast.error(message);
-        }
-      };
+        context.filters.supplierId !== "all";
 
       return {
         search: {
@@ -262,38 +212,10 @@ export function usePurchaseHistoryTableController({
             placeholder: "Supplier",
             disabled: context.isSyncing,
           },
-          {
-            type: "custom",
-            id: "date-range",
-            element: (
-              <div className="flex items-center gap-3">
-                <DateRangeFilter
-                  value={rangePreset ?? "month"}
-                  onChange={handleRangeChange}
-                />
-                {context.filters.from || context.filters.to ? (
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground underline"
-                    onClick={() => {
-                      setRangePreset(null);
-                      context.updateFilters(
-                        { from: null, to: null },
-                        { resetPage: true },
-                      );
-                    }}
-                  >
-                    Clear dates
-                  </button>
-                ) : null}
-              </div>
-            ),
-          },
         ],
         reset: {
           visible: showReset,
           onReset: () => {
-            setRangePreset(null);
             context.updateFilters(
               {
                 search: "",
@@ -309,19 +231,9 @@ export function usePurchaseHistoryTableController({
         status: {
           isSyncing: context.isSyncing,
         },
-        secondaryActions: (
-          <button
-            type="button"
-            className="text-sm text-primary underline"
-            onClick={handleExport}
-            disabled={exportMutation.isPending || context.isSyncing}
-          >
-            Export CSV
-          </button>
-        ),
       };
     },
-    [exportMutation, rangePreset, suppliers],
+    [suppliers],
   );
 
   return {

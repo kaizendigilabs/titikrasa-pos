@@ -9,6 +9,7 @@ import * as React from "react";
 import {
   createRecipe,
   deleteRecipe,
+  getRecipe,
   listRecipes,
   updateRecipe,
   type RecipeInput,
@@ -123,5 +124,22 @@ export function useDeleteRecipeMutation() {
         queryKey: [RECIPES_QUERY_KEY],
       });
     },
+  });
+}
+
+export function useRecipeDetail(
+  recipeId: string | null,
+  options: { enabled?: boolean } = {},
+) {
+  const enabled = options.enabled ?? true;
+  return useQuery({
+    queryKey: [RECIPES_QUERY_KEY, "detail", recipeId],
+    queryFn: () => {
+      if (!recipeId) throw new Error("Recipe id missing");
+      return getRecipe(recipeId);
+    },
+    enabled: enabled && Boolean(recipeId),
+    staleTime: 1000 * 30,
+    gcTime: 1000 * 60 * 30,
   });
 }

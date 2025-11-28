@@ -3,12 +3,7 @@
 import * as React from "react";
 
 import type { DataTableRenderContext } from "@/components/tables/data-table";
-import {
-  type DataTableQueryHook,
-  type DataTableQueryResult,
-  type PaginationFilters,
-  useDataTableState,
-} from "@/components/tables/use-data-table-state";
+import { type DataTableQueryResult, type PaginationFilters } from "@/components/tables/use-data-table-state";
 import type { DataTableToolbarProps } from "@/components/tables/data-table-toolbar";
 import { createSupplierTransactionColumns } from "../columns";
 import { useSupplierOrders } from "@/features/procurements/suppliers/hooks";
@@ -42,14 +37,6 @@ export function useSupplierTransactionsTable({
   );
 
   const columns = React.useMemo(() => createSupplierTransactionColumns(), []);
-
-  const controller = useDataTableState<SupplierOrder, SupplierTransactionsFilters>({
-    columns,
-    initialFilters,
-    queryHook: useSupplierTransactionsDataTableQuery,
-    initialData,
-    getRowId: (row) => row.id,
-  });
 
   const buildToolbarConfig = React.useCallback(
     (

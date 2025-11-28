@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { SupplierListItem } from "@/features/procurements/suppliers/types";
 
@@ -29,14 +29,14 @@ export type SupplierEditFormValues = SupplierFormValues & {
   isActive: boolean;
 };
 
-type InviteSupplierSheetProps = {
+type InviteSupplierDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: SupplierFormValues) => Promise<void>;
   isSubmitting: boolean;
 };
 
-type EditSupplierSheetProps = {
+type EditSupplierDialogProps = {
   supplier: SupplierListItem | null;
   onOpenChange: (supplier: SupplierListItem | null) => void;
   onSubmit: (values: SupplierEditFormValues) => Promise<void>;
@@ -62,12 +62,12 @@ const buildEditDefaults = (supplier: SupplierListItem | null): SupplierEditFormV
   isActive: supplier?.is_active ?? true,
 });
 
-export function InviteSupplierSheet({
+export function InviteSupplierDialog({
   open,
   onOpenChange,
   onSubmit,
   isSubmitting,
-}: InviteSupplierSheetProps) {
+}: InviteSupplierDialogProps) {
   const form = useForm({
     defaultValues: DEFAULT_VALUES,
     onSubmit: async ({ value }) => {
@@ -84,11 +84,11 @@ export function InviteSupplierSheet({
   }, [form, open]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>Invite Supplier</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite Supplier</DialogTitle>
+        </DialogHeader>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -182,23 +182,23 @@ export function InviteSupplierSheet({
               </div>
             )}
           </form.Field>
-          <SheetFooter>
+          <DialogFooter>
             <Button type="submit" disabled={isSubmitting || form.state.isSubmitting}>
               {isSubmitting || form.state.isSubmitting ? "Creating..." : "Create Supplier"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-export function EditSupplierSheet({
+export function EditSupplierDialog({
   supplier,
   onOpenChange,
   onSubmit,
   isSubmitting,
-}: EditSupplierSheetProps) {
+}: EditSupplierDialogProps) {
   const form = useForm({
     defaultValues: buildEditDefaults(supplier),
     onSubmit: async ({ value }) => {
@@ -224,11 +224,18 @@ export function EditSupplierSheet({
   }
 
   return (
-    <Sheet open={Boolean(supplier)} onOpenChange={() => onOpenChange(null)}>
-      <SheetContent side="right">
-        <SheetHeader>
-          <SheetTitle>Edit Supplier</SheetTitle>
-        </SheetHeader>
+    <Dialog
+      open={Boolean(supplier)}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onOpenChange(null);
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Supplier</DialogTitle>
+        </DialogHeader>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -265,13 +272,13 @@ export function EditSupplierSheet({
               </label>
             )}
           </form.Field>
-          <SheetFooter>
+          <DialogFooter>
             <Button type="submit" disabled={isSubmitting || form.state.isSubmitting}>
               {isSubmitting || form.state.isSubmitting ? "Saving..." : "Save changes"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

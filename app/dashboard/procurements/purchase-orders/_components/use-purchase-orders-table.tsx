@@ -34,7 +34,7 @@ import type {
   PurchaseOrderSupplierOption,
 } from "@/features/procurements/purchase-orders/types";
 import { AppError } from "@/lib/utils/errors";
-import type { PurchaseOrderCreateSheetProps, PurchaseOrderFormValues } from "./forms";
+import type { PurchaseOrderCreateDialogProps, PurchaseOrderFormValues } from "./forms";
 import type {
   PurchaseOrderDeleteDialogProps,
   PurchaseOrderDetailDialogProps,
@@ -65,9 +65,9 @@ export type UsePurchaseOrdersTableControllerArgs = {
   canManage: boolean;
 };
 
-export type PurchaseOrderCreateSheetController = {
-  sheetProps: PurchaseOrderCreateSheetProps;
-  openSheet: (defaults?: { supplierId?: string }) => void;
+export type PurchaseOrderCreateDialogController = {
+  dialogProps: PurchaseOrderCreateDialogProps;
+  openDialog: (defaults?: { supplierId?: string }) => void;
 };
 
 export type UsePurchaseOrdersTableResult = {
@@ -79,7 +79,7 @@ export type UsePurchaseOrdersTableResult = {
   buildToolbarConfig: (
     context: DataTableRenderContext<PurchaseOrderListItem, PurchaseOrdersTableFilters>,
   ) => DataTableToolbarProps;
-  createSheetProps?: PurchaseOrderCreateSheetProps;
+  createDialogProps?: PurchaseOrderCreateDialogProps;
   detailDialogProps: PurchaseOrderDetailDialogProps;
   deleteDialogProps: PurchaseOrderDeleteDialogProps;
 };
@@ -101,15 +101,15 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
-export function usePurchaseOrderCreateSheetController({
+export function usePurchaseOrderCreateDialogController({
   suppliers,
   catalogItems,
 }: {
   suppliers: PurchaseOrderSupplierOption[];
   catalogItems: PurchaseOrderCatalogItem[];
-}): PurchaseOrderCreateSheetController {
+}): PurchaseOrderCreateDialogController {
   const createPurchaseOrderMutation = useCreatePurchaseOrderMutation();
-  const [sheetState, setSheetState] = React.useState<{
+  const [dialogState, setDialogState] = React.useState<{
     open: boolean;
     supplierId?: string;
     version: number;
@@ -166,7 +166,7 @@ export function usePurchaseOrderCreateSheetController({
         const payload = mapFormValues(values);
         await createPurchaseOrderMutation.mutateAsync(payload);
         toast.success("Purchase order dibuat");
-        setSheetState((prev) => ({ ...prev, open: false }));
+        setDialogState((prev) => ({ ...prev, open: false }));
       } catch (error) {
         toast.error(getErrorMessage(error, "Gagal membuat purchase order"));
       }
@@ -174,9 +174,9 @@ export function usePurchaseOrderCreateSheetController({
     [createPurchaseOrderMutation, mapFormValues],
   );
 
-  const openSheet = React.useCallback(
+  const openDialog = React.useCallback(
     (defaults?: { supplierId?: string }) => {
-      setSheetState((prev) => ({
+      setDialogState((prev) => ({
         open: true,
         supplierId: defaults?.supplierId ?? prev.supplierId,
         version: prev.version + 1,
@@ -185,11 +185,11 @@ export function usePurchaseOrderCreateSheetController({
     [],
   );
 
-  const sheetProps: PurchaseOrderCreateSheetProps = React.useMemo(
+  const dialogProps: PurchaseOrderCreateDialogProps = React.useMemo(
     () => ({
-      open: sheetState.open,
+      open: dialogState.open,
       onOpenChange: (open) =>
-        setSheetState((prev) => ({
+        setDialogState((prev) => ({
           ...prev,
           open,
         })),
@@ -198,24 +198,24 @@ export function usePurchaseOrderCreateSheetController({
       suppliers,
       catalogItems,
       prefill: {
-        supplierId: sheetState.supplierId,
-        version: sheetState.version,
+        supplierId: dialogState.supplierId,
+        version: dialogState.version,
       },
     }),
     [
       catalogItems,
       createPurchaseOrderMutation.isPending,
       handleSubmit,
-      sheetState.open,
-      sheetState.supplierId,
-      sheetState.version,
+      dialogState.open,
+      dialogState.supplierId,
+      dialogState.version,
       suppliers,
     ],
   );
 
   return {
-    sheetProps,
-    openSheet,
+    dialogProps,
+    openDialog,
   };
 }
 
@@ -241,11 +241,11 @@ export function usePurchaseOrdersTableController({
     [initialMeta],
   );
 
-  const createSheetController = usePurchaseOrderCreateSheetController({
+  const createDialogController = usePurchaseOrderCreateDialogController({
     suppliers,
     catalogItems,
   });
-  const { sheetProps, openSheet } = createSheetController;
+  const { dialogProps, openDialog } = createDialogController;
 
   const [selectedOrder, setSelectedOrder] = React.useState<PurchaseOrderListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<PurchaseOrderListItem | null>(
@@ -295,8 +295,9 @@ export function usePurchaseOrdersTableController({
         toast.error(getErrorMessage(error, "Gagal memperbarui status"));
       } finally {
         setPendingStatus((prev) => {
-          const { [order.id]: _omit, ...rest } = prev;
-          return rest;
+          const next = { ...prev };
+          delete next[order.id];
+          return next;
         });
       }
     },
@@ -374,14 +375,14 @@ export function usePurchaseOrdersTableController({
           isSyncing: context.isSyncing,
         },
         primaryAction: canManage ? (
-          <Button onClick={() => openSheet()}>
+          <Button onClick={() => openDialog()}>
             <IconPlus className="mr-2 size-4" />
             Purchase Order
           </Button>
         ) : undefined,
       };
     },
-    [canManage, openSheet],
+    [canManage, openDialog],
   );
 
   const detailDialogProps: PurchaseOrderDetailDialogProps = {
@@ -424,7 +425,7 @@ export function usePurchaseOrdersTableController({
     queryHook,
     getRowId: (row) => row.id,
     buildToolbarConfig,
-    createSheetProps: canManage ? sheetProps : undefined,
+    createDialogProps: canManage ? dialogProps : undefined,
     detailDialogProps,
     deleteDialogProps,
   };

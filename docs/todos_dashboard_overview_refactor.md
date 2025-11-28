@@ -19,20 +19,20 @@ Dokumen ini memetakan pekerjaan untuk merapikan halaman Dashboard Overview (`/da
 ## ✅ Rencana Detail
 
 ### 1. Data Layer & API
-- [ ] Tambahkan helper `getDashboardSummary(actor, payload)` yang bisa dipanggil baik SSR maupun API; pastikan shape `{ data, error, meta }`.
-- [ ] Perluas payload agar bisa menerima `limit`, `includeReceivables`, dll, namun tetap default ringan.
-- [ ] Audit `fetchDashboardSummary` agar:
-  - [ ] Memakai typed selects + `parseTotals` di level mapper.
-  - [ ] Menyediakan `updatedAt` / `generatedAt` timestamp untuk invalidasi cache.
-  - [ ] Memisahkan query berat (low stock, receivables, pending PO) supaya bisa di-load lazy bila diperlukan.
+- [x] Tambahkan helper `getDashboardSummary(actor, payload)` yang bisa dipanggil baik SSR maupun API; pastikan shape `{ data, error, meta }`.
+- [x] Perluas payload agar bisa menerima `limit`, `includeReceivables`, dll, namun tetap default ringan.
+- [x] Audit `fetchDashboardSummary` agar:
+  - [x] Memakai typed selects + `parseTotals` di level mapper.
+  - [x] Menyediakan `updatedAt` / `generatedAt` timestamp untuk invalidasi cache.
+  - [x] Memisahkan query berat (low stock, receivables, pending PO) supaya bisa di-load lazy bila diperlukan.
 - [x] Pastikan API route mengembalikan `ok({ data, meta })` sesuai standar BFF (termasuk endpoint baru `/api/dashboard/orders`).
 
 ### 2. Hybrid Client Flow
 - [x] Bungkus dashboard summary dalam TanStack Query (mis. key `["dashboard-summary", range]`) dengan dehydrasi via `HydrationBoundary`.
 - [x] `DashboardOverviewClient` cukup membaca data dari query hook (`useDashboardSummary(range)`), dan memicu refetch melalui query API, bukan `fetch` manual.
-- [ ] Simpan snapshot terakhir di localStorage/IndexedDB (optional) agar reload offline tetap menampilkan data terakhir.
-- [ ] Tambahkan background refetch interval (mis. setiap 60 detik) + tombol manual “Refresh”.
-- [ ] Hook-kan Supabase realtime channel orders untuk men-trigger `queryClient.invalidateQueries(["dashboard-summary"])` saat ada order baru terbuat.
+- [x] Simpan snapshot terakhir di localStorage/IndexedDB (optional) agar reload offline tetap menampilkan data terakhir.
+- [x] Tambahkan background refetch interval (mis. setiap 60 detik) + tombol manual “Refresh”.
+- [x] Hook-kan Supabase realtime channel orders untuk men-trigger `queryClient.invalidateQueries(["dashboard-summary"])` saat ada order baru terbuat.
 
 ### 3. Order History Table (Reusable)
 - [x] Pindahkan table ke pattern `data-table.tsx`:
@@ -42,15 +42,15 @@ Dokumen ini memetakan pekerjaan untuk merapikan halaman Dashboard Overview (`/da
 - [x] Pastikan table mendukung skeleton/loading state bawaan DataTable shell.
 
 ### 4. UI/UX Enhancements
-- [ ] Tampilkan rentang aktif + summary `last updated` timestamp.
-- [ ] Metric cards: tambahkan indicator delta vs previous period (opsional) atau placeholder.
-- [ ] Chart: fallback (empty) terintegrasi dengan Query state (loading/error/empty).
-- [ ] Order history section: gunakan CTA yang jelas (“Lihat semua pesanan”) dan state kosong terstandardisasi.
+- [x] Tampilkan rentang aktif + summary `last updated` timestamp.
+- [x] Metric cards: tambahkan indicator delta vs previous period (opsional) atau placeholder.
+- [x] Chart: fallback (empty) terintegrasi dengan Query state (loading/error/empty).
+- [x] Order history section: gunakan CTA yang jelas (“Lihat semua pesanan”) dan state kosong terstandardisasi.
 
 ### 5. Testing & Docs
-- [ ] Update `docs/tests_dashboard_manual.md` (baru) berisi skenario range switching, offline snapshot, realtime refresh.
-- [ ] Tambahkan catatan di `docs/todos_tables_refactor.md` bahwa dashboard order history sudah memakai DataTable.
-- [ ] Rekam progres di dokumen ini begitu checklist selesai.
+- [x] Update `docs/tests_dashboard_manual.md` (baru) berisi skenario range switching, offline snapshot, realtime refresh.
+- [x] Tambahkan catatan di `docs/todos_tables_refactor.md` bahwa dashboard order history sudah memakai DataTable.
+- [x] Rekam progres di dokumen ini begitu checklist selesai.
 
 ---
 

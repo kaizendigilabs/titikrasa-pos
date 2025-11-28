@@ -3,7 +3,7 @@
 import { DataTable } from '@/components/tables/data-table';
 import { DataTableToolbar } from '@/components/tables/data-table-toolbar';
 
-import { MenuFormSheet } from './_components/forms';
+import { MenuFormDialog } from './_components/forms';
 import {
   ToggleStatusDialog,
   DeleteMenuDialog,
@@ -34,7 +34,7 @@ export function MenusTable(props: MenusTableProps) {
       renderAfterTable={(context) => (
         <>
           {props.canManage ? (
-            <MenuFormSheet {...controller.formSheetProps} />
+            <MenuFormDialog {...controller.formDialogProps} />
           ) : null}
           <ToggleStatusDialog {...controller.dialogs.toggle} />
           <DeleteMenuDialog {...controller.dialogs.delete} />

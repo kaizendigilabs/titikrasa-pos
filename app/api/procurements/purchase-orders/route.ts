@@ -267,6 +267,7 @@ export async function POST(request: NextRequest) {
 
     const insertPayload: TablesInsert<"purchase_orders"> = {
       status: body.status,
+      supplier_id: body.supplierId,
       items: preparedItems as TablesInsert<"purchase_orders">["items"],
       totals: totals as TablesInsert<"purchase_orders">["totals"],
       issued_at: body.issuedAt ?? new Date().toISOString(),
@@ -286,7 +287,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return ok({ purchaseOrder: mapPurchaseOrder(data) });
+    const { data: enrichedRow, error: fetchError } = await admin
+      .from("purchase_orders")
+      .select("*, suppliers(name)")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (fetchError || !enrichedRow) {
+      console.error("[PO_FETCH_AFTER_INSERT_ERROR]", fetchError);
+    }
+
+    return ok({ purchaseOrder: mapPurchaseOrder(enrichedRow ?? data) });
   } catch (error) {
     if (error instanceof AppError) {
       return fail(error);

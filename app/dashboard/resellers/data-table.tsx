@@ -3,7 +3,7 @@
 import { DataTable } from "@/components/tables/data-table";
 import { DataTableToolbar } from "@/components/tables/data-table-toolbar";
 
-import { InviteResellerSheet, EditResellerSheet } from "./_components/forms";
+import { InviteResellerDialog, EditResellerDialog } from "./_components/forms";
 import {
   BulkDeleteDialog,
   DeleteResellerDialog,
@@ -35,8 +35,8 @@ export function ResellersTable(props: ResellersTableProps) {
         <>
           {props.canManage ? (
             <>
-              <InviteResellerSheet {...controller.inviteSheetProps} />
-              <EditResellerSheet {...controller.editSheetProps} />
+              <InviteResellerDialog {...controller.inviteSheetProps} />
+              <EditResellerDialog {...controller.editSheetProps} />
             </>
           ) : null}
           <ToggleStatusDialog {...controller.dialogs.toggle} />

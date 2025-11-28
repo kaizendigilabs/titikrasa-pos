@@ -3,7 +3,7 @@
 import { DataTable } from "@/components/tables/data-table";
 import { DataTableToolbar } from "@/components/tables/data-table-toolbar";
 
-import { PurchaseOrderCreateSheet } from "./_components/forms";
+import { PurchaseOrderCreateDialog } from "./_components/forms";
 import {
   PurchaseOrderDeleteDialog,
   PurchaseOrderDetailDialog,
@@ -32,8 +32,8 @@ export function PurchaseOrdersTable(props: PurchaseOrdersTableProps) {
       )}
       renderAfterTable={() => (
         <>
-          {controller.createSheetProps ? (
-            <PurchaseOrderCreateSheet {...controller.createSheetProps} />
+          {controller.createDialogProps ? (
+            <PurchaseOrderCreateDialog {...controller.createDialogProps} />
           ) : null}
           <PurchaseOrderDetailDialog {...controller.detailDialogProps} />
           <PurchaseOrderDeleteDialog {...controller.deleteDialogProps} />

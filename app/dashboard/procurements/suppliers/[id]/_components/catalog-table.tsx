@@ -7,8 +7,8 @@ import {
   useSupplierCatalogTableController,
   type UseSupplierCatalogTableArgs,
 } from "./use-supplier-catalog-table";
-import { CatalogItemSheet } from "./catalog-item-sheet";
-import { CatalogItemEditSheet } from "./catalog-item-edit-sheet";
+import { CatalogItemDialog } from "./catalog-item-dialog";
+import { CatalogItemEditDialog } from "./catalog-item-edit-dialog";
 import { CatalogItemDeleteDialog } from "./catalog-item-delete-dialog";
 
 export type SupplierCatalogTableProps = UseSupplierCatalogTableArgs;
@@ -31,14 +31,14 @@ export function SupplierCatalogTable(props: SupplierCatalogTableProps) {
       renderAfterTable={() =>
         props.canManage ? (
           <>
-            {controller.createSheetProps ? (
-              <CatalogItemSheet
+            {controller.createDialogProps ? (
+              <CatalogItemDialog
                 supplierId={props.supplierId}
-                {...controller.createSheetProps}
+                {...controller.createDialogProps}
               />
             ) : null}
-            {controller.editSheetProps ? (
-              <CatalogItemEditSheet {...controller.editSheetProps} />
+            {controller.editDialogProps ? (
+              <CatalogItemEditDialog {...controller.editDialogProps} />
             ) : null}
             {controller.deleteDialogProps ? (
               <CatalogItemDeleteDialog {...controller.deleteDialogProps} />

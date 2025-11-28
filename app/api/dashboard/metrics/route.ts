@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { fetchDashboardSummary } from "@/features/dashboard/server";
+import { getDashboardSummary } from "@/features/dashboard/server";
 import type { DashboardRangePayload } from "@/features/dashboard/types";
 import { getDateRange, type DateRangeType } from "@/lib/utils/date-helpers";
 import { ensureStaffOrAbove, requireActor } from "@/features/users/server";
@@ -33,8 +33,10 @@ export async function GET(request: NextRequest) {
       granularity: rangeResult.granularity,
     };
 
-    const summary = await fetchDashboardSummary(actor, payload);
-    return ok({ summary });
+    const result = await getDashboardSummary(actor, payload);
+    return ok(result.data, {
+      meta: result.meta,
+    });
   } catch (error) {
     if (error instanceof AppError) {
       return fail(error);

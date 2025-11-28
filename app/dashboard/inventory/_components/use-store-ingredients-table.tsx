@@ -59,7 +59,7 @@ export type StoreIngredientsTableControllerResult = {
       StoreIngredientsTableFilters
     >,
   ) => DataTableToolbarProps;
-  editSheetProps?: {
+  editDialogProps?: {
     ingredient: StoreIngredientListItem | null;
     isSubmitting: boolean;
     onOpenChange: (open: boolean) => void;
@@ -246,7 +246,7 @@ export function useStoreIngredientsTableController({
     queryHook,
     getRowId: (row) => row.id,
     buildToolbarConfig,
-    editSheetProps: canManage
+    editDialogProps: canManage
       ? {
           ingredient: editingIngredient,
           isSubmitting: updateMutation.isPending,
