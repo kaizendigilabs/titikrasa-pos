@@ -65,7 +65,6 @@ async function applyCompletionEffects(purchaseOrder: PurchaseOrderListItem) {
     const { error: updateIngredientError } = await admin
       .from("store_ingredients")
       .update({
-        current_stock: nextStock,
         avg_cost: newAvgCost,
       })
       .eq("id", item.storeIngredientId);
