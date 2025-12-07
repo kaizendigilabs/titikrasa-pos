@@ -164,8 +164,8 @@ export function useMenuCategoriesTableController({
           toast.success('Kategori dibuat');
         }
         setFormState({ open: false, mode: 'create', category: null });
-        // pastikan tabel refresh
-        await queryHook({ ...initialFilters, page: 1, pageSize: initialFilters.pageSize });
+        // pastikan tabel refresh - handled by mutation onSuccess invalidation
+
       } catch (error) {
         toast.error(getErrorMessage(error, 'Gagal menyimpan kategori'));
         throw error;
@@ -179,7 +179,8 @@ export function useMenuCategoriesTableController({
         }
       }
     },
-    [createMutation, formState, initialFilters, queryHook, updateMutation],
+
+    [createMutation, formState, updateMutation],
   );
 
   const performToggle = React.useCallback(
