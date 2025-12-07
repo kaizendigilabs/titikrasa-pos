@@ -3,11 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   purchaseHistoryFiltersSchema,
   storeIngredientFiltersSchema,
+  createStoreIngredientSchema,
 } from "./schemas";
 import type {
   PurchaseHistoryFilters,
   StoreIngredientFilters,
   UpdateStoreIngredientInput,
+  CreateStoreIngredientInput,
 } from "./schemas";
 import type {
   PurchaseHistoryEntry,
@@ -19,6 +21,7 @@ import { adminClient, ensureAdminOrManager } from "@/features/users/server";
 import type { ActorContext } from "@/features/users/server";
 import type { Database } from "@/lib/types/database";
 import { ERR, appError } from "@/lib/utils/errors";
+import type { TablesInsert } from "@/lib/types/database";
 
 type AdminSupabase = SupabaseClient<Database>;
 
@@ -435,6 +438,41 @@ export async function getStoreIngredientDetailBootstrap(
       },
     },
   };
+}
+
+export async function createStoreIngredientEntry(
+  actor: ActorContext,
+  payload: CreateStoreIngredientInput,
+  client?: AdminSupabase,
+): Promise<StoreIngredientDetail> {
+  ensureAdminOrManager(actor.roles);
+  const supabase = resolveClient(client);
+
+  const body = createStoreIngredientSchema.parse(payload);
+  const insertPayload: TablesInsert<"store_ingredients"> = {
+    name: body.name,
+    base_uom: body.baseUom,
+    min_stock: body.minStock,
+    sku: body.sku ?? null,
+    is_active: body.isActive ?? true,
+    current_stock: 0,
+    avg_cost: 0,
+  };
+
+  const { data, error } = await supabase
+    .from("store_ingredients")
+    .insert(insertPayload)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    throw appError(ERR.SERVER_ERROR, {
+      message: "Failed to create store ingredient",
+      details: { hint: error?.message },
+    });
+  }
+
+  return await fetchStoreIngredientDetail(data.id, supabase);
 }
 
 export async function updateStoreIngredientMeta(

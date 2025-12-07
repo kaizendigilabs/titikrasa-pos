@@ -80,6 +80,10 @@ export function useCreateMenuMutation() {
     mutationFn: createMenu,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
+      void queryClient.refetchQueries({
+        queryKey: [MENUS_KEY],
+        type: "active",
+      });
     },
   });
 }
@@ -96,6 +100,10 @@ export function useUpdateMenuMutation() {
     }) => updateMenu(menuId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
+      void queryClient.refetchQueries({
+        queryKey: [MENUS_KEY],
+        type: "active",
+      });
     },
   });
 }
@@ -106,6 +114,10 @@ export function useDeleteMenuMutation() {
     mutationFn: (menuId: string) => deleteMenu(menuId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
+      void queryClient.refetchQueries({
+        queryKey: [MENUS_KEY],
+        type: "active",
+      });
     },
   });
 }
@@ -122,6 +134,10 @@ export function useToggleMenuStatusMutation() {
     }) => publishMenu(menuId, isActive),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
+      void queryClient.refetchQueries({
+        queryKey: [MENUS_KEY],
+        type: "active",
+      });
     },
   });
 }

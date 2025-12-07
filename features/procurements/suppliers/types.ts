@@ -26,6 +26,8 @@ export type SupplierCatalogItem = {
   name: string;
   base_uom: string;
   purchase_price: number;
+  unit_label?: string | null;
+  conversion_rate?: number;
   is_active: boolean;
   created_at: string;
 };

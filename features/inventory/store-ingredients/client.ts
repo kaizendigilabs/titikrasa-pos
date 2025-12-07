@@ -9,6 +9,7 @@ import type {
   StoreIngredientListItem,
 } from "./types";
 import { AppError, ERR } from "@/lib/utils/errors";
+import type { CreateStoreIngredientInput } from "./schemas";
 
 const ENDPOINT = "/api/inventory/store-ingredients" as const;
 
@@ -160,5 +161,15 @@ export async function updateStoreIngredient(
       body: JSON.stringify(payload),
     },
   );
+  return data.storeIngredient;
+}
+
+export async function createStoreIngredient(
+  payload: CreateStoreIngredientInput,
+): Promise<StoreIngredientDetail> {
+  const { data } = await request<{ storeIngredient: StoreIngredientDetail }>(ENDPOINT, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
   return data.storeIngredient;
 }

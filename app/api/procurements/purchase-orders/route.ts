@@ -146,13 +146,16 @@ export async function POST(request: NextRequest) {
     let computedTotal = 0;
 
     for (const item of body.items) {
-      const { data: catalog, error: catalogError } = await admin
+      const { data: rawCatalog, error: catalogError } = await admin
         .from("supplier_catalog_items")
         .select(
-          "id, supplier_id, name, base_uom, purchase_price, ingredient_supplier_links ( id, store_ingredient_id, preferred )",
+          "id, supplier_id, name, base_uom, purchase_price, unit_label, conversion_rate, ingredient_supplier_links ( id, store_ingredient_id, preferred )",
         )
         .eq("id", item.catalogItemId)
         .single();
+
+      // Cast to any because database types are not yet regenerated with new columns
+      const catalog = rawCatalog as any;
 
       if (catalogError || !catalog) {
         throw appError(ERR.BAD_REQUEST, {
@@ -226,30 +229,68 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      const qtyValue = Number(item.qty);
-      const qty = Number.isFinite(qtyValue) ? Math.max(0, Math.round(qtyValue)) : 0;
-      const price = Number.isFinite(item.price ?? NaN)
-        ? (item.price as number)
-        : catalog.purchase_price ?? 0;
-
-      const priceInt = Math.max(0, Math.round(price));
-
-      computedTotal += priceInt * qty;
-
-      if (qty <= 0) {
+      const qtyPack = Number(item.qty); // User inputs pack quantity
+      if (qtyPack <= 0) {
         throw appError(ERR.BAD_REQUEST, {
           message: "Quantity must be greater than zero",
           details: { catalogItemId: catalog.id },
         });
       }
 
-      preparedItems.push({
+      const conversionRate = Number(catalog.conversion_rate ?? 1);
+      const qtyBase = qtyPack * conversionRate;
+      const unitLabel = catalog.unit_label ?? "pcs";
+
+      // Price logic: item.price is per pack (from user input or catalog default)
+      const pricePerPack = Number.isFinite(item.price ?? NaN)
+        ? (item.price as number)
+        : catalog.purchase_price ?? 0;
+
+      const pricePerPackInt = Math.max(0, Math.round(pricePerPack));
+
+      computedTotal += pricePerPackInt * qtyPack;
+
+      // We push the enriched structure.
+      // Note: We map 'price' to pricePerPackInt because that is what the user expects in the PO Order view (Price/Unit).
+      // 'qty' is mapped to qtyBase for Inventory/Logic purposes, but we also save qty_pack for UI display if needed.
+      // However, to keep standard consistency with existing types that expect 'qty' and 'price' to match:
+      // If we store qty=qtyBase, then price should be pricePerBase?
+      // Wait, let's look at the migration notes:
+      // items: [{catalog_item_id, store_ingredient_id, qty_pack, pack_uom, qty_base, price}]
+      // The previous code stored 'price' and 'qty'.
+      // If I want to support "Easy PO", the PO document usually shows "Beans 5 kg @ 100.000 = 500.000".
+      // So 'qty' in the JSON should probably be 'qty_pack' for display purposes?
+      // BUT 'applyCompletionEffects' uses 'item.qty' to add to stock.
+      // If 'item.qty' is used for stock, it MUST be BASE units (gr).
+      // If 'item.price' is used for avg_cost calc:
+      // Math.round((currentStock * currentAvg + qty * item.price) / ...
+      // Here 'qty' is Base Qty (gr). So 'item.price' MUST BE Price Per Base Unit (Price/gr).
+      // So checks: 5kg * 100.000/kg = 500.000.
+      // 5000gr. Price/gr = 100.000 / 1000 = 100.
+      // 5000 * 100 = 500.000. Correct.
+      // SO:
+      // 1. We must store 'qty': qtyBase (for inventory logic compatibility)
+      // 2. We must store 'price': pricePerBase (for avg cost logic compatibility)
+      // 3. BUT we also want to store 'qty_pack' and 'price_pack' for UI display.
+      
+      const pricePerBase = pricePerPackInt / conversionRate;
+
+      // Update preparedItems to allow extra fields (TS ignore or cast as any since items is jsonb)
+      (preparedItems as any[]).push({
         catalog_item_id: catalog.id,
         supplier_id: body.supplierId,
         store_ingredient_id: storeIngredientId,
-        qty,
+        
+        // Critical for Inventory Logic (Inventory expects Base Units)
+        qty: qtyBase, 
+        price: pricePerBase, 
         base_uom: catalog.base_uom,
-        price: priceInt,
+
+        // Display / User History (What they actually ordered)
+        qty_pack: qtyPack,
+        pack_uom: unitLabel,
+        price_pack: pricePerPackInt,
+        conversion_rate: conversionRate
       });
     }
 

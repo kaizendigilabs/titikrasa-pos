@@ -22,6 +22,8 @@ function mapCatalogItem(row: any): SupplierCatalogItem {
     name: row.name,
     base_uom: row.base_uom,
     purchase_price: row.purchase_price,
+    unit_label: row.unit_label,
+    conversion_rate: Number(row.conversion_rate ?? 1),
     is_active: row.is_active,
     created_at: row.created_at,
   };
@@ -42,7 +44,9 @@ export async function PATCH(
     const updates: TablesUpdate<"supplier_catalog_items"> = {};
     if (body.name !== undefined) updates.name = body.name;
     if (body.baseUom !== undefined) updates.base_uom = body.baseUom;
-    if (body.purchasePrice !== undefined) updates.purchase_price = body.purchasePrice;
+    if (body.purchasePrice !== undefined) updates.purchase_price = Math.round(body.purchasePrice * 100);
+    if (body.unitLabel !== undefined) updates.unit_label = body.unitLabel;
+    if (body.conversionRate !== undefined) updates.conversion_rate = body.conversionRate;
     if (body.isActive !== undefined) updates.is_active = body.isActive;
 
     if (!Object.keys(updates).length) {

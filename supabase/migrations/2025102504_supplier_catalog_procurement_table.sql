@@ -49,10 +49,16 @@ create table if not exists supplier_catalog_items (
   name                text not null,
   base_uom            base_uom not null,
   purchase_price      integer not null,              -- per base uom (ex-PPN)
+  unit_label          text,                          -- e.g., 'Pack', 'Box', 'Kg', 'Bottle'
+  conversion_rate     numeric not null default 1,    -- Multiplier to convert buying unit to base_uom
   is_active           boolean not null default true,
   created_at          timestamptz not null default now()
 );
 create index if not exists idx_catalog_supplier on supplier_catalog_items(supplier_id);
+
+comment on column public.supplier_catalog_items.unit_label is 'Display label for the buying unit (e.g. Pack, Bottle)';
+comment on column public.supplier_catalog_items.conversion_rate is 'Multiplier to convert buying unit to base_uom (e.g. 1000 for 1kg -> gr)';
+
 alter table public.supplier_catalog_items enable row level security;
 
 drop policy if exists "supplier_catalog_select_staff" on public.supplier_catalog_items;

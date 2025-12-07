@@ -54,6 +54,8 @@ export function CatalogItemEditDialog({
       name: item.name,
       baseUom: BASE_UOMS.includes(item.base_uom as any) ? item.base_uom : "gr",
       purchasePrice: String(item.purchase_price),
+      unitLabel: item.unit_label ?? "",
+      conversionRate: String(item.conversion_rate ?? 1),
     },
     onSubmit: async ({ value }) => {
       try {
@@ -61,6 +63,8 @@ export function CatalogItemEditDialog({
           name: value.name.trim(),
           baseUom: value.baseUom,
           purchasePrice: Number(value.purchasePrice || "0"),
+          unitLabel: value.unitLabel.trim(),
+          conversionRate: Number(value.conversionRate || "1"),
         }) satisfies UpdateCatalogItemPayload;
         await updateMutation.mutateAsync({ catalogItemId: item.id, payload });
         toast.success("Catalog item updated");
@@ -81,7 +85,9 @@ export function CatalogItemEditDialog({
       "baseUom",
       BASE_UOMS.includes(item.base_uom as any) ? item.base_uom : "gr",
     );
-    form.setFieldValue("purchasePrice", String(item.purchase_price));
+    form.setFieldValue("purchasePrice", String(Math.round(item.purchase_price / 100)));
+    form.setFieldValue("unitLabel", item.unit_label ?? "");
+    form.setFieldValue("conversionRate", String(item.conversion_rate ?? 1));
   }, [form, item]);
 
   const existingIngredientIds = React.useMemo(
@@ -155,6 +161,38 @@ export function CatalogItemEditDialog({
                   </div>
                 )}
               </form.Field>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <form.Field name="unitLabel">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="catalog-edit-unit-label">Unit Label (Beli)</Label>
+                    <Input
+                      id="catalog-edit-unit-label"
+                      placeholder="Contoh: Pack, Botol"
+                      value={field.state.value}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                      onBlur={field.handleBlur}
+                    />
+                  </div>
+                )}
+              </form.Field>
+               <form.Field name="conversionRate">
+                  {(field) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="catalog-edit-conversion-rate">Isi per Unit</Label>
+                      <Input
+                        id="catalog-edit-conversion-rate"
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Contoh: 1000"
+                        value={field.state.value}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        onBlur={field.handleBlur}
+                      />
+                    </div>
+                  )}
+                </form.Field>
             </div>
             <DialogFooter>
               <Button

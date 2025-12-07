@@ -143,6 +143,27 @@ function createColumns({
       },
     },
     {
+      accessorKey: "unit_label",
+      header: "Unit Beli",
+      cell: ({ row }) => (
+        <span className="text-sm">
+          {row.original.unit_label || row.original.base_uom}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "conversion_rate",
+      header: "Konversi",
+      cell: ({ row }) => (
+        <div className="flex flex-col text-sm text-muted-foreground">
+          <span>
+            1 {row.original.unit_label || "Unit"} = {row.original.conversion_rate}{" "}
+            {row.original.base_uom}
+          </span>
+         </div>
+      ),
+    },
+    {
       accessorKey: "created_at",
       header: "Created",
       cell: ({ row }) => (

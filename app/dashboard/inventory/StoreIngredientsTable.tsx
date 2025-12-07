@@ -3,6 +3,7 @@
 import { DataTable } from "@/components/tables/data-table";
 import { DataTableToolbar } from "@/components/tables/data-table-toolbar";
 import { StoreIngredientEditDialog } from "./_components/edit-sheet";
+import { StoreIngredientCreateDialog } from "./_components/create-dialog";
 import {
   useStoreIngredientsTableController,
   type UseStoreIngredientsTableControllerArgs,
@@ -26,9 +27,14 @@ export function StoreIngredientsTable(props: StoreIngredientsTableProps) {
         <DataTableToolbar {...controller.buildToolbarConfig(context)} />
       )}
       renderAfterTable={() =>
-        controller.editDialogProps ? (
-          <StoreIngredientEditDialog {...controller.editDialogProps} />
-        ) : null
+        <>
+          {controller.createDialogProps ? (
+            <StoreIngredientCreateDialog {...controller.createDialogProps} />
+          ) : null}
+          {controller.editDialogProps ? (
+            <StoreIngredientEditDialog {...controller.editDialogProps} />
+          ) : null}
+        </>
       }
     />
   );

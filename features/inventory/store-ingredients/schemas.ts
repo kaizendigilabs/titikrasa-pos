@@ -24,6 +24,22 @@ export const purchaseHistoryFiltersSchema = z.object({
 export type StoreIngredientFilters = z.infer<typeof storeIngredientFiltersSchema>;
 export type PurchaseHistoryFilters = z.infer<typeof purchaseHistoryFiltersSchema>;
 
+const BASE_UOM_ENUM = z.enum(["gr", "ml", "pcs"]);
+
+export const createStoreIngredientSchema = z.object({
+  name: z.string().trim().min(1, "Nama wajib diisi").max(200),
+  baseUom: BASE_UOM_ENUM,
+  minStock: z.coerce.number().int().min(0).default(0),
+  sku: z
+    .string()
+    .trim()
+    .max(64)
+    .or(z.literal(""))
+    .optional()
+    .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
+  isActive: z.boolean().optional(),
+});
+
 export const updateStoreIngredientSchema = z
   .object({
     sku: z
@@ -44,4 +60,5 @@ export const updateStoreIngredientSchema = z
     sku: value.sku !== undefined ? (value.sku.trim().length > 0 ? value.sku.trim() : null) : undefined,
   }));
 
+export type CreateStoreIngredientInput = z.infer<typeof createStoreIngredientSchema>;
 export type UpdateStoreIngredientInput = z.infer<typeof updateStoreIngredientSchema>;

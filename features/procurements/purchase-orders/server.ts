@@ -102,6 +102,8 @@ export async function getPurchaseOrderFormOptions(
       purchase_price: row.purchase_price ?? 0,
       is_active: row.is_active,
       created_at: row.created_at,
+      unit_label: row.unit_label,
+      conversion_rate: Number(row.conversion_rate ?? 1),
       links,
     };
   });

@@ -300,24 +300,27 @@ export function PurchaseOrderCreateDialog({
                       </select>
                     </div>
 
-                    {catalog ? (
-                      <div className="space-y-2">
-                        <Label>Quantity ({catalog.base_uom.toUpperCase()})</Label>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="Contoh: 10"
-                          value={item.qty}
-                          onChange={(event) =>
-                            updateItemField(index, "qty", event.target.value)
-                          }
-                        />
-                        <div className="text-xs text-muted-foreground">
-                          <div>Satuan: {formatCurrency(unitPrice / 100)}</div>
-                          <div>Subtotal: {formatCurrency(lineTotal / 100)}</div>
+                      {catalog ? (
+                        <div className="space-y-2">
+                          <Label>Quantity ({catalog.unit_label || "Unit"})</Label>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="Contoh: 10"
+                            value={item.qty}
+                            onChange={(event) =>
+                              updateItemField(index, "qty", event.target.value)
+                            }
+                          />
+                          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                            <div>
+                               Isi per {catalog.unit_label || "Unit"}: {catalog.conversion_rate || 1} {catalog.base_uom}
+                            </div>
+                            <div>Harga Satuan: {formatCurrency(unitPrice / 100)} / {catalog.unit_label || "Unit"}</div>
+                            <div className="font-medium text-foreground">Subtotal: {formatCurrency(lineTotal / 100)}</div>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
+                      ) : (
                       <p className="text-xs text-muted-foreground">Pilih katalog terlebih dahulu.</p>
                     )}
                   </div>

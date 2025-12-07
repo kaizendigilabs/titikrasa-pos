@@ -699,30 +699,36 @@ export type Database = {
       supplier_catalog_items: {
         Row: {
           base_uom: Database["public"]["Enums"]["base_uom"]
+          conversion_rate: number
           created_at: string
           id: string
           is_active: boolean
           name: string
           purchase_price: number
           supplier_id: string
+          unit_label: string | null
         }
         Insert: {
           base_uom: Database["public"]["Enums"]["base_uom"]
+          conversion_rate?: number
           created_at?: string
           id?: string
           is_active?: boolean
           name: string
           purchase_price: number
           supplier_id: string
+          unit_label?: string | null
         }
         Update: {
           base_uom?: Database["public"]["Enums"]["base_uom"]
+          conversion_rate?: number
           created_at?: string
           id?: string
           is_active?: boolean
           name?: string
           purchase_price?: number
           supplier_id?: string
+          unit_label?: string | null
         }
         Relationships: [
           {

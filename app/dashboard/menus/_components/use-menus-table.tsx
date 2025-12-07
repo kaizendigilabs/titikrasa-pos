@@ -22,6 +22,7 @@ import {
   useToggleMenuStatusMutation,
   useUpdateMenuMutation,
 } from '@/features/menus/hooks';
+import { useMenuCategories } from '@/features/menu-categories/hooks';
 import {
   createDefaultMenuFormValues,
   mapMenuToFormValues,
@@ -142,6 +143,11 @@ export function useMenusTableController({
   const updateMutation = useUpdateMenuMutation();
   const toggleMutation = useToggleMenuStatusMutation();
   const deleteMutation = useDeleteMenuMutation();
+
+  const categoriesQuery = useMenuCategories(
+    { page: 1, pageSize: 200, status: 'all', search: null },
+    { initialData: { items: categories, meta: null } as any },
+  );
 
   const formInitialValues = React.useMemo(() => {
     if (formState.mode === 'edit' && formState.menu) {
@@ -371,7 +377,7 @@ export function useMenusTableController({
       onOpenChange: handleFormOpenChange,
       onSubmit: handleFormSubmit,
       isSubmitting: createMutation.isPending || updateMutation.isPending,
-      categories,
+      categories: categoriesQuery.data?.items ?? categories,
     },
     dialogs: {
       toggle: {

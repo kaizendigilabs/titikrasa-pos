@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
 
-import { fetchStoreIngredients } from "@/features/inventory/store-ingredients/server";
-import { storeIngredientFiltersSchema } from "@/features/inventory/store-ingredients/schemas";
-import { requireActor } from "@/features/users/server";
+import { createStoreIngredientEntry, fetchStoreIngredients } from "@/features/inventory/store-ingredients/server";
+import {
+  createStoreIngredientSchema,
+  storeIngredientFiltersSchema,
+} from "@/features/inventory/store-ingredients/schemas";
+import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { ok, fail } from "@/lib/utils/api-response";
 import { AppError } from "@/lib/utils/errors";
 
@@ -31,6 +34,24 @@ export async function GET(request: NextRequest) {
         },
       },
     );
+  } catch (error) {
+    if (error instanceof AppError) {
+      return fail(error);
+    }
+    return fail(error);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const actor = await requireActor();
+    ensureAdminOrManager(actor.roles);
+
+    const payload = await request.json();
+    const body = createStoreIngredientSchema.parse(payload);
+    const storeIngredient = await createStoreIngredientEntry(actor, body);
+
+    return ok({ storeIngredient });
   } catch (error) {
     if (error instanceof AppError) {
       return fail(error);

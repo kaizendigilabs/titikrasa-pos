@@ -98,6 +98,10 @@ export function useCreateRecipeMutation() {
       void queryClient.invalidateQueries({
         queryKey: [RECIPES_QUERY_KEY],
       });
+      void queryClient.refetchQueries({
+        queryKey: [RECIPES_QUERY_KEY],
+        type: "active",
+      });
     },
   });
 }
@@ -111,6 +115,10 @@ export function useUpdateRecipeMutation() {
       void queryClient.invalidateQueries({
         queryKey: [RECIPES_QUERY_KEY],
       });
+      void queryClient.refetchQueries({
+        queryKey: [RECIPES_QUERY_KEY],
+        type: "active",
+      });
     },
   });
 }
@@ -122,6 +130,10 @@ export function useDeleteRecipeMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: [RECIPES_QUERY_KEY],
+      });
+      void queryClient.refetchQueries({
+        queryKey: [RECIPES_QUERY_KEY],
+        type: "active",
       });
     },
   });

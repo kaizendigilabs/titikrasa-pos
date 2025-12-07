@@ -15,15 +15,19 @@ import { createStoreIngredientColumns } from "../columns";
 import {
   useStoreIngredients,
   useStoreIngredientsRealtime,
+  useCreateStoreIngredientMutation,
   useUpdateStoreIngredientMutation,
 } from "@/features/inventory/store-ingredients/hooks";
 import type {
+  CreateStoreIngredientInput,
   StoreIngredientFilters,
   UpdateStoreIngredientInput,
 } from "@/features/inventory/store-ingredients/schemas";
 import type { StoreIngredientListItem } from "@/features/inventory/store-ingredients/types";
 import type { StoreIngredientListResult } from "@/features/inventory/store-ingredients/client";
 import type { StoreIngredientFormValues } from "./edit-sheet";
+import { StoreIngredientCreateDialog, type StoreIngredientCreateValues } from "./create-dialog";
+import { Button } from "@/components/ui/button";
 
 export type StoreIngredientsTableFilters = PaginationFilters & {
   status: "all" | "active" | "inactive";
@@ -59,6 +63,12 @@ export type StoreIngredientsTableControllerResult = {
       StoreIngredientsTableFilters
     >,
   ) => DataTableToolbarProps;
+  createDialogProps?: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (values: StoreIngredientCreateValues) => Promise<void>;
+    isSubmitting: boolean;
+  };
   editDialogProps?: {
     ingredient: StoreIngredientListItem | null;
     isSubmitting: boolean;
@@ -115,8 +125,8 @@ export function useStoreIngredientsTableController({
     [initialMeta],
   );
 
-  const [editingIngredient, setEditingIngredient] =
-    React.useState<StoreIngredientListItem | null>(null);
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [editingIngredient, setEditingIngredient] = React.useState<StoreIngredientListItem | null>(null);
 
   const columns = React.useMemo(
     () =>
@@ -131,7 +141,30 @@ export function useStoreIngredientsTableController({
 
   useStoreIngredientsRealtime(true);
 
+  const createMutation = useCreateStoreIngredientMutation();
   const updateMutation = useUpdateStoreIngredientMutation();
+
+  const handleSubmitCreate = React.useCallback(
+    async (values: StoreIngredientCreateValues) => {
+      const minStock = Number.parseInt(values.minStock, 10);
+      const payload: CreateStoreIngredientInput = {
+        name: values.name.trim(),
+        baseUom: values.baseUom as CreateStoreIngredientInput["baseUom"],
+        minStock: Number.isFinite(minStock) ? minStock : 0,
+        sku: values.sku?.trim() ?? "",
+      };
+      try {
+        await createMutation.mutateAsync(payload);
+        toast.success("Ingredient created");
+        setCreateOpen(false);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to create ingredient";
+        toast.error(message);
+      }
+    },
+    [createMutation],
+  );
 
   const handleSubmitEdit = React.useCallback(
     async (values: StoreIngredientFormValues) => {
@@ -228,9 +261,14 @@ export function useStoreIngredientsTableController({
         status: {
           isSyncing: context.isSyncing,
         },
+        primaryAction: canManage ? (
+          <Button onClick={() => setCreateOpen(true)} disabled={context.isSyncing}>
+            Add Ingredient
+          </Button>
+        ) : undefined,
       };
     },
-    [],
+    [canManage, initialFilters],
   );
 
   return {
@@ -246,6 +284,14 @@ export function useStoreIngredientsTableController({
     queryHook,
     getRowId: (row) => row.id,
     buildToolbarConfig,
+    createDialogProps: canManage
+      ? {
+          open: createOpen,
+          onOpenChange: setCreateOpen,
+          onSubmit: handleSubmitCreate,
+          isSubmitting: createMutation.isPending,
+        }
+      : undefined,
     editDialogProps: canManage
       ? {
           ingredient: editingIngredient,

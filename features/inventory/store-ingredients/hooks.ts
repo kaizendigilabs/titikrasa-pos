@@ -12,6 +12,7 @@ import {
   listPurchaseHistory,
   listStoreIngredients,
   updateStoreIngredient,
+  createStoreIngredient,
   type StoreIngredientListResult,
   type PurchaseHistoryMeta,
 } from "./client";
@@ -19,6 +20,7 @@ import type {
   PurchaseHistoryFilters,
   StoreIngredientFilters,
   UpdateStoreIngredientInput,
+  CreateStoreIngredientInput,
 } from "./schemas";
 import type { PurchaseHistoryEntry, StoreIngredientDetail } from "./types";
 import { createBrowserClient } from "@/lib/supabase/client";
@@ -139,6 +141,16 @@ export function useUpdateStoreIngredientMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [STORE_INGREDIENTS_KEY] });
       queryClient.invalidateQueries({ queryKey: [STORE_INGREDIENT_DETAIL_KEY] });
+    },
+  });
+}
+
+export function useCreateStoreIngredientMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateStoreIngredientInput) => createStoreIngredient(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STORE_INGREDIENTS_KEY] });
     },
   });
 }

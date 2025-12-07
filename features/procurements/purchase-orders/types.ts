@@ -10,6 +10,9 @@ export type PurchaseOrderItem = {
   qty: number;
   baseUom: Database["public"]["Enums"]["base_uom"];
   price: number;
+  qtyPack?: number;
+  packUom?: string;
+  conversionRate?: number;
 };
 
 export type PurchaseOrderCatalogLink = {
@@ -29,6 +32,8 @@ export type PurchaseOrderCatalogItem = {
   base_uom: string;
   purchase_price: number;
   is_active: boolean;
+  unit_label?: string | null;
+  conversion_rate?: number;
   created_at: string;
   links?: PurchaseOrderCatalogLink[];
 };
@@ -93,6 +98,9 @@ export function parsePurchaseOrderItems(payload: Json | null): PurchaseOrderItem
         qty,
         baseUom,
         price,
+        ...(data.qty_pack || data.qtyPack ? { qtyPack: Number(data.qty_pack ?? data.qtyPack) } : {}),
+        ...(data.pack_uom || data.packUom ? { packUom: String(data.pack_uom ?? data.packUom) } : {}),
+        ...(data.conversion_rate || data.conversionRate ? { conversionRate: Number(data.conversion_rate ?? data.conversionRate) } : {}),
       } satisfies PurchaseOrderItem;
     })
     .filter((item): item is PurchaseOrderItem => Boolean(item));

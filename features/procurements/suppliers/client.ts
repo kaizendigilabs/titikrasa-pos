@@ -95,6 +95,8 @@ function transformCatalogItem(raw: any): SupplierCatalogItem {
     name: raw.name,
     base_uom: raw.base_uom,
     purchase_price: raw.purchase_price,
+    unit_label: raw.unit_label,
+    conversion_rate: Number(raw.conversion_rate ?? 1),
     is_active: raw.is_active,
     created_at: raw.created_at,
   };

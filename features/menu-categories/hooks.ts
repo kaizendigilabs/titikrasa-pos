@@ -77,6 +77,10 @@ export function useCreateMenuCategoryMutation() {
     mutationFn: createMenuCategory,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [MENU_CATEGORIES_KEY] });
+      void queryClient.refetchQueries({
+        queryKey: [MENU_CATEGORIES_KEY],
+        type: "active",
+      });
     },
   });
 }
@@ -93,6 +97,10 @@ export function useUpdateMenuCategoryMutation() {
     }) => updateMenuCategory(categoryId, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [MENU_CATEGORIES_KEY] });
+      void queryClient.refetchQueries({
+        queryKey: [MENU_CATEGORIES_KEY],
+        type: "active",
+      });
     },
   });
 }
@@ -103,6 +111,10 @@ export function useDeleteMenuCategoryMutation() {
     mutationFn: (categoryId: string) => deleteMenuCategory(categoryId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: [MENU_CATEGORIES_KEY] });
+      void queryClient.refetchQueries({
+        queryKey: [MENU_CATEGORIES_KEY],
+        type: "active",
+      });
     },
   });
 }

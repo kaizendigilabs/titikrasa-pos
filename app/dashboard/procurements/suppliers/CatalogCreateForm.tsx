@@ -18,6 +18,8 @@ const DEFAULT_STATE = {
   name: "",
   baseUom: "gr",
   purchasePrice: "0",
+  unitLabel: "Pack",
+  conversionRate: "1",
 };
 
 const BASE_UOMS = ['gr', 'ml', 'pcs'] as const;
@@ -39,6 +41,8 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
           name: value.name.trim(),
           baseUom: value.baseUom,
           purchasePrice: Number(value.purchasePrice || "0"),
+          unitLabel: value.unitLabel.trim(),
+          conversionRate: Number(value.conversionRate || "1"),
           isActive: true,
         }) satisfies CreateCatalogItemPayload;
         await createMutation.mutateAsync(payload);
@@ -94,6 +98,38 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+        </form.Field>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <form.Field name="unitLabel">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor="catalog-unit-label">Unit Label (Beli)</Label>
+              <Input
+                id="catalog-unit-label"
+                placeholder="Contoh: Pack, Botol, Karton"
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="conversionRate">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor="catalog-conversion-rate">Isi per Unit</Label>
+              <Input
+                id="catalog-conversion-rate"
+                type="text"
+                inputMode="decimal"
+                placeholder="Contoh: 1000"
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+                onBlur={field.handleBlur}
+              />
             </div>
           )}
         </form.Field>

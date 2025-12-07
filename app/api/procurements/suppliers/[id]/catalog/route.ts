@@ -24,6 +24,8 @@ function mapCatalogItem(row: any): SupplierCatalogItem {
     name: row.name,
     base_uom: row.base_uom,
     purchase_price: row.purchase_price,
+    unit_label: row.unit_label,
+    conversion_rate: Number(row.conversion_rate ?? 1),
     is_active: row.is_active,
     created_at: row.created_at,
   };
@@ -147,7 +149,9 @@ export async function POST(
       supplier_id: id,
       name: body.name,
       base_uom: body.baseUom,
-      purchase_price: body.purchasePrice,
+      purchase_price: Math.round(body.purchasePrice * 100), // Convert to cents
+      unit_label: body.unitLabel,
+      conversion_rate: body.conversionRate,
       is_active: body.isActive ?? true,
     };
     const { data, error } = await admin

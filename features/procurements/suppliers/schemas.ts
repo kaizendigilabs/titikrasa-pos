@@ -59,6 +59,8 @@ export const createCatalogItemSchema = z.object({
   name: z.string().trim().min(1).max(200),
   baseUom: baseUomEnum,
   purchasePrice: z.coerce.number().int().min(0),
+  unitLabel: z.string().trim().max(50).optional(),
+  conversionRate: z.coerce.number().min(0.0001).default(1),
   isActive: z.boolean().optional(),
 });
 
