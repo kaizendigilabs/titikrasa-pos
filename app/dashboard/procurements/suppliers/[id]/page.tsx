@@ -41,14 +41,10 @@ export default async function SupplierDetailPage({
   } catch (error) {
     if (error instanceof AppError) {
       if (error.statusCode === ERR.FORBIDDEN.statusCode) {
-        redirect(
-          "/dashboard?status=forbidden&message=You%20do%20not%20have%20permission%20to%20access%20this%20resource",
-        );
+        redirect("/dashboard?error=forbidden");
       }
       if (error.statusCode === ERR.NOT_FOUND.statusCode) {
-        redirect(
-          "/dashboard/procurements/suppliers?status=not-found&message=Supplier%20tidak%20ditemukan",
-        );
+        redirect("/dashboard/procurements/suppliers?error=not-found");
       }
     }
     console.error("[SUPPLIER_DETAIL_PAGE_ERROR]", error);

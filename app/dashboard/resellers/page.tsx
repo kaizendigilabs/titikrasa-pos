@@ -19,9 +19,7 @@ export default async function ResellersPage() {
     bootstrap = await getResellersTableBootstrap(actor, { pageSize: DEFAULT_PAGE_SIZE });
   } catch (error) {
     if (error instanceof AppError && error.statusCode === ERR.FORBIDDEN.statusCode) {
-      redirect(
-        "/dashboard?status=forbidden&message=You%20do%20not%20have%20permission%20to%20access%20this%20resource",
-      );
+      redirect("/dashboard?error=forbidden");
     }
     console.error("[RESELLERS_PAGE_ERROR]", error);
     redirect("/dashboard");

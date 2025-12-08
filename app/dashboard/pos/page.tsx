@@ -26,9 +26,7 @@ export default async function PosPage() {
       error instanceof AppError &&
       error.statusCode === ERR.FORBIDDEN.statusCode
     ) {
-      redirect(
-        "/dashboard?status=forbidden&message=Anda%20tidak%20memiliki%20akses%20ke%20POS",
-      );
+      redirect("/dashboard?error=forbidden");
     }
     redirect("/dashboard");
   }

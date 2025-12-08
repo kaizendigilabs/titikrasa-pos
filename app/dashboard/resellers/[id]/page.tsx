@@ -39,14 +39,10 @@ export default async function ResellerDetailPage({
   } catch (error) {
     if (error instanceof AppError) {
       if (error.statusCode === ERR.FORBIDDEN.statusCode) {
-        redirect(
-          "/dashboard?status=forbidden&message=You%20do%20not%20have%20permission%20to%20access%20this%20resource",
-        );
+        redirect("/dashboard?error=forbidden");
       }
       if (error.statusCode === ERR.NOT_FOUND.statusCode) {
-        redirect(
-          "/dashboard/resellers?status=not-found&message=Reseller%20tidak%20ditemukan",
-        );
+        redirect("/dashboard/resellers?error=not-found");
       }
     }
     console.error("[RESELLER_DETAIL_PAGE_ERROR]", error);

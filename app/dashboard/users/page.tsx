@@ -26,9 +26,7 @@ export default async function UsersPage() {
       error instanceof AppError &&
       error.statusCode === ERR.FORBIDDEN.statusCode
     ) {
-      redirect(
-        '/dashboard?status=forbidden&message=You%20do%20not%20have%20permission%20to%20access%20this%20resource'
-      );
+      redirect("/dashboard?error=forbidden");
     }
     console.error('[USERS_PAGE_ERROR]', error);
     redirect('/dashboard');

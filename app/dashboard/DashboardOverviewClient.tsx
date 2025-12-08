@@ -16,6 +16,7 @@ import { OrderHistoryTable } from "@/app/dashboard/_components/order-history-tab
 import { DASHBOARD_ORDER_HISTORY_PAGE_SIZE } from "@/features/dashboard/constants";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils/formatters";
+import { ERROR_MESSAGES, type RedirectErrorCode } from "@/lib/utils/redirect-errors";
 
 type DashboardOverviewClientProps = {
   initialRange: DateRangeType;
@@ -52,13 +53,11 @@ export function DashboardOverviewClient({ initialRange }: DashboardOverviewClien
 
   useEffect(() => {
     if (toastHandledRef.current) return;
-    const status = searchParams.get("status");
-    const message = searchParams.get("message");
-    if (status === "forbidden") {
-      toast.error(message ?? "You do not have permission to access this resource");
+    const error = searchParams.get("error") as RedirectErrorCode | null;
+    if (error && ERROR_MESSAGES[error]) {
+      toast.error(ERROR_MESSAGES[error]);
       const params = new URLSearchParams(searchParams.toString());
-      params.delete("status");
-      params.delete("message");
+      params.delete("error");
       router.replace(`/dashboard${params.toString() ? `?${params.toString()}` : ""}`);
       toastHandledRef.current = true;
     }

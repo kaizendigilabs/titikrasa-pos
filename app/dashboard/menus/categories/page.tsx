@@ -23,9 +23,7 @@ export default async function MenuCategoriesPage() {
       error instanceof AppError &&
       error.statusCode === ERR.FORBIDDEN.statusCode
     ) {
-      redirect(
-        "/dashboard?status=forbidden&message=You%20do%20not%20have%20permission%20to%20access%20this%20resource",
-      );
+      redirect("/dashboard?error=forbidden");
     }
     if (
       error instanceof AppError &&
