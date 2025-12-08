@@ -31,14 +31,6 @@ import {
   type CartState,
 } from "@/features/pos/cart-store";
 import {
-  queueStore,
-  hydrateQueueStore,
-  enqueueOrder,
-  markOrderSynced,
-  markOrderSyncing,
-  markOrderFailed,
-} from "@/features/pos/offline-queue-store";
-import {
   listVariantOptions,
   resolveMenuPrice,
   hasResellerPrice,
@@ -109,9 +101,7 @@ export function usePosController({
     React.useState<VariantDialogState | null>(null);
   const [paymentDrawerOpen, setPaymentDrawerOpen] = React.useState(false);
   const [isOnline, setIsOnline] = React.useState(true);
-  const [isProcessingQueue, setIsProcessingQueue] = React.useState(false);
   const cartState = useStore(cartStore, (state) => state);
-  const queueState = useStore(queueStore, (state) => state);
   const preferences = useStore(preferencesStore, (state) => state);
 
   const resellerMap = React.useMemo(() => {
@@ -140,7 +130,6 @@ export function usePosController({
   React.useEffect(() => {
     if (hasHydratedRef.current) return;
     hydrateCartStore();
-    hydrateQueueStore();
     hydratePreferencesStore();
     hasHydratedRef.current = true;
     setHasHydrated(true);
@@ -465,30 +454,6 @@ export function usePosController({
     }
   }, [mode, selectedResellerId]);
 
-  const processQueue = React.useCallback(async () => {
-    if (queueState.orders.length === 0) return;
-    if (isProcessingQueue) return;
-    setIsProcessingQueue(true);
-    for (const entry of queueState.orders) {
-      try {
-        markOrderSyncing(entry.id);
-        await createOrderMutation.mutateAsync(entry.payload);
-        markOrderSynced(entry.id);
-        toast.success("Order tersinkron");
-      } catch (error) {
-        markOrderFailed(
-          entry.id,
-          error instanceof Error ? error.message : "Sinkronisasi gagal",
-        );
-      }
-    }
-    setIsProcessingQueue(false);
-  }, [createOrderMutation, isProcessingQueue, queueState.orders]);
-
-  React.useEffect(() => {
-    if (!isOnline) return;
-    void processQueue();
-  }, [isOnline, processQueue]);
 
   const submitOrder = React.useCallback(
     async (values: PaymentFormValues) => {
@@ -522,29 +487,12 @@ export function usePosController({
         clientId,
       };
 
-      if (!isOnline) {
-        enqueueOrder(payload);
-        toast.info("Perangkat offline – order disimpan ke antrian.");
-        handleClearCart();
-        setPaymentDrawerOpen(false);
-        return;
-      }
-
       try {
         await createOrderMutation.mutateAsync(payload);
         toast.success("Transaksi berhasil");
         handleClearCart();
         setPaymentDrawerOpen(false);
       } catch (error) {
-        if (isNetworkError(error)) {
-          enqueueOrder(payload);
-          toast.warning(
-            "Jaringan bermasalah. Order disimpan dan akan disinkron saat online.",
-          );
-          handleClearCart();
-          setPaymentDrawerOpen(false);
-          return;
-        }
         throw error;
       }
     },
@@ -556,7 +504,6 @@ export function usePosController({
       createOrderMutation,
       defaultTaxRate,
       handleClearCart,
-      isOnline,
       mode,
       modeChannel,
       selectedResellerId,
@@ -591,8 +538,6 @@ export function usePosController({
     paymentDrawerOpen,
     setPaymentDrawerOpen,
     isOnline,
-    isProcessingQueue,
-    queueState,
     cartState,
     subtotal,
     discountAmount,
@@ -618,7 +563,6 @@ export function usePosController({
     removeCartLine,
     handleClearCart,
     submitOrder,
-    processQueue,
     isSubmittingOrder: createOrderMutation.isPending,
     isHydrating: !hasHydrated,
     submitPaymentForm,
@@ -637,7 +581,3 @@ function mapCartToPaymentValues(state: CartState): PaymentFormValues {
   };
 }
 
-function isNetworkError(error: unknown) {
-  if (typeof window === "undefined") return false;
-  return error instanceof TypeError;
-}
