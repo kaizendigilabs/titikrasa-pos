@@ -1,3 +1,6 @@
+import { apiClient } from "@/lib/api/client";
+import type { Json } from "@/lib/types/database";
+
 import type { ResellerListItem, ResellerOrder } from "./types";
 import type {
   CreateResellerPayload,
@@ -6,13 +9,6 @@ import type {
   UpdateResellerPayload,
 } from "./schemas";
 import { parseContact, parseTerms } from "./types";
-import { AppError, ERR } from "@/lib/utils/errors";
-
-type ApiResponse<T> = {
-  data: T;
-  error: { message: string; code?: number } | null;
-  meta: Record<string, unknown> | null;
-};
 
 export type ResellerListMeta = {
   pagination: {
@@ -23,160 +19,149 @@ export type ResellerListMeta = {
   filters?: Record<string, unknown> | null;
 };
 
-export type ResellerListResponse = {
+type ResellerListResponse = {
   items: ResellerListItem[];
 };
 
-export type ResellerOrdersResponse = {
+type ResellerOrdersResponse = {
   items: ResellerOrder[];
 };
 
-function transformListItem(payload: any): ResellerListItem {
+type ResellerResponse = {
+  reseller: ResellerListItem;
+};
+
+/**
+ * Transforms raw API response to typed ResellerListItem
+ */
+function transformListItem(payload: Record<string, unknown>): ResellerListItem {
   return {
-    id: payload.id,
-    name: payload.name,
-    contact: parseContact(payload.contact),
-    terms: parseTerms(payload.terms),
-    is_active: payload.is_active,
-    created_at: payload.created_at,
+    id: payload.id as string,
+    name: payload.name as string,
+    contact: parseContact(payload.contact as Json),
+    terms: parseTerms(payload.terms as Json),
+    is_active: payload.is_active as boolean,
+    created_at: payload.created_at as string,
   };
 }
 
-function transformOrder(payload: any): ResellerOrder {
+/**
+ * Transforms raw API response to typed ResellerOrder
+ */
+function transformOrder(payload: Record<string, unknown>): ResellerOrder {
   return {
-    id: payload.id,
-    number: payload.number,
-    status: payload.status,
-    paymentStatus: payload.paymentStatus ?? payload.payment_status,
-    paymentMethod: payload.paymentMethod ?? payload.payment_method,
-    dueDate: payload.dueDate ?? payload.due_date ?? null,
-    totalAmount: payload.totalAmount ?? payload.total_amount ?? 0,
-    createdAt: payload.createdAt ?? payload.created_at,
-    paidAt: payload.paidAt ?? payload.paid_at ?? null,
+    id: payload.id as string,
+    number: payload.number as string,
+    status: payload.status as string,
+    paymentStatus: (payload.paymentStatus ?? payload.payment_status) as string,
+    paymentMethod: (payload.paymentMethod ?? payload.payment_method) as string,
+    dueDate: (payload.dueDate ?? payload.due_date ?? null) as string | null,
+    totalAmount: (payload.totalAmount ?? payload.total_amount ?? 0) as number,
+    createdAt: (payload.createdAt ?? payload.created_at) as string,
+    paidAt: (payload.paidAt ?? payload.paid_at ?? null) as string | null,
   };
 }
 
-async function request<T>(input: string, init: RequestInit) {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
-
-  let payload: ApiResponse<T> | null = null;
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Request failed",
-    );
-  }
-
-  return {
-    data: payload.data,
-    meta: payload.meta,
-  };
-}
-
+/**
+ * Fetches a paginated list of resellers
+ */
 export async function listResellers(
   filters: ResellerFilters,
 ): Promise<{ items: ResellerListItem[]; meta: ResellerListMeta | null }> {
-  const searchParams = new URLSearchParams();
-  searchParams.set("page", String(filters.page));
-  searchParams.set("pageSize", String(filters.pageSize));
+  const params: Record<string, string> = {
+    page: String(filters.page),
+    pageSize: String(filters.pageSize),
+  };
+  
   if (filters.search) {
-    searchParams.set("search", filters.search);
+    params.search = filters.search;
   }
   if (filters.status && filters.status !== "all") {
-    searchParams.set("status", filters.status);
+    params.status = filters.status;
   }
 
-  const response = await request<ResellerListResponse>(
-    `/api/resellers?${searchParams.toString()}`,
-    { method: "GET" },
+  const { data, meta } = await apiClient.get<ResellerListResponse>(
+    "/api/resellers",
+    params
   );
 
   return {
-    items: response.data.items.map(transformListItem),
-    meta: (response.meta as ResellerListMeta | null) ?? null,
+    items: data.items.map((item) => transformListItem(item as unknown as Record<string, unknown>)),
+    meta: (meta as ResellerListMeta | null) ?? null,
   };
 }
 
+/**
+ * Creates a new reseller
+ */
 export async function createReseller(
   input: CreateResellerPayload,
 ): Promise<ResellerListItem> {
-  const { data } = await request<{ reseller: ResellerListItem }>(
-    "/api/resellers",
-    {
-      method: "POST",
-      body: JSON.stringify(input),
-    },
-  );
-  return transformListItem(data.reseller);
+  const { data } = await apiClient.post<ResellerResponse>("/api/resellers", input);
+  return transformListItem(data.reseller as unknown as Record<string, unknown>);
 }
 
+/**
+ * Updates an existing reseller
+ */
 export async function updateReseller(
   resellerId: string,
   input: UpdateResellerPayload,
 ): Promise<ResellerListItem> {
-  const { data } = await request<{ reseller: ResellerListItem }>(
+  const { data } = await apiClient.patch<ResellerResponse>(
     `/api/resellers/${resellerId}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    },
+    input
   );
-  return transformListItem(data.reseller);
+  return transformListItem(data.reseller as unknown as Record<string, unknown>);
 }
 
-export async function toggleResellerStatus(resellerId: string, isActive: boolean) {
-  const { data } = await request<{ reseller: ResellerListItem }>(
+/**
+ * Toggles reseller active status
+ */
+export async function toggleResellerStatus(
+  resellerId: string,
+  isActive: boolean
+): Promise<ResellerListItem> {
+  const { data } = await apiClient.patch<ResellerResponse>(
     `/api/resellers/${resellerId}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ isActive }),
-    },
+    { isActive }
   );
-  return transformListItem(data.reseller);
+  return transformListItem(data.reseller as unknown as Record<string, unknown>);
 }
 
+/**
+ * Deletes a reseller
+ */
 export async function deleteReseller(resellerId: string): Promise<void> {
-  await request<{ success: boolean }>(`/api/resellers/${resellerId}`, {
-    method: "DELETE",
-  });
+  await apiClient.delete<{ success: boolean }>(`/api/resellers/${resellerId}`);
 }
 
+/**
+ * Fetches orders for a specific reseller
+ */
 export async function listResellerOrders(
   resellerId: string,
   filters: ResellerOrderFilters,
 ) {
-  const searchParams = new URLSearchParams();
-  searchParams.set("page", String(filters.page));
-  searchParams.set("pageSize", String(filters.pageSize));
+  const params: Record<string, string> = {
+    page: String(filters.page),
+    pageSize: String(filters.pageSize),
+  };
+  
   if (filters.paymentStatus && filters.paymentStatus !== "all") {
-    searchParams.set("paymentStatus", filters.paymentStatus);
+    params.paymentStatus = filters.paymentStatus;
   }
   if (filters.search?.trim()) {
-    searchParams.set("search", filters.search.trim());
+    params.search = filters.search.trim();
   }
 
-  const response = await request<ResellerOrdersResponse>(
-    `/api/resellers/${resellerId}/orders?${searchParams.toString()}`,
-    { method: "GET" },
+  const { data, meta } = await apiClient.get<ResellerOrdersResponse>(
+    `/api/resellers/${resellerId}/orders`,
+    params
   );
 
   return {
-    items: response.data.items.map(transformOrder),
-    meta: (response.meta as ResellerListMeta | null) ?? null,
+    items: data.items.map((item) => transformOrder(item as unknown as Record<string, unknown>)),
+    meta: (meta as ResellerListMeta | null) ?? null,
   };
 }

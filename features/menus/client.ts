@@ -1,147 +1,112 @@
-import { AppError, ERR } from "@/lib/utils/errors";
+import { apiClient } from "@/lib/api/client";
 
 import type { MenuFilters, MenuListItem } from "./types";
-
-type ApiResponse<TData> = {
-  data: TData;
-  error: { message: string; code?: number } | null;
-  meta: Record<string, unknown> | null;
-};
 
 type ListMenusResponse = {
   items: MenuListItem[];
 };
 
+type CreateMenuInput =
+  | {
+      type: "simple";
+      name: string;
+      sku?: string | null;
+      categoryId?: string | null;
+      thumbnailUrl?: string | null;
+      isActive?: boolean;
+      price: number;
+      resellerPrice?: number | null;
+    }
+  | {
+      type: "variant";
+      name: string;
+      sku?: string | null;
+      categoryId?: string | null;
+      thumbnailUrl?: string | null;
+      isActive?: boolean;
+      variants: Record<string, unknown>;
+    };
+
+type UpdateMenuInput = Partial<{
+  type: "simple" | "variant";
+  name: string;
+  sku: string | null;
+  categoryId: string | null;
+  thumbnailUrl: string | null;
+  isActive: boolean;
+  price: number;
+  resellerPrice: number | null;
+  variants: Record<string, unknown>;
+}>;
+
+/**
+ * Fetches a paginated list of menus with optional filtering
+ */
 export async function listMenus(filters: MenuFilters = {}) {
-  const searchParams = new URLSearchParams();
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.status) searchParams.set("status", filters.status);
-  if (filters.categoryId) searchParams.set("categoryId", filters.categoryId);
-  if (filters.type) searchParams.set("type", filters.type);
-  if (filters.page) searchParams.set("page", String(filters.page));
-  if (filters.pageSize) searchParams.set("pageSize", String(filters.pageSize));
+  const params: Record<string, string> = {};
+  
+  if (filters.search) params.search = filters.search;
+  if (filters.status) params.status = filters.status;
+  if (filters.categoryId) params.categoryId = filters.categoryId;
+  if (filters.type) params.type = filters.type;
+  if (filters.page) params.page = String(filters.page);
+  if (filters.pageSize) params.pageSize = String(filters.pageSize);
 
-  const query = searchParams.toString();
-  const url = `/api/menus${query ? `?${query}` : ""}`;
-
-  const response = await request<ListMenusResponse>(url, {
-    method: "GET",
-  });
+  const { data, meta } = await apiClient.get<ListMenusResponse>(
+    "/api/menus",
+    params
+  );
 
   return {
-    items: response.data.items,
-    meta: response.meta,
+    items: data.items,
+    meta,
   };
 }
 
+/**
+ * Fetches a single menu by ID
+ */
 export async function getMenu(menuId: string) {
-  const { data } = await request<MenuListItem>(`/api/menus/${menuId}`, {
-    method: "GET",
-  });
+  const { data } = await apiClient.get<MenuListItem>(`/api/menus/${menuId}`);
   return data;
 }
 
-export async function createMenu(
-  input:
-    | {
-        type: "simple";
-        name: string;
-        sku?: string | null;
-        categoryId?: string | null;
-        thumbnailUrl?: string | null;
-        isActive?: boolean;
-        price: number;
-        resellerPrice?: number | null;
-      }
-    | {
-        type: "variant";
-        name: string;
-        sku?: string | null;
-        categoryId?: string | null;
-        thumbnailUrl?: string | null;
-        isActive?: boolean;
-        variants: Record<string, unknown>;
-      },
-) {
-  const { data } = await request<MenuListItem>("/api/menus", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+/**
+ * Creates a new menu
+ */
+export async function createMenu(input: CreateMenuInput) {
+  const { data } = await apiClient.post<MenuListItem>("/api/menus", input);
   return data;
 }
 
-export async function updateMenu(
-  menuId: string,
-  input: Partial<{
-    type: "simple" | "variant";
-    name: string;
-    sku: string | null;
-    categoryId: string | null;
-    thumbnailUrl: string | null;
-    isActive: boolean;
-    price: number;
-    resellerPrice: number | null;
-    variants: Record<string, unknown>;
-  }>,
-) {
-  const { data } = await request<MenuListItem>(`/api/menus/${menuId}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
-  return data;
-}
-
-export async function deleteMenu(menuId: string) {
-  const { data } = await request<{ success: boolean }>(
+/**
+ * Updates an existing menu
+ */
+export async function updateMenu(menuId: string, input: UpdateMenuInput) {
+  const { data } = await apiClient.patch<MenuListItem>(
     `/api/menus/${menuId}`,
-    {
-      method: "DELETE",
-    },
+    input
   );
   return data;
 }
 
+/**
+ * Deletes a menu
+ */
+export async function deleteMenu(menuId: string) {
+  const { data } = await apiClient.delete<{ success: boolean }>(
+    `/api/menus/${menuId}`
+  );
+  return data;
+}
+
+/**
+ * Publishes or unpublishes a menu
+ */
 export async function publishMenu(menuId: string, isActive: boolean) {
-  const { data } = await request<MenuListItem>(
+  const { data } = await apiClient.post<MenuListItem>(
     `/api/menus/${menuId}/publish`,
-    {
-      method: "POST",
-      body: JSON.stringify({ isActive }),
-    },
+    { isActive }
   );
   return data;
-}
-
-async function request<T>(input: string, init: RequestInit) {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
-
-  let payload: ApiResponse<T> | null = null;
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error
-        ? error.message
-        : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Request failed",
-    );
-  }
-
-  return {
-    data: payload.data,
-    meta: payload.meta,
-  };
 }

@@ -3,7 +3,7 @@ import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { createQueryClient } from "@/lib/query";
 import { ensureAdminOrManager, requireActor } from "@/features/users/server";
 import { getSettings } from "@/features/settings/server";
-import { settingsQueryKey } from "@/features/settings/queries";
+import { settingsQueryKey } from "@/features/settings/keys";
 import { SettingsScreen } from "./SettingsScreen";
 
 export const dynamic = "force-dynamic";

@@ -1,33 +1,36 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { SettingsPayload, SettingsUpdateInput } from "./types";
-import { settingsQueryKey, settingsQueryOptions } from "./queries";
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
 
-const UPDATE_ERROR = "Gagal memperbarui pengaturan";
+import type { SettingsUpdateInput } from "./types";
+import { fetchSettings, updateSettings } from "./client";
+import { settingsQueryKey } from "./keys";
 
+// Re-export query key for external usage
+export { settingsQueryKey } from "./keys";
+
+/**
+ * Hook for fetching application settings
+ */
 export function useSettings() {
-  return useQuery(settingsQueryOptions());
+  return useQuery({
+    queryKey: settingsQueryKey,
+    queryFn: fetchSettings,
+    ...CACHE_POLICIES.PERMANENT,
+  });
 }
 
+/**
+ * Hook for updating application settings
+ */
 export function useUpdateSettingsMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: async (input: SettingsUpdateInput) => {
-      const response = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload?.error?.message ?? UPDATE_ERROR);
-      }
-
-      return payload?.data?.settings as SettingsPayload;
-    },
+    mutationFn: (input: SettingsUpdateInput) => updateSettings(input),
     onSuccess: (data) => {
       queryClient.setQueryData(settingsQueryKey, data);
     },
   });
 }
+

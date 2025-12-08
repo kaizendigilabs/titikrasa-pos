@@ -6,6 +6,9 @@ import {
 } from "@tanstack/react-query";
 import * as React from "react";
 
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
+import { createBrowserClient } from "@/lib/supabase/client";
+
 import {
   exportPurchaseHistoryCsv,
   getStoreIngredient,
@@ -23,7 +26,6 @@ import type {
   CreateStoreIngredientInput,
 } from "./schemas";
 import type { PurchaseHistoryEntry, StoreIngredientDetail } from "./types";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 const STORE_INGREDIENTS_KEY = "storeIngredients";
 const STORE_INGREDIENT_DETAIL_KEY = "storeIngredientDetail";
@@ -33,6 +35,9 @@ type UseStoreIngredientsOptions = {
   initialData?: StoreIngredientListResult;
 };
 
+/**
+ * Hook for fetching store ingredients list
+ */
 export function useStoreIngredients(
   filters: StoreIngredientFilters,
   options: UseStoreIngredientsOptions = {},
@@ -41,18 +46,20 @@ export function useStoreIngredients(
     queryKey: [STORE_INGREDIENTS_KEY, filters],
     queryFn: () => listStoreIngredients(filters),
     placeholderData: keepPreviousData,
-    gcTime: 1000 * 60 * 30,
-    staleTime: 1000 * 30,
+    ...CACHE_POLICIES.FREQUENT,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
 
+/**
+ * Hook for fetching single store ingredient
+ */
 export function useStoreIngredient(ingredientId: string) {
   return useQuery({
     queryKey: [STORE_INGREDIENT_DETAIL_KEY, ingredientId],
     queryFn: () => getStoreIngredient(ingredientId),
     enabled: Boolean(ingredientId),
-    gcTime: 1000 * 60 * 5,
+    ...CACHE_POLICIES.FREQUENT,
   });
 }
 
@@ -60,6 +67,9 @@ type UseStoreIngredientDetailOptions = {
   initialData?: StoreIngredientDetail;
 };
 
+/**
+ * Hook for fetching store ingredient detail
+ */
 export function useStoreIngredientDetail(
   ingredientId: string,
   options: UseStoreIngredientDetailOptions = {},
@@ -68,7 +78,7 @@ export function useStoreIngredientDetail(
     queryKey: [STORE_INGREDIENT_DETAIL_KEY, ingredientId],
     queryFn: () => getStoreIngredient(ingredientId),
     enabled: Boolean(ingredientId),
-    gcTime: 1000 * 60 * 5,
+    ...CACHE_POLICIES.FREQUENT,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
@@ -80,6 +90,9 @@ type PurchaseHistoryOptions = {
   };
 };
 
+/**
+ * Hook for fetching purchase history
+ */
 export function usePurchaseHistory(
   ingredientId: string,
   filters: PurchaseHistoryFilters,
@@ -90,12 +103,14 @@ export function usePurchaseHistory(
     queryFn: () => listPurchaseHistory(ingredientId, filters),
     placeholderData: keepPreviousData,
     enabled: Boolean(ingredientId),
-    gcTime: 1000 * 60 * 10,
-    staleTime: 1000 * 30,
+    ...CACHE_POLICIES.STATIC,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
 
+/**
+ * Hook for exporting purchase history as CSV
+ */
 export function useExportPurchaseHistoryMutation(ingredientId: string) {
   return useMutation({
     mutationFn: (filters: PurchaseHistoryFilters) =>
@@ -103,6 +118,9 @@ export function useExportPurchaseHistoryMutation(ingredientId: string) {
   });
 }
 
+/**
+ * Hook for real-time store ingredient updates via Supabase
+ */
 export function useStoreIngredientsRealtime(enabled = true) {
   const queryClient = useQueryClient();
 
@@ -127,6 +145,9 @@ export function useStoreIngredientsRealtime(enabled = true) {
   }, [enabled, queryClient]);
 }
 
+/**
+ * Hook for updating a store ingredient
+ */
 export function useUpdateStoreIngredientMutation() {
   const queryClient = useQueryClient();
 
@@ -145,8 +166,12 @@ export function useUpdateStoreIngredientMutation() {
   });
 }
 
+/**
+ * Hook for creating a store ingredient
+ */
 export function useCreateStoreIngredientMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (payload: CreateStoreIngredientInput) => createStoreIngredient(payload),
     onSuccess: () => {

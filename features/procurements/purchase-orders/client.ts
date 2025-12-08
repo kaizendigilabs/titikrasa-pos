@@ -1,19 +1,15 @@
+import { apiClient } from "@/lib/api/client";
+
 import type {
   CreatePurchaseOrderPayload,
   PurchaseOrderFilters,
   UpdatePurchaseOrderPayload,
 } from "./schemas";
-import type { PurchaseOrderListItem } from "./types";
+import type { Json } from "@/lib/types/database";
+import type { PurchaseOrderListItem, PurchaseOrderStatus } from "./types";
 import { parsePurchaseOrderItems, parseGrandTotal } from "./types";
-import { AppError, ERR } from "@/lib/utils/errors";
 
 const ENDPOINT = "/api/procurements/purchase-orders" as const;
-
-type ApiResponse<T> = {
-  data: T;
-  error: { message: string; code?: number } | null;
-  meta: Record<string, unknown> | null;
-};
 
 type PurchaseOrderListFiltersMeta = {
   status: string;
@@ -37,120 +33,111 @@ export type PurchaseOrderListResult = {
   meta: PurchaseOrderListMeta | null;
 };
 
-async function request<T>(input: string, init: RequestInit) {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
+type PurchaseOrdersResponse = {
+  purchaseOrders: Array<Record<string, unknown>>;
+};
 
-  let payload: ApiResponse<T> | null = null;
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
+type PurchaseOrderResponse = {
+  purchaseOrder: Record<string, unknown>;
+};
 
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Request failed",
-    );
-  }
-
-  return {
-    data: payload.data,
-    meta: payload.meta,
-  };
-}
-
-function extractSupplierName(raw: any): string {
+/**
+ * Extracts supplier name from raw API response
+ */
+function extractSupplierName(raw: Record<string, unknown>): string {
   const supplierData = raw.suppliers;
   if (Array.isArray(supplierData)) {
-    return supplierData[0]?.name ?? "Unknown supplier";
+    return (supplierData[0]?.name ?? "Unknown supplier") as string;
   }
   if (supplierData && typeof supplierData === "object") {
-    return supplierData.name ?? "Unknown supplier";
+    return ((supplierData as Record<string, unknown>).name ?? "Unknown supplier") as string;
   }
-  return raw.supplier_name ?? "Unknown supplier";
+  return (raw.supplier_name ?? "Unknown supplier") as string;
 }
 
-function transformPurchaseOrder(raw: any): PurchaseOrderListItem {
+/**
+ * Transforms raw API response to typed PurchaseOrderListItem
+ */
+function transformPurchaseOrder(raw: Record<string, unknown>): PurchaseOrderListItem {
   return {
-    id: raw.id,
-    status: raw.status,
-    items: parsePurchaseOrderItems(raw.items ?? []),
-    totals: typeof raw.totals === "object" && raw.totals !== null ? raw.totals : {},
-    supplier_id: raw.supplier_id ?? "",
+    id: raw.id as string,
+    status: raw.status as PurchaseOrderStatus,
+    items: parsePurchaseOrderItems((raw.items ?? null) as Json),
+    totals: typeof raw.totals === "object" && raw.totals !== null ? raw.totals as Record<string, unknown> : {},
+    supplier_id: (raw.supplier_id ?? "") as string,
     supplier_name: extractSupplierName(raw),
-    grand_total: parseGrandTotal(raw.totals ?? null),
-    issued_at: raw.issued_at ?? null,
-    completed_at: raw.completed_at ?? null,
-    created_at: raw.created_at ?? new Date().toISOString(),
+    grand_total: parseGrandTotal((raw.totals ?? null) as Record<string, unknown> | null),
+    issued_at: (raw.issued_at ?? null) as string | null,
+    completed_at: (raw.completed_at ?? null) as string | null,
+    created_at: (raw.created_at ?? new Date().toISOString()) as string,
   };
 }
 
+/**
+ * Fetches a paginated list of purchase orders
+ */
 export async function listPurchaseOrders(
   filters: PurchaseOrderFilters,
 ): Promise<PurchaseOrderListResult> {
-  const searchParams = new URLSearchParams();
-  searchParams.set("page", String(filters.page));
-  searchParams.set("pageSize", String(filters.pageSize));
+  const params: Record<string, string> = {
+    page: String(filters.page),
+    pageSize: String(filters.pageSize),
+  };
+  
   if (filters.status && filters.status !== "all") {
-    searchParams.set("status", filters.status);
+    params.status = filters.status;
   }
   if (filters.search) {
-    searchParams.set("search", filters.search);
+    params.search = filters.search;
   }
   if (filters.supplierId) {
-    searchParams.set("supplierId", filters.supplierId);
+    params.supplierId = filters.supplierId;
   }
   if (filters.issuedFrom) {
-    searchParams.set("issuedFrom", filters.issuedFrom);
+    params.issuedFrom = filters.issuedFrom;
   }
   if (filters.issuedTo) {
-    searchParams.set("issuedTo", filters.issuedTo);
+    params.issuedTo = filters.issuedTo;
   }
 
-  const response = await request<{ purchaseOrders: any[] }>(
-    `${ENDPOINT}?${searchParams.toString()}`,
-    { method: "GET" },
+  const { data, meta } = await apiClient.get<PurchaseOrdersResponse>(
+    ENDPOINT,
+    params
   );
 
   return {
-    items: response.data.purchaseOrders.map(transformPurchaseOrder),
-    meta: (response.meta as PurchaseOrderListMeta | null) ?? null,
+    items: data.purchaseOrders.map(transformPurchaseOrder),
+    meta: (meta as PurchaseOrderListMeta | null) ?? null,
   };
 }
 
+/**
+ * Creates a new purchase order
+ */
 export async function createPurchaseOrder(
   payload: CreatePurchaseOrderPayload,
 ): Promise<PurchaseOrderListItem> {
-  const { data } = await request<{ purchaseOrder: any }>(ENDPOINT, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const { data } = await apiClient.post<PurchaseOrderResponse>(ENDPOINT, payload);
   return transformPurchaseOrder(data.purchaseOrder);
 }
 
+/**
+ * Updates an existing purchase order
+ */
 export async function updatePurchaseOrder(
   purchaseOrderId: string,
   payload: UpdatePurchaseOrderPayload,
 ): Promise<PurchaseOrderListItem> {
-  const { data } = await request<{ purchaseOrder: any }>(`${ENDPOINT}/${purchaseOrderId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
+  const { data } = await apiClient.patch<PurchaseOrderResponse>(
+    `${ENDPOINT}/${purchaseOrderId}`,
+    payload
+  );
   return transformPurchaseOrder(data.purchaseOrder);
 }
 
+/**
+ * Deletes a purchase order
+ */
 export async function deletePurchaseOrder(purchaseOrderId: string): Promise<void> {
-  await request<{ success: boolean }>(`${ENDPOINT}/${purchaseOrderId}`, {
-    method: "DELETE",
-  });
+  await apiClient.delete<{ success: boolean }>(`${ENDPOINT}/${purchaseOrderId}`);
 }

@@ -1,23 +1,19 @@
+import { apiClient } from "@/lib/api/client";
+import { AppError } from "@/lib/utils/errors";
+
 import type {
   PurchaseHistoryFilters,
   StoreIngredientFilters,
   UpdateStoreIngredientInput,
+  CreateStoreIngredientInput,
 } from "./schemas";
 import type {
   PurchaseHistoryEntry,
   StoreIngredientDetail,
   StoreIngredientListItem,
 } from "./types";
-import { AppError, ERR } from "@/lib/utils/errors";
-import type { CreateStoreIngredientInput } from "./schemas";
 
 const ENDPOINT = "/api/inventory/store-ingredients" as const;
-
-type ApiResponse<T> = {
-  data: T;
-  error: { message: string; code?: number } | null;
-  meta: Record<string, unknown> | null;
-};
 
 type StoreIngredientListMeta = {
   pagination: {
@@ -47,53 +43,40 @@ export type PurchaseHistoryMeta = {
   };
 };
 
-async function request<T>(input: string, init?: RequestInit) {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
+type StoreIngredientsResponse = {
+  storeIngredients: StoreIngredientListItem[];
+};
 
-  let payload: ApiResponse<T> | null = null;
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
+type StoreIngredientResponse = {
+  storeIngredient: StoreIngredientDetail;
+};
 
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Request failed",
-    );
-  }
+type PurchaseHistoryResponse = {
+  purchases: PurchaseHistoryEntry[];
+};
 
-  return {
-    data: payload.data,
-    meta: payload.meta,
-  };
-}
-
-function buildSearchParams(filters: Partial<Record<string, unknown>>) {
-  const params = new URLSearchParams();
+/**
+ * Builds query params from filters object
+ */
+function buildSearchParams(filters: Partial<Record<string, unknown>>): Record<string, string> {
+  const params: Record<string, string> = {};
   Object.entries(filters).forEach(([key, value]) => {
     if (value === undefined || value === null || value === "") return;
-    params.set(key, String(value));
+    params[key] = String(value);
   });
   return params;
 }
 
+/**
+ * Fetches a paginated list of store ingredients
+ */
 export async function listStoreIngredients(
   filters: StoreIngredientFilters,
 ): Promise<StoreIngredientListResult> {
   const params = buildSearchParams(filters);
-  const { data, meta } = await request<{ storeIngredients: StoreIngredientListItem[] }>(
-    `${ENDPOINT}?${params.toString()}`,
+  const { data, meta } = await apiClient.get<StoreIngredientsResponse>(
+    ENDPOINT,
+    params
   );
   return {
     items: data.storeIngredients,
@@ -101,15 +84,21 @@ export async function listStoreIngredients(
   };
 }
 
+/**
+ * Fetches a single store ingredient by ID
+ */
 export async function getStoreIngredient(
   ingredientId: string,
 ): Promise<StoreIngredientDetail> {
-  const { data } = await request<{ storeIngredient: StoreIngredientDetail }>(
-    `${ENDPOINT}/${ingredientId}`,
+  const { data } = await apiClient.get<StoreIngredientResponse>(
+    `${ENDPOINT}/${ingredientId}`
   );
   return data.storeIngredient;
 }
 
+/**
+ * Fetches purchase history for an ingredient
+ */
 export async function listPurchaseHistory(
   ingredientId: string,
   filters: PurchaseHistoryFilters,
@@ -118,8 +107,9 @@ export async function listPurchaseHistory(
   meta: PurchaseHistoryMeta | null;
 }> {
   const params = buildSearchParams(filters);
-  const { data, meta } = await request<{ purchases: PurchaseHistoryEntry[] }>(
-    `${ENDPOINT}/${ingredientId}/purchase-history?${params.toString()}`,
+  const { data, meta } = await apiClient.get<PurchaseHistoryResponse>(
+    `${ENDPOINT}/${ingredientId}/purchase-history`,
+    params
   );
   return {
     items: data.purchases,
@@ -127,11 +117,15 @@ export async function listPurchaseHistory(
   };
 }
 
+/**
+ * Exports purchase history as CSV
+ * Note: This uses native fetch since apiClient doesn't support blob responses
+ */
 export async function exportPurchaseHistoryCsv(
   ingredientId: string,
   filters: PurchaseHistoryFilters,
 ): Promise<Blob> {
-  const params = buildSearchParams({ ...filters, format: "csv" });
+  const params = new URLSearchParams(buildSearchParams({ ...filters, format: "csv" }));
   const response = await fetch(
     `${ENDPOINT}/${ingredientId}/purchase-history?${params.toString()}`,
     {
@@ -150,26 +144,29 @@ export async function exportPurchaseHistoryCsv(
   return await response.blob();
 }
 
+/**
+ * Updates a store ingredient
+ */
 export async function updateStoreIngredient(
   ingredientId: string,
   payload: UpdateStoreIngredientInput,
 ): Promise<StoreIngredientDetail> {
-  const { data } = await request<{ storeIngredient: StoreIngredientDetail }>(
+  const { data } = await apiClient.patch<StoreIngredientResponse>(
     `${ENDPOINT}/${ingredientId}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    },
+    payload
   );
   return data.storeIngredient;
 }
 
+/**
+ * Creates a new store ingredient
+ */
 export async function createStoreIngredient(
   payload: CreateStoreIngredientInput,
 ): Promise<StoreIngredientDetail> {
-  const { data } = await request<{ storeIngredient: StoreIngredientDetail }>(ENDPOINT, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const { data } = await apiClient.post<StoreIngredientResponse>(
+    ENDPOINT,
+    payload
+  );
   return data.storeIngredient;
 }

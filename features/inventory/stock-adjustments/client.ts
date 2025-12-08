@@ -1,61 +1,34 @@
+import { apiClient } from "@/lib/api/client";
+
 import type {
   CreateStockAdjustmentPayload,
   StockAdjustment,
 } from "./types";
-import { AppError, ERR } from "@/lib/utils/errors";
 
 const ENDPOINT = "/api/inventory/stock-adjustments" as const;
 
-type ApiResponse<T> = {
-  data: T;
-  error: { message: string; code?: number } | null;
-  meta: Record<string, unknown> | null;
+type StockAdjustmentResponse = {
+  adjustment: StockAdjustment;
 };
 
-async function request<T>(input: string, init?: RequestInit) {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
-
-  let payload: ApiResponse<T> | null = null;
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Request failed",
-    );
-  }
-
-  return payload.data;
-}
-
+/**
+ * Creates a new stock adjustment
+ */
 export async function createStockAdjustment(payload: CreateStockAdjustmentPayload) {
-  const data = await request<{ adjustment: StockAdjustment }>(ENDPOINT, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const { data } = await apiClient.post<StockAdjustmentResponse>(
+    ENDPOINT,
+    payload
+  );
   return data.adjustment;
 }
 
+/**
+ * Approves a stock adjustment
+ */
 export async function approveStockAdjustment(adjustmentId: string) {
-  const data = await request<{ adjustment: StockAdjustment }>(
+  const { data } = await apiClient.patch<StockAdjustmentResponse>(
     `${ENDPOINT}/${adjustmentId}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ action: "approve" } as const),
-    },
+    { action: "approve" }
   );
   return data.adjustment;
 }

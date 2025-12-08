@@ -1,77 +1,6 @@
-import { AppError, ERR } from "@/lib/utils/errors";
+import { apiClient } from "@/lib/api/client";
 
 import type { RecipeFilters, RecipeListItem, RecipeListResponse } from "./types";
-
-type ApiEnvelope<T> = {
-  data: T;
-  error: { message: string; code?: number } | null;
-  meta: Record<string, unknown> | null;
-};
-
-function buildParams(filters: RecipeFilters): string {
-  const params = new URLSearchParams();
-  if (filters.search) params.set("search", filters.search);
-  if (filters.menuId) params.set("menuId", filters.menuId);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
-  return params.toString();
-}
-
-export async function listRecipes(filters: RecipeFilters = {}) {
-  const query = buildParams(filters);
-  const response = await fetch(`/api/recipes${query ? `?${query}` : ""}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  let payload: ApiEnvelope<RecipeListResponse> | null = null;
-  try {
-    payload = (await response.json()) as ApiEnvelope<RecipeListResponse>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Failed to load recipes",
-    );
-  }
-
-  return {
-    recipes: payload.data.recipes,
-    meta: payload.meta,
-  };
-}
-
-export async function getRecipe(recipeId: string) {
-  const response = await fetch(`/api/recipes/${recipeId}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  let payload: ApiEnvelope<{ recipe: RecipeListItem }> | null = null;
-  try {
-    payload = (await response.json()) as ApiEnvelope<{ recipe: RecipeListItem }>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Failed to load recipe",
-    );
-  }
-
-  return payload.data.recipe;
-}
 
 type RecipeInput = {
   menuId: string;
@@ -97,84 +26,67 @@ type RecipeInput = {
   }>;
 };
 
+type RecipeResponse = {
+  recipe: RecipeListItem;
+};
+
+/**
+ * Fetches a paginated list of recipes
+ */
+export async function listRecipes(filters: RecipeFilters = {}) {
+  const params: Record<string, string> = {};
+  
+  if (filters.search) params.search = filters.search;
+  if (filters.menuId) params.menuId = filters.menuId;
+  if (filters.page) params.page = String(filters.page);
+  if (filters.pageSize) params.pageSize = String(filters.pageSize);
+
+  const { data, meta } = await apiClient.get<RecipeListResponse>(
+    "/api/recipes",
+    params
+  );
+
+  return {
+    recipes: data.recipes,
+    meta,
+  };
+}
+
+/**
+ * Fetches a single recipe by ID
+ */
+export async function getRecipe(recipeId: string) {
+  const { data } = await apiClient.get<RecipeResponse>(`/api/recipes/${recipeId}`);
+  return data.recipe;
+}
+
+/**
+ * Creates a new recipe
+ */
 export async function createRecipe(input: RecipeInput) {
-  const response = await fetch(`/api/recipes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  let payload: ApiEnvelope<{ recipe: RecipeListItem }> | null = null;
-  try {
-    payload = (await response.json()) as ApiEnvelope<{ recipe: RecipeListItem }>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Failed to create recipe",
-    );
-  }
-
-  return payload.data.recipe;
+  const { data } = await apiClient.post<RecipeResponse>("/api/recipes", input);
+  return data.recipe;
 }
 
+/**
+ * Updates an existing recipe
+ */
 export async function updateRecipe(recipeId: string, input: Partial<RecipeInput>) {
-  const response = await fetch(`/api/recipes/${recipeId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  let payload: ApiEnvelope<{ recipe: RecipeListItem }> | null = null;
-  try {
-    payload = (await response.json()) as ApiEnvelope<{ recipe: RecipeListItem }>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Failed to update recipe",
-    );
-  }
-
-  return payload.data.recipe;
+  const { data } = await apiClient.patch<RecipeResponse>(
+    `/api/recipes/${recipeId}`,
+    input
+  );
+  return data.recipe;
 }
 
+/**
+ * Deletes a recipe
+ */
 export async function deleteRecipe(recipeId: string) {
-  const response = await fetch(`/api/recipes/${recipeId}`, {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  let payload: ApiEnvelope<{ success: boolean }> | null = null;
-  try {
-    payload = (await response.json()) as ApiEnvelope<{ success: boolean }>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error ? error.message : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Failed to delete recipe",
-    );
-  }
-
-  return payload.data.success;
+  const { data } = await apiClient.delete<{ success: boolean }>(
+    `/api/recipes/${recipeId}`
+  );
+  return data.success;
 }
 
 export type { RecipeInput };

@@ -6,6 +6,9 @@ import {
 } from "@tanstack/react-query";
 import * as React from "react";
 
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
+import { createBrowserClient } from "@/lib/supabase/client";
+
 import {
   createPurchaseOrder,
   deletePurchaseOrder,
@@ -18,7 +21,6 @@ import type {
   UpdatePurchaseOrderPayload,
 } from "./schemas";
 import type { PurchaseOrderListItem } from "./types";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 const PURCHASE_ORDERS_KEY = "purchaseOrders";
 
@@ -31,6 +33,9 @@ type UsePurchaseOrdersOptions = {
   initialData?: Awaited<ReturnType<typeof listPurchaseOrders>>;
 };
 
+/**
+ * Hook for fetching purchase orders list
+ */
 export function usePurchaseOrders(
   filters: PurchaseOrderFilters,
   options: UsePurchaseOrdersOptions = {},
@@ -39,12 +44,14 @@ export function usePurchaseOrders(
     queryKey: [PURCHASE_ORDERS_KEY, filters],
     queryFn: () => listPurchaseOrders(filters),
     placeholderData: keepPreviousData,
-    gcTime: 1000 * 60 * 30,
-    staleTime: 1000 * 30,
+    ...CACHE_POLICIES.FREQUENT,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
 
+/**
+ * Updates all purchase orders cache queries
+ */
 function updatePurchaseOrdersCache(
   queryClient: ReturnType<typeof useQueryClient>,
   updater: (snapshot: PurchaseOrderQuerySnapshot) => PurchaseOrderQuerySnapshot,
@@ -58,8 +65,12 @@ function updatePurchaseOrdersCache(
   );
 }
 
+/**
+ * Hook for creating a purchase order
+ */
 export function useCreatePurchaseOrderMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (payload: CreatePurchaseOrderPayload) => createPurchaseOrder(payload),
     onSuccess: (purchaseOrder) => {
@@ -71,8 +82,12 @@ export function useCreatePurchaseOrderMutation() {
   });
 }
 
+/**
+ * Hook for updating a purchase order
+ */
 export function useUpdatePurchaseOrderMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ purchaseOrderId, payload }: { purchaseOrderId: string; payload: UpdatePurchaseOrderPayload }) =>
       updatePurchaseOrder(purchaseOrderId, payload),
@@ -85,8 +100,12 @@ export function useUpdatePurchaseOrderMutation() {
   });
 }
 
+/**
+ * Hook for deleting a purchase order
+ */
 export function useDeletePurchaseOrderMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (purchaseOrderId: string) => deletePurchaseOrder(purchaseOrderId),
     onSuccess: (_data, purchaseOrderId) => {
@@ -98,6 +117,9 @@ export function useDeletePurchaseOrderMutation() {
   });
 }
 
+/**
+ * Hook for real-time purchase order updates via Supabase
+ */
 export function usePurchaseOrdersRealtime(enabled = true) {
   const queryClient = useQueryClient();
 

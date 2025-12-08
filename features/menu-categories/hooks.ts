@@ -6,6 +6,9 @@ import {
 } from "@tanstack/react-query";
 import * as React from "react";
 
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
+import { createBrowserClient } from "@/lib/supabase/client";
+
 import {
   createMenuCategory,
   deleteMenuCategory,
@@ -13,23 +16,26 @@ import {
   updateMenuCategory,
 } from "./client";
 import type { MenuCategory, MenuCategoryFilters } from "./types";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 const MENU_CATEGORIES_KEY = "menu-categories";
 
 type MenuCategoriesQuery = Awaited<ReturnType<typeof listMenuCategories>>;
 
+/**
+ * Normalizes filter values for consistent query keys
+ */
 function normalizeFilters(filters: MenuCategoryFilters): MenuCategoryFilters {
   return {
     page: filters.page ?? 1,
     pageSize: filters.pageSize ?? 50,
     status: filters.status ?? "all",
-    search: filters.search?.trim()
-      ? filters.search.trim()
-      : null,
+    search: filters.search?.trim() ? filters.search.trim() : null,
   };
 }
 
+/**
+ * Adjusts pagination total by delta
+ */
 function adjustMetaTotal(
   meta: MenuCategoriesQuery["meta"],
   delta: number,
@@ -47,32 +53,40 @@ function adjustMetaTotal(
   };
 }
 
+/**
+ * Hook for fetching menu categories list
+ */
 export function useMenuCategories(
   filters: MenuCategoryFilters,
   options: { initialData?: MenuCategoriesQuery } = {},
 ) {
   const normalizedFilters = normalizeFilters(filters);
+  
   return useQuery({
     queryKey: [MENU_CATEGORIES_KEY, normalizedFilters],
     queryFn: () => listMenuCategories(normalizedFilters),
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 30,
-    gcTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
+    ...CACHE_POLICIES.STATIC,
     retry: 1,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
 
+/**
+ * Hook for getting menu categories query key
+ */
 export function useMenuCategoriesQueryKey() {
   return React.useCallback((filters: MenuCategoryFilters = {}) => {
     return [MENU_CATEGORIES_KEY, normalizeFilters(filters)] as const;
   }, []);
 }
 
+/**
+ * Hook for creating a menu category
+ */
 export function useCreateMenuCategoryMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: createMenuCategory,
     onSuccess: () => {
@@ -85,8 +99,12 @@ export function useCreateMenuCategoryMutation() {
   });
 }
 
+/**
+ * Hook for updating a menu category
+ */
 export function useUpdateMenuCategoryMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({
       categoryId,
@@ -105,8 +123,12 @@ export function useUpdateMenuCategoryMutation() {
   });
 }
 
+/**
+ * Hook for deleting a menu category
+ */
 export function useDeleteMenuCategoryMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (categoryId: string) => deleteMenuCategory(categoryId),
     onSuccess: () => {
@@ -119,6 +141,9 @@ export function useDeleteMenuCategoryMutation() {
   });
 }
 
+/**
+ * Hook for real-time menu category updates via Supabase
+ */
 export function useMenuCategoriesRealtime(
   filters: MenuCategoryFilters,
   options: { enabled?: boolean } = {},
@@ -129,8 +154,8 @@ export function useMenuCategoriesRealtime(
 
   React.useEffect(() => {
     if (!enabled) return;
+    
     const supabase = createBrowserClient();
-
     const channel = supabase
       .channel("menu-categories-list")
       .on(
@@ -142,9 +167,7 @@ export function useMenuCategoriesRealtime(
             (current) => {
               if (!current) return current;
 
-              const newRow = (payload.new ??
-                payload.old ??
-                {}) as Record<string, unknown>;
+              const newRow = (payload.new ?? payload.old ?? {}) as Record<string, unknown>;
 
               const category: MenuCategory = {
                 id: String(newRow.id ?? ""),
@@ -174,6 +197,7 @@ export function useMenuCategoriesRealtime(
               const exists = current.items.some(
                 (item) => item.id === category.id,
               );
+              
               if (exists) {
                 return {
                   items: current.items.map((item) =>

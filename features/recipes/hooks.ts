@@ -6,6 +6,9 @@ import {
 } from "@tanstack/react-query";
 import * as React from "react";
 
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
+import { createBrowserClient } from "@/lib/supabase/client";
+
 import {
   createRecipe,
   deleteRecipe,
@@ -15,12 +18,14 @@ import {
   type RecipeInput,
 } from "./client";
 import type { RecipeFilters } from "./types";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 const RECIPES_QUERY_KEY = "recipes";
 
 type RecipesQueryResult = Awaited<ReturnType<typeof listRecipes>>;
 
+/**
+ * Normalizes filter values for consistent query keys
+ */
 function normalizeFilters(filters: RecipeFilters): RecipeFilters {
   return {
     search: filters.search ?? null,
@@ -28,24 +33,28 @@ function normalizeFilters(filters: RecipeFilters): RecipeFilters {
   };
 }
 
+/**
+ * Hook for fetching recipes list
+ */
 export function useRecipes(
   filters: RecipeFilters,
   options: { initialData?: RecipesQueryResult } = {},
 ) {
   const normalized = normalizeFilters(filters);
+  
   return useQuery({
     queryKey: [RECIPES_QUERY_KEY, normalized],
     queryFn: () => listRecipes(normalized),
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 30,
-    gcTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
+    ...CACHE_POLICIES.STATIC,
     retry: 1,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
 
+/**
+ * Hook for real-time recipe updates via Supabase
+ */
 export function useRecipesRealtime(
   filters: RecipeFilters,
   options: { enabled?: boolean } = {},
@@ -90,8 +99,12 @@ export function useRecipesRealtime(
   }, [enabled, normalized, queryClient]);
 }
 
+/**
+ * Hook for creating a recipe
+ */
 export function useCreateRecipeMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: createRecipe,
     onSuccess: () => {
@@ -106,8 +119,12 @@ export function useCreateRecipeMutation() {
   });
 }
 
+/**
+ * Hook for updating a recipe
+ */
 export function useUpdateRecipeMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ recipeId, input }: { recipeId: string; input: Partial<RecipeInput> }) =>
       updateRecipe(recipeId, input),
@@ -123,8 +140,12 @@ export function useUpdateRecipeMutation() {
   });
 }
 
+/**
+ * Hook for deleting a recipe
+ */
 export function useDeleteRecipeMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (recipeId: string) => deleteRecipe(recipeId),
     onSuccess: () => {
@@ -139,11 +160,15 @@ export function useDeleteRecipeMutation() {
   });
 }
 
+/**
+ * Hook for fetching single recipe detail
+ */
 export function useRecipeDetail(
   recipeId: string | null,
   options: { enabled?: boolean } = {},
 ) {
   const enabled = options.enabled ?? true;
+  
   return useQuery({
     queryKey: [RECIPES_QUERY_KEY, "detail", recipeId],
     queryFn: () => {
@@ -151,7 +176,6 @@ export function useRecipeDetail(
       return getRecipe(recipeId);
     },
     enabled: enabled && Boolean(recipeId),
-    staleTime: 1000 * 30,
-    gcTime: 1000 * 60 * 30,
+    ...CACHE_POLICIES.STATIC,
   });
 }

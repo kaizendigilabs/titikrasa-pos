@@ -6,7 +6,7 @@ import { DashboardOverviewClient } from "./DashboardOverviewClient";
 import { ensureStaffOrAbove, requireActor } from "@/features/users/server";
 import type { DashboardRangePayload } from "@/features/dashboard/types";
 import { createQueryClient } from "@/lib/query";
-import { dashboardOrdersQueryKey, dashboardSummaryQueryKey } from "@/features/dashboard/queries";
+import { dashboardSummaryQueryKey, dashboardOrdersQueryKey } from "@/features/dashboard/keys";
 import { DASHBOARD_ORDER_HISTORY_PAGE_SIZE } from "@/features/dashboard/constants";
 
 export const dynamic = "force-dynamic";

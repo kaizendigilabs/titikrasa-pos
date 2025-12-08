@@ -6,6 +6,9 @@ import {
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
+import { createBrowserClient } from "@/lib/supabase/client";
+
 import {
   createOrder,
   deleteOrder,
@@ -19,7 +22,6 @@ import type {
   UpdateOrderPaymentInput,
   VoidOrderInput,
 } from "./schemas";
-import { createBrowserClient } from "@/lib/supabase/client";
 import { computeOrderTotals } from "./utils";
 
 const ORDERS_QUERY_KEY = "pos-orders";
@@ -32,37 +34,39 @@ type UseCreateOrderOptions = {
   getResellerName?: (resellerId: string) => string | undefined;
 };
 
+/**
+ * Hook for fetching orders list with real-time updates
+ */
 export function useOrders(filters: OrderFilters, options: UseOrdersOptions = {}) {
   return useQuery({
     queryKey: [ORDERS_QUERY_KEY, filters],
     queryFn: () => listOrders(filters),
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 5,
-    gcTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
+    ...CACHE_POLICIES.REALTIME,
     retry: 1,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
 
+/**
+ * Hook for creating a new order with optimistic updates
+ */
 export function useCreateOrderMutation(
   filters: OrderFilters,
   options: UseCreateOrderOptions = {},
 ) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (input: CreateOrderInput) => createOrder(input),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: [ORDERS_QUERY_KEY, filters] });
+      
       const previous = queryClient.getQueryData<Awaited<ReturnType<typeof listOrders>>>(
         [ORDERS_QUERY_KEY, filters],
       );
 
-      const optimisticOrder = buildOptimisticOrder(
-        input,
-        options.getResellerName,
-      );
+      const optimisticOrder = buildOptimisticOrder(input, options.getResellerName);
 
       queryClient.setQueryData<Awaited<ReturnType<typeof listOrders>>>(
         [ORDERS_QUERY_KEY, filters],
@@ -107,6 +111,9 @@ export function useCreateOrderMutation(
   });
 }
 
+/**
+ * Builds an optimistic order for immediate UI feedback
+ */
 function buildOptimisticOrder(
   input: CreateOrderInput,
   getResellerName?: (resellerId: string) => string | undefined,
@@ -114,6 +121,7 @@ function buildOptimisticOrder(
   const now = new Date().toISOString();
   const tempId = `optimistic-${Math.random().toString(36).slice(2)}`;
   const totals = computeOrderTotals(input.items, input.discount, input.taxRate);
+  
   const items: OrderItem[] = input.items.map((item, index) => ({
     id: item.id ?? `optimistic-item-${index}-${tempId}`,
     menuId: item.menuId,
@@ -158,8 +166,12 @@ function buildOptimisticOrder(
   };
 }
 
+/**
+ * Hook for updating order payment
+ */
 export function useUpdateOrderPaymentMutation(filters: OrderFilters) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ orderId, input }: { orderId: string; input: UpdateOrderPaymentInput }) =>
       updateOrderPayment(orderId, input),
@@ -169,8 +181,12 @@ export function useUpdateOrderPaymentMutation(filters: OrderFilters) {
   });
 }
 
+/**
+ * Hook for voiding an order
+ */
 export function useVoidOrderMutation(filters: OrderFilters) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ orderId, input }: { orderId: string; input: VoidOrderInput }) =>
       voidOrder(orderId, input),
@@ -180,8 +196,12 @@ export function useVoidOrderMutation(filters: OrderFilters) {
   });
 }
 
+/**
+ * Hook for deleting an order
+ */
 export function useDeleteOrderMutation(filters: OrderFilters) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: deleteOrder,
     onSuccess: () => {
@@ -190,6 +210,9 @@ export function useDeleteOrderMutation(filters: OrderFilters) {
   });
 }
 
+/**
+ * Hook for real-time order updates via Supabase
+ */
 export function useOrdersRealtime(filters: OrderFilters, options: { enabled?: boolean } = {}) {
   const queryClient = useQueryClient();
 
@@ -216,6 +239,9 @@ export function useOrdersRealtime(filters: OrderFilters, options: { enabled?: bo
   }, [filters, options.enabled, queryClient]);
 }
 
+/**
+ * Utility function to find an order in a list
+ */
 export function findOrder(
   list: OrderListItem[],
   orderId: string,

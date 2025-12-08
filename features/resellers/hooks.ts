@@ -7,6 +7,10 @@ import {
 } from "@tanstack/react-query";
 import * as React from "react";
 
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
+import { createBrowserClient } from "@/lib/supabase/client";
+import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
+
 import {
   createReseller,
   deleteReseller,
@@ -21,13 +25,11 @@ import type {
   ResellerOrderFilters,
   UpdateResellerPayload,
 } from "./schemas";
+import type { Json } from "@/lib/types/database";
 import type { ResellerListItem, ResellerOrder } from "./types";
 import { parseContact, parseTerms } from "./types";
-import { createBrowserClient } from "@/lib/supabase/client";
-import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
 
 const RESELLERS_KEY = "resellers";
-
 const RESELLER_ORDERS_KEY = "reseller-orders";
 
 type UseResellersOptions = {
@@ -39,6 +41,9 @@ type ResellersQuerySnapshot = {
   meta: ResellerListMeta | null;
 };
 
+/**
+ * Adjusts pagination total by delta
+ */
 function adjustMetaTotal(
   meta: ResellerListMeta | null,
   delta: number,
@@ -56,6 +61,9 @@ function adjustMetaTotal(
   };
 }
 
+/**
+ * Updates all resellers cache queries
+ */
 function updateResellersCache(
   queryClient: QueryClient,
   updater: (current: ResellersQuerySnapshot) => ResellersQuerySnapshot,
@@ -69,19 +77,25 @@ function updateResellersCache(
   );
 }
 
+/**
+ * Hook for fetching resellers list
+ */
 export function useResellers(filters: ResellerFilters, options: UseResellersOptions = {}) {
   return useQuery({
     queryKey: [RESELLERS_KEY, filters],
     queryFn: () => listResellers(filters),
     placeholderData: keepPreviousData,
-    gcTime: 1000 * 60 * 30,
-    staleTime: 1000 * 30,
+    ...CACHE_POLICIES.STATIC,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
 
+/**
+ * Hook for creating a reseller
+ */
 export function useCreateResellerMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: createReseller,
     onSuccess: (reseller) => {
@@ -99,8 +113,12 @@ export function useCreateResellerMutation() {
   });
 }
 
+/**
+ * Hook for updating a reseller
+ */
 export function useUpdateResellerMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ resellerId, input }: { resellerId: string; input: UpdateResellerPayload }) =>
       updateReseller(resellerId, input),
@@ -115,8 +133,12 @@ export function useUpdateResellerMutation() {
   });
 }
 
+/**
+ * Hook for toggling reseller status
+ */
 export function useToggleResellerStatusMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({
       resellerId,
@@ -136,8 +158,12 @@ export function useToggleResellerStatusMutation() {
   });
 }
 
+/**
+ * Hook for deleting a reseller
+ */
 export function useDeleteResellerMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (resellerId: string) => deleteReseller(resellerId),
     onSuccess: (_result, resellerId) => {
@@ -160,11 +186,15 @@ type RealtimeOptions = {
   onDelete?: (resellerId: string) => void;
 };
 
+/**
+ * Hook for real-time reseller updates via Supabase
+ */
 export function useResellersRealtime(enabled: boolean, options: RealtimeOptions = {}) {
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
     if (!enabled) return;
+    
     const supabase = createBrowserClient();
     const channel = supabase
       .channel("resellers-list")
@@ -183,8 +213,8 @@ export function useResellersRealtime(enabled: boolean, options: RealtimeOptions 
           const reseller: ResellerListItem = {
             id: String(newRow.id ?? oldRow.id ?? ""),
             name: String(newRow.name ?? oldRow.name ?? ""),
-            contact: parseContact(contactJson as any),
-            terms: parseTerms(termsJson as any),
+            contact: parseContact(contactJson as Json),
+            terms: parseTerms(termsJson as Json),
             is_active: Boolean(newRow.is_active ?? oldRow.is_active ?? true),
             created_at: String(
               newRow.created_at ?? oldRow.created_at ?? new Date().toISOString(),
@@ -240,6 +270,9 @@ type UseResellerOrdersOptions = {
   initialData?: DataTableQueryResult<ResellerOrder>;
 };
 
+/**
+ * Hook for fetching reseller orders
+ */
 export function useResellerOrders(
   resellerId: string,
   filters: ResellerOrderFilters,
@@ -249,8 +282,7 @@ export function useResellerOrders(
     queryKey: [RESELLER_ORDERS_KEY, resellerId, filters],
     queryFn: () => listResellerOrders(resellerId, filters),
     placeholderData: keepPreviousData,
-    gcTime: 1000 * 60 * 30,
-    staleTime: 1000 * 30,
+    ...CACHE_POLICIES.FREQUENT,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }

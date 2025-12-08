@@ -6,6 +6,10 @@ import {
 } from "@tanstack/react-query";
 import * as React from "react";
 
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
+import { createBrowserClient } from "@/lib/supabase/client";
+import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
+
 import {
   createSupplier,
   deleteCatalogItem,
@@ -36,8 +40,6 @@ import type {
   SupplierListItem,
   SupplierOrder,
 } from "./types";
-import { createBrowserClient } from "@/lib/supabase/client";
-import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
 
 const SUPPLIERS_KEY = "suppliers";
 const SUPPLIER_CATALOG_KEY = "supplierCatalog";
@@ -52,29 +54,41 @@ type UseSuppliersOptions = {
   initialData?: Awaited<ReturnType<typeof listSuppliers>>;
 };
 
+/**
+ * Hook for fetching suppliers list
+ */
 export function useSuppliers(filters: SupplierFilters, options: UseSuppliersOptions = {}) {
   return useQuery({
     queryKey: [SUPPLIERS_KEY, filters],
     queryFn: () => listSuppliers(filters),
     placeholderData: keepPreviousData,
-    gcTime: 1000 * 60 * 30,
-    staleTime: 1000 * 30,
+    ...CACHE_POLICIES.STATIC,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
 
+/**
+ * Updates all suppliers cache queries
+ */
 function updateSuppliersCache(
   queryClient: ReturnType<typeof useQueryClient>,
   updater: (current: SuppliersQuerySnapshot) => SuppliersQuerySnapshot,
 ) {
-  queryClient.setQueriesData<SuppliersQuerySnapshot | undefined>({ queryKey: [SUPPLIERS_KEY] }, (current) => {
-    if (!current) return current;
-    return updater(current);
-  });
+  queryClient.setQueriesData<SuppliersQuerySnapshot | undefined>(
+    { queryKey: [SUPPLIERS_KEY] },
+    (current) => {
+      if (!current) return current;
+      return updater(current);
+    }
+  );
 }
 
+/**
+ * Hook for creating a supplier
+ */
 export function useCreateSupplierMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: createSupplier,
     onSuccess: (supplier) => {
@@ -86,8 +100,12 @@ export function useCreateSupplierMutation() {
   });
 }
 
+/**
+ * Hook for updating a supplier
+ */
 export function useUpdateSupplierMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ supplierId, payload }: { supplierId: string; payload: UpdateSupplierPayload }) =>
       updateSupplier(supplierId, payload),
@@ -100,8 +118,12 @@ export function useUpdateSupplierMutation() {
   });
 }
 
+/**
+ * Hook for deleting a supplier
+ */
 export function useDeleteSupplierMutation() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: deleteSupplier,
     onSuccess: (_result, supplierId) => {
@@ -113,8 +135,12 @@ export function useDeleteSupplierMutation() {
   });
 }
 
+/**
+ * Hook for creating a catalog item
+ */
 export function useCreateCatalogItemMutation(supplierId: string) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (payload: CreateCatalogItemPayload) => createCatalogItem(payload),
     onSuccess: () => {
@@ -123,8 +149,12 @@ export function useCreateCatalogItemMutation(supplierId: string) {
   });
 }
 
+/**
+ * Hook for updating a catalog item
+ */
 export function useUpdateCatalogItemMutation(supplierId: string) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ catalogItemId, payload }: { catalogItemId: string; payload: UpdateCatalogItemPayload }) =>
       updateCatalogItem(supplierId, catalogItemId, payload),
@@ -134,8 +164,12 @@ export function useUpdateCatalogItemMutation(supplierId: string) {
   });
 }
 
+/**
+ * Hook for toggling catalog item status
+ */
 export function useToggleCatalogItemMutation(supplierId: string) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ catalogItemId, isActive }: { catalogItemId: string; isActive: boolean }) =>
       toggleCatalogItem(supplierId, catalogItemId, isActive),
@@ -145,8 +179,12 @@ export function useToggleCatalogItemMutation(supplierId: string) {
   });
 }
 
+/**
+ * Hook for deleting a catalog item
+ */
 export function useDeleteCatalogItemMutation(supplierId: string) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (catalogItemId: string) => deleteCatalogItem(supplierId, catalogItemId),
     onSuccess: () => {
@@ -155,8 +193,12 @@ export function useDeleteCatalogItemMutation(supplierId: string) {
   });
 }
 
+/**
+ * Hook for creating a supplier link
+ */
 export function useCreateSupplierLinkMutation(supplierId: string) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (payload: CreateSupplierLinkPayload) => createSupplierLink(supplierId, payload),
     onSuccess: () => {
@@ -165,8 +207,12 @@ export function useCreateSupplierLinkMutation(supplierId: string) {
   });
 }
 
+/**
+ * Hook for updating a supplier link
+ */
 export function useUpdateSupplierLinkMutation(supplierId: string) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: ({ linkId, payload }: { linkId: string; payload: UpdateSupplierLinkPayload }) =>
       updateSupplierLink(supplierId, linkId, payload),
@@ -176,8 +222,12 @@ export function useUpdateSupplierLinkMutation(supplierId: string) {
   });
 }
 
+/**
+ * Hook for deleting a supplier link
+ */
 export function useDeleteSupplierLinkMutation(supplierId: string) {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: (linkId: string) => deleteSupplierLink(supplierId, linkId),
     onSuccess: () => {
@@ -190,6 +240,9 @@ type SupplierRealtimeOptions = {
   enabled?: boolean;
 };
 
+/**
+ * Hook for real-time supplier updates via Supabase
+ */
 export function useSuppliersRealtime({ enabled = true }: SupplierRealtimeOptions = {}) {
   const queryClient = useQueryClient();
 
@@ -227,6 +280,9 @@ type UseSupplierOrdersOptions = {
   initialData?: DataTableQueryResult<SupplierOrder>;
 };
 
+/**
+ * Hook for fetching supplier orders
+ */
 export function useSupplierOrders(
   supplierId: string,
   filters: SupplierOrderFilters,
@@ -236,8 +292,7 @@ export function useSupplierOrders(
     queryKey: [SUPPLIER_ORDERS_KEY, supplierId, filters],
     queryFn: () => listSupplierOrders(supplierId, filters),
     placeholderData: keepPreviousData,
-    gcTime: 1000 * 60 * 30,
-    staleTime: 1000 * 30,
+    ...CACHE_POLICIES.FREQUENT,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
@@ -246,6 +301,9 @@ type UseSupplierCatalogOptions = {
   initialData?: DataTableQueryResult<SupplierCatalogWithLinks>;
 };
 
+/**
+ * Hook for fetching supplier catalog
+ */
 export function useSupplierCatalogList(
   supplierId: string,
   filters: SupplierCatalogFilters,
@@ -255,8 +313,7 @@ export function useSupplierCatalogList(
     queryKey: [SUPPLIER_CATALOG_KEY, supplierId, filters],
     queryFn: () => listCatalogItems(supplierId, filters),
     placeholderData: keepPreviousData,
-    gcTime: 1000 * 60 * 30,
-    staleTime: 1000 * 30,
+    ...CACHE_POLICIES.STATIC,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }

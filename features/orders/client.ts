@@ -1,3 +1,4 @@
+import { apiClient } from "@/lib/api/client";
 import { AppError, ERR } from "@/lib/utils/errors";
 
 import type { OrderFilters, OrderListItem } from "./types";
@@ -7,48 +8,52 @@ import type {
   VoidOrderInput,
 } from "./schemas";
 
-type ApiResponse<T> = {
-  data: T;
-  error: { message: string; code?: number } | null;
-  meta: Record<string, unknown> | null;
-};
-
 type ListOrdersResponse = {
   items: OrderListItem[];
 };
 
+/**
+ * Fetches a paginated list of orders with optional filtering
+ */
 export async function listOrders(filters: OrderFilters = {}) {
-  const searchParams = new URLSearchParams();
+  const params: Record<string, string> = {};
+  
   if (filters.channel && filters.channel !== "all") {
-    searchParams.set("channel", filters.channel);
+    params.channel = filters.channel;
   }
   if (filters.status && filters.status !== "all") {
-    searchParams.set("status", filters.status);
+    params.status = filters.status;
   }
   if (filters.paymentStatus && filters.paymentStatus !== "all") {
-    searchParams.set("paymentStatus", filters.paymentStatus);
+    params.paymentStatus = filters.paymentStatus;
   }
   if (filters.search) {
-    searchParams.set("search", filters.search);
+    params.search = filters.search;
   }
   if (filters.limit) {
-    searchParams.set("limit", String(filters.limit));
+    params.limit = String(filters.limit);
   }
 
-  const query = searchParams.toString();
-  const url = `/api/pos/orders${query ? `?${query}` : ""}`;
-  const response = await request<ListOrdersResponse>(url, { method: "GET" });
+  const { data, meta } = await apiClient.get<ListOrdersResponse>(
+    "/api/pos/orders",
+    params
+  );
+  
   return {
-    items: response.data.items,
-    meta: response.meta,
+    items: data.items,
+    meta,
   };
 }
 
+/**
+ * Fetches a single order by ID
+ * Returns null if order not found
+ */
 export async function fetchOrder(orderId: string) {
   try {
-    const { data } = await request<OrderListItem>(`/api/pos/orders/${orderId}`, {
-      method: "GET",
-    });
+    const { data } = await apiClient.get<OrderListItem>(
+      `/api/pos/orders/${orderId}`
+    );
     return data;
   } catch (error) {
     if (error instanceof AppError && error.statusCode === ERR.NOT_FOUND.statusCode) {
@@ -58,70 +63,48 @@ export async function fetchOrder(orderId: string) {
   }
 }
 
+/**
+ * Creates a new order
+ */
 export async function createOrder(input: CreateOrderInput) {
-  const { data } = await request<OrderListItem>(`/api/pos/orders`, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  const { data } = await apiClient.post<OrderListItem>(
+    "/api/pos/orders",
+    input
+  );
   return data;
 }
 
+/**
+ * Updates order payment status
+ */
 export async function updateOrderPayment(
   orderId: string,
   input: UpdateOrderPaymentInput,
 ) {
-  const { data } = await request<OrderListItem>(`/api/pos/orders/${orderId}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
+  const { data } = await apiClient.patch<OrderListItem>(
+    `/api/pos/orders/${orderId}`,
+    input
+  );
   return data;
 }
 
+/**
+ * Voids an existing order
+ */
 export async function voidOrder(orderId: string, input: VoidOrderInput) {
-  const { data } = await request<OrderListItem>(`/api/pos/orders/${orderId}/void`, {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  const { data } = await apiClient.post<OrderListItem>(
+    `/api/pos/orders/${orderId}/void`,
+    input
+  );
   return data;
 }
 
+/**
+ * Deletes an order
+ */
 export async function deleteOrder(orderId: string) {
-  const { data } = await request<{ success: boolean }>(`/api/pos/orders/${orderId}`, {
-    method: "DELETE",
-  });
+  const { data } = await apiClient.delete<{ success: boolean }>(
+    `/api/pos/orders/${orderId}`
+  );
   return data.success;
-}
-
-async function request<T>(input: string, init: RequestInit) {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
-
-  let payload: ApiResponse<T> | null = null;
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch (error) {
-    throw new AppError(
-      ERR.SERVER_ERROR.statusCode,
-      error instanceof Error
-        ? error.message
-        : "Unexpected response from server",
-    );
-  }
-
-  if (!response.ok || payload.error) {
-    throw new AppError(
-      payload.error?.code ?? response.status,
-      payload.error?.message ?? "Request failed",
-    );
-  }
-
-  return {
-    data: payload.data,
-    meta: payload.meta,
-  };
 }

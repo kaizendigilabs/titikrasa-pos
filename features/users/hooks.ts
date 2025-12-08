@@ -6,6 +6,9 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 
+import { CACHE_POLICIES } from "@/lib/api/cache-policies";
+import { createBrowserClient } from "@/lib/supabase/client";
+
 import {
   createUser,
   deleteUser,
@@ -16,7 +19,6 @@ import {
   updateUser,
   type ListUsersParams,
 } from "./client";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 const USERS_QUERY_KEY = "users";
 const ROLES_QUERY_KEY = "users-roles";
@@ -25,6 +27,9 @@ type UseUsersOptions = {
   initialData?: Awaited<ReturnType<typeof listUsers>>;
 };
 
+/**
+ * Hook for fetching users list
+ */
 export function useUsers(
   filters: ListUsersParams,
   options: UseUsersOptions = {},
@@ -33,10 +38,7 @@ export function useUsers(
     queryKey: [USERS_QUERY_KEY, filters],
     queryFn: () => listUsers(filters),
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60,
-    gcTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
+    ...CACHE_POLICIES.STATIC,
     retry: 1,
     ...(options.initialData !== undefined
       ? { initialData: options.initialData }
@@ -48,19 +50,26 @@ type UseRolesOptions = {
   initialData?: Awaited<ReturnType<typeof fetchRoles>>;
 };
 
+/**
+ * Hook for fetching user roles
+ */
 export function useRoles(options: UseRolesOptions = {}) {
   return useQuery({
     queryKey: [ROLES_QUERY_KEY],
     queryFn: () => fetchRoles(),
-    staleTime: 1000 * 60 * 5,
+    ...CACHE_POLICIES.PERMANENT,
     ...(options.initialData !== undefined
       ? { initialData: options.initialData }
       : {}),
   });
 }
 
+/**
+ * Hook for creating a user
+ */
 export function useCreateUserMutation() {
   const client = useQueryClient();
+  
   return useMutation({
     mutationFn: createUser,
     onSuccess: () => {
@@ -69,8 +78,12 @@ export function useCreateUserMutation() {
   });
 }
 
+/**
+ * Hook for updating a user
+ */
 export function useUpdateUserMutation() {
   const client = useQueryClient();
+  
   return useMutation({
     mutationFn: ({
       userId,
@@ -85,8 +98,12 @@ export function useUpdateUserMutation() {
   });
 }
 
+/**
+ * Hook for toggling user status
+ */
 export function useToggleUserStatusMutation() {
   const client = useQueryClient();
+  
   return useMutation({
     mutationFn: ({
       userId,
@@ -101,8 +118,12 @@ export function useToggleUserStatusMutation() {
   });
 }
 
+/**
+ * Hook for deleting a user
+ */
 export function useDeleteUserMutation() {
   const client = useQueryClient();
+  
   return useMutation({
     mutationFn: (userId: string) => deleteUser(userId),
     onSuccess: () => {
@@ -111,6 +132,9 @@ export function useDeleteUserMutation() {
   });
 }
 
+/**
+ * Hook for resetting user password
+ */
 export function useResetPasswordMutation() {
   return useMutation({
     mutationFn: ({
@@ -123,6 +147,9 @@ export function useResetPasswordMutation() {
   });
 }
 
+/**
+ * Hook for getting users query key
+ */
 export function useUsersQueryKey() {
   return useCallback((filters: ListUsersParams = {}) => {
     return [USERS_QUERY_KEY, filters] as const;
@@ -133,6 +160,9 @@ type UseUsersRealtimeOptions = {
   enabled?: boolean;
 };
 
+/**
+ * Hook for real-time user updates via Supabase
+ */
 export function useUsersRealtime(
   filters: ListUsersParams,
   options: UseUsersRealtimeOptions = {},
@@ -146,6 +176,7 @@ export function useUsersRealtime(
     const supabase = createBrowserClient();
     const filterKey = JSON.stringify(filters ?? {});
     const channelName = `users-dashboard-${filterKey}-${Date.now()}`;
+    
     const invalidate = () => {
       void queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
     };
