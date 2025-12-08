@@ -10,8 +10,6 @@ import { CACHE_POLICIES } from "@/lib/api/cache-policies";
 import { createBrowserClient } from "@/lib/supabase/client";
 
 import {
-  exportPurchaseHistoryCsv,
-  getStoreIngredient,
   listPurchaseHistory,
   listStoreIngredients,
   updateStoreIngredient,
@@ -25,7 +23,7 @@ import type {
   UpdateStoreIngredientInput,
   CreateStoreIngredientInput,
 } from "./schemas";
-import type { PurchaseHistoryEntry, StoreIngredientDetail } from "./types";
+import type { PurchaseHistoryEntry } from "./types";
 
 const STORE_INGREDIENTS_KEY = "storeIngredients";
 const STORE_INGREDIENT_DETAIL_KEY = "storeIngredientDetail";
@@ -46,38 +44,6 @@ export function useStoreIngredients(
     queryKey: [STORE_INGREDIENTS_KEY, filters],
     queryFn: () => listStoreIngredients(filters),
     placeholderData: keepPreviousData,
-    ...CACHE_POLICIES.FREQUENT,
-    ...(options.initialData ? { initialData: options.initialData } : {}),
-  });
-}
-
-/**
- * Hook for fetching single store ingredient
- */
-export function useStoreIngredient(ingredientId: string) {
-  return useQuery({
-    queryKey: [STORE_INGREDIENT_DETAIL_KEY, ingredientId],
-    queryFn: () => getStoreIngredient(ingredientId),
-    enabled: Boolean(ingredientId),
-    ...CACHE_POLICIES.FREQUENT,
-  });
-}
-
-type UseStoreIngredientDetailOptions = {
-  initialData?: StoreIngredientDetail;
-};
-
-/**
- * Hook for fetching store ingredient detail
- */
-export function useStoreIngredientDetail(
-  ingredientId: string,
-  options: UseStoreIngredientDetailOptions = {},
-) {
-  return useQuery({
-    queryKey: [STORE_INGREDIENT_DETAIL_KEY, ingredientId],
-    queryFn: () => getStoreIngredient(ingredientId),
-    enabled: Boolean(ingredientId),
     ...CACHE_POLICIES.FREQUENT,
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
@@ -105,16 +71,6 @@ export function usePurchaseHistory(
     enabled: Boolean(ingredientId),
     ...CACHE_POLICIES.STATIC,
     ...(options.initialData ? { initialData: options.initialData } : {}),
-  });
-}
-
-/**
- * Hook for exporting purchase history as CSV
- */
-export function useExportPurchaseHistoryMutation(ingredientId: string) {
-  return useMutation({
-    mutationFn: (filters: PurchaseHistoryFilters) =>
-      exportPurchaseHistoryCsv(ingredientId, filters),
   });
 }
 
@@ -179,3 +135,4 @@ export function useCreateStoreIngredientMutation() {
     },
   });
 }
+

@@ -22,13 +22,3 @@ export async function createStockAdjustment(payload: CreateStockAdjustmentPayloa
   return data.adjustment;
 }
 
-/**
- * Approves a stock adjustment
- */
-export async function approveStockAdjustment(adjustmentId: string) {
-  const { data } = await apiClient.patch<StockAdjustmentResponse>(
-    `${ENDPOINT}/${adjustmentId}`,
-    { action: "approve" }
-  );
-  return data.adjustment;
-}
