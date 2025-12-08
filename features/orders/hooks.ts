@@ -155,7 +155,6 @@ function buildOptimisticOrder(
     customerNote: input.note ?? null,
     reseller,
     items,
-    ticket: null,
   };
 }
 
@@ -204,14 +203,6 @@ export function useOrdersRealtime(filters: OrderFilters, options: { enabled?: bo
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "orders" },
-      () => {
-        void queryClient.invalidateQueries({ queryKey: [ORDERS_QUERY_KEY, filters] });
-      },
-    );
-
-    channel.on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "kds_tickets" },
       () => {
         void queryClient.invalidateQueries({ queryKey: [ORDERS_QUERY_KEY, filters] });
       },

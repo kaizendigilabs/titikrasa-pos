@@ -107,48 +107,7 @@ before insert or update on public.order_items
 for each row
 execute function public.validate_channel_price();
 
--- KDS Tickets (tanpa station/timer)
-create table if not exists kds_tickets (
-  id         uuid primary key default gen_random_uuid(),
-  order_id   uuid not null references orders(id) on delete cascade,
-  -- items: [{ order_item_id, status, updated_by, updated_at }]
-  items      jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
-);
-create index if not exists idx_kds_order on kds_tickets(order_id);
-
--- Guard due_date (hanya bermakna untuk reseller+unpaid)
-create or replace function trg_orders_due_date_guard()
-returns trigger language plpgsql as $$
-begin
-  if new.channel = 'reseller' and new.payment_status = 'unpaid' then
-    return new; -- boleh null/diisi (default +7 di service)
-  end if;
-  if new.due_date is not null then
-    raise exception 'due_date hanya untuk reseller-unpaid';
-  end if;
-  return new;
-end $$;
-
-drop trigger if exists orders_due_date_guard on orders;
-create trigger orders_due_date_guard
-before insert or update on orders
-for each row execute function trg_orders_due_date_guard();
-
--- KDS items status check (ringan)
-create or replace function kds_items_check(items jsonb)
-returns boolean language sql immutable as $$
-  select coalesce(
-    (select bool_and( (i->>'status') in ('queue','making','ready','served') )
-      from jsonb_array_elements(items) i),
-    true
-  )
-$$;
-
-alter table kds_tickets
-  add constraint kds_items_status_check check (kds_items_check(items));
-
--- POS checkout helper (inserts order + line items + optional KDS ticket)
+-- POS checkout helper (inserts order + line items)
 create or replace function public.pos_checkout(payload jsonb)
 returns uuid
 language plpgsql
@@ -168,7 +127,6 @@ declare
   v_totals jsonb := coalesce(payload->'totals', '{}'::jsonb);
   v_paid_at timestamptz := (payload->>'paid_at')::timestamptz;
   v_created_by uuid := (payload->>'created_by')::uuid;
-  v_ticket_items jsonb := payload->'ticket_items';
   v_client_ref text := payload->>'client_ref';
 begin
   if v_number is null then
@@ -227,18 +185,12 @@ begin
     item->>'variant'
   from jsonb_array_elements(coalesce(payload->'items', '[]'::jsonb)) as item;
 
-  if v_ticket_items is not null then
-    insert into public.kds_tickets (order_id, items)
-    values (v_order_id, v_ticket_items);
-  end if;
-
   return v_order_id;
 end;
 $$;
 
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
-alter table public.kds_tickets enable row level security;
 
 drop policy if exists "orders_select" on public.orders;
 drop policy if exists "orders_insert" on public.orders;
@@ -328,52 +280,6 @@ with check (
 
 create policy "order_items_delete"
 on public.order_items
-for delete
-to authenticated
-using (public.has_role(auth.uid(),'admin'));
-
-drop policy if exists "kds_tickets_select" on public.kds_tickets;
-drop policy if exists "kds_tickets_insert" on public.kds_tickets;
-drop policy if exists "kds_tickets_update" on public.kds_tickets;
-drop policy if exists "kds_tickets_delete" on public.kds_tickets;
-
-create policy "kds_tickets_select"
-on public.kds_tickets
-for select
-to authenticated
-using (
-  public.has_role(auth.uid(),'admin')
-  or public.has_role(auth.uid(),'manager')
-  or public.has_role(auth.uid(),'staff')
-);
-
-create policy "kds_tickets_insert"
-on public.kds_tickets
-for insert
-to authenticated
-with check (
-  public.has_role(auth.uid(),'admin')
-  or public.has_role(auth.uid(),'manager')
-  or public.has_role(auth.uid(),'staff')
-);
-
-create policy "kds_tickets_update"
-on public.kds_tickets
-for update
-to authenticated
-using (
-  public.has_role(auth.uid(),'admin')
-  or public.has_role(auth.uid(),'manager')
-  or public.has_role(auth.uid(),'staff')
-)
-with check (
-  public.has_role(auth.uid(),'admin')
-  or public.has_role(auth.uid(),'manager')
-  or public.has_role(auth.uid(),'staff')
-);
-
-create policy "kds_tickets_delete"
-on public.kds_tickets
 for delete
 to authenticated
 using (public.has_role(auth.uid(),'admin'));

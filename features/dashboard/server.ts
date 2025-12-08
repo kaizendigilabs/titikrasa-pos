@@ -1,7 +1,7 @@
 import { format, startOfDay, startOfHour, startOfMonth } from "date-fns";
 
 import type { ActorContext } from "@/features/users/server";
-import { parseTicketItems, parseTotals } from "@/features/orders/types";
+import { parseTotals } from "@/features/orders/types";
 import type { Json, Database } from "@/lib/types/database";
 import { appError, ERR } from "@/lib/utils/errors";
 import type {
@@ -19,7 +19,6 @@ import type {
 
 type RawDashboardOrder = Database["public"]["Tables"]["orders"]["Row"] & {
   resellers?: { id: string; name: string } | null;
-  kds_tickets: Array<{ items: Json; created_at: string }>;
 };
 
 type TransactionOrderRow = Pick<
@@ -114,7 +113,6 @@ function createEmptyMetrics(): DashboardMetricSummary {
     paidOrders: 0,
     unpaidOrders: 0,
     voidOrders: 0,
-    kdsPending: 0,
     lowStockCount: 0,
     resellerReceivables: 0,
     pendingPurchaseOrders: 0,
@@ -158,8 +156,7 @@ export async function fetchDashboardSummary(
         created_at,
         due_date,
         reseller_id,
-        resellers ( id, name ),
-        kds_tickets ( items, created_at )
+        resellers ( id, name )
       `,
       )
       .gte("created_at", payload.start)
@@ -243,11 +240,6 @@ export async function fetchDashboardSummary(
     bucket.revenue += totals.grand;
     chartBucket.set(key, bucket);
 
-    const tickets = order.kds_tickets ?? [];
-    for (const ticket of tickets) {
-      const items = parseTicketItems(ticket.items);
-      metrics.kdsPending += items.filter((item) => item.status !== "served").length;
-    }
   }
 
   metrics.aov = metrics.paidOrders > 0 ? Math.round(metrics.revenue / metrics.paidOrders) : 0;

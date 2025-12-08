@@ -117,17 +117,6 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       });
     }
 
-    const { error: deleteTicketError } = await actor.supabase
-      .from("kds_tickets")
-      .delete()
-      .eq("order_id", orderId);
-
-    if (deleteTicketError) {
-      throw appError(ERR.SERVER_ERROR, {
-        message: "Gagal menghapus tiket KDS",
-        details: { hint: deleteTicketError.message },
-      });
-    }
 
     const { error: deleteItemsError } = await actor.supabase
       .from("order_items")

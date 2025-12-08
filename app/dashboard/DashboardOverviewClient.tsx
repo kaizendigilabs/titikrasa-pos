@@ -31,7 +31,6 @@ const DEFAULT_SUMMARY: DashboardSummary = {
     paidOrders: 0,
     unpaidOrders: 0,
     voidOrders: 0,
-    kdsPending: 0,
     lowStockCount: 0,
     resellerReceivables: 0,
     pendingPurchaseOrders: 0,

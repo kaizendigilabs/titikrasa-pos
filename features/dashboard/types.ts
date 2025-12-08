@@ -27,7 +27,6 @@ export type DashboardMetricSummary = {
   paidOrders: number;
   unpaidOrders: number;
   voidOrders: number;
-  kdsPending: number;
   lowStockCount: number;
   resellerReceivables: number;
   pendingPurchaseOrders: number;

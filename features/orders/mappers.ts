@@ -1,4 +1,4 @@
-import { parseTicketItems, parseTotals, type OrderItem, type OrderListItem, type RawOrderRow } from "./types";
+import { parseTotals, type OrderItem, type OrderListItem, type RawOrderRow } from "./types";
 
 function parseVariant(variant: string | null) {
   if (!variant) {
@@ -31,15 +31,6 @@ function mapOrderItem(row: RawOrderRow["order_items"][number]): OrderItem {
 
 export function mapOrderRow(row: RawOrderRow): OrderListItem {
   const totals = parseTotals(row.totals);
-  const ticketRow = row.kds_tickets?.[0] ?? null;
-  const ticket = ticketRow
-    ? {
-        id: ticketRow.id,
-        orderId: row.id,
-        items: parseTicketItems(ticketRow.items),
-        createdAt: ticketRow.created_at,
-      }
-    : null;
 
   return {
     id: row.id,
@@ -55,6 +46,5 @@ export function mapOrderRow(row: RawOrderRow): OrderListItem {
     customerNote: row.customer_note,
     reseller: row.resellers ? { id: row.resellers.id, name: row.resellers.name } : null,
     items: (row.order_items ?? []).map(mapOrderItem),
-    ticket,
   };
-}
+};

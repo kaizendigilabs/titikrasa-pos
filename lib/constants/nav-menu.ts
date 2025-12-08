@@ -31,7 +31,6 @@ export const NAV_MENU: NavMenuItem[] = [
     icon: IconCash,
     items: [
       { title: 'POS', url: '/dashboard/pos', icon: IconCash },
-      { title: 'Kitchen Display', url: '/dashboard/kds', icon: IconChefHat },
     ],
   },
   {

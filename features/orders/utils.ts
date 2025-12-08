@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 
 import type { CreateOrderInput, OrderItemInput } from "./schemas";
-import type { OrderTotals, KdsTicketItem } from "./types";
+import type { OrderTotals } from "./types";
 
 const ORDER_NUMBER_PREFIX = "TR";
 
@@ -36,25 +36,3 @@ export function buildOrderNumber(date = new Date()) {
   return `${ORDER_NUMBER_PREFIX}-${yyyy}${mm}${dd}-${random}`;
 }
 
-export function buildTicketItems(
-  items: OrderItemInput[],
-  bypassServed: boolean,
-  actorId: string,
-): KdsTicketItem[] {
-  const now = new Date().toISOString();
-  const status: KdsTicketItem["status"] = bypassServed ? "served" : "queue";
-  return items.map((item) => {
-    if (!item.id) {
-      throw new Error("Order item id must be provided before building ticket items");
-    }
-    return {
-      orderItemId: item.id,
-      status,
-      qty: item.qty,
-      updatedAt: now,
-      updatedBy: bypassServed ? actorId : null,
-      menuName: item.menuName,
-      variantLabel: item.variant,
-    };
-  });
-}

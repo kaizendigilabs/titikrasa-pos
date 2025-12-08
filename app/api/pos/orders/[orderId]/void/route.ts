@@ -45,27 +45,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
       });
     }
 
-    const { error: ticketError } = await actor.supabase
-      .from("kds_tickets")
-      .update({
-        items: (existing.ticket?.items ?? []).map((item) => ({
-          order_item_id: item.orderItemId,
-          status: "served",
-          qty: item.qty,
-          updated_at: new Date().toISOString(),
-          updated_by: actor.user.id,
-          menu_name: item.menuName,
-          variant_label: item.variantLabel ?? null,
-        })),
-      })
-      .eq("order_id", orderId);
-
-    if (ticketError) {
-      throw appError(ERR.SERVER_ERROR, {
-        message: "Gagal memperbarui tiket KDS",
-        details: { hint: ticketError.message },
-      });
-    }
 
     const refreshed = await fetchOrderById(actor, orderId);
     return ok(refreshed);

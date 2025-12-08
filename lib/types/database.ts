@@ -152,35 +152,6 @@ export type Database = {
           },
         ]
       }
-      kds_tickets: {
-        Row: {
-          created_at: string
-          id: string
-          items: Json
-          order_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          items?: Json
-          order_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          items?: Json
-          order_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "kds_tickets_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       menus: {
         Row: {
           category_id: string | null
@@ -826,7 +797,6 @@ export type Database = {
       is_last_admin_user: { Args: { p_user_id: string }; Returns: boolean }
       is_role_admin_id: { Args: { p_role_id: string }; Returns: boolean }
       is_user_admin: { Args: { p_user_id: string }; Returns: boolean }
-      kds_items_check: { Args: { items: Json }; Returns: boolean }
       pos_checkout: { Args: { payload: Json }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

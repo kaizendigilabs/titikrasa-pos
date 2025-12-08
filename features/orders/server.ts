@@ -15,6 +15,8 @@ const ORDER_SELECT = `
   customer_note,
   created_at,
   paid_at,
+  created_by,
+  client_ref,
   reseller_id,
   resellers ( id, name ),
   order_items (
@@ -34,8 +36,7 @@ const ORDER_SELECT = `
       category_id,
       categories ( icon_url )
     )
-  ),
-  kds_tickets ( id, items, created_at )
+  )
 `;
 
 export async function fetchOrderById(
