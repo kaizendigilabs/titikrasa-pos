@@ -7,31 +7,25 @@ import { CartPanel } from "./_components/cart-panel";
 import { PaymentDrawer } from "./_components/payment-drawer";
 import { VariantSheet } from "./_components/variant-sheet";
 import { usePosController } from "./_components/use-pos-controller";
-import type { MenuListItem } from "@/features/menus/types";
-import type { ResellerListItem } from "@/features/resellers/types";
-import type { OrderListItem } from "@/features/orders/types";
+import { usePosMenus, usePosResellers, usePosSettings } from "@/features/pos/hooks";
 
-type PosScreenProps = {
-  initialMenus: MenuListItem[];
-  initialResellers: ResellerListItem[];
-  initialOrderData: {
-    items: OrderListItem[];
-    meta: Record<string, unknown> | null;
-  };
-  defaultTaxRate: number;
-};
-
-export function PosScreen({
-  initialMenus,
-  initialResellers,
-  initialOrderData,
-  defaultTaxRate,
-}: PosScreenProps) {
+/**
+ * POS Screen component that uses React Query hooks for data hydration
+ * Data is prefetched on server and hydrated via HydrationBoundary
+ */
+export function PosScreen() {
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
+  
+  // Use hooks to access hydrated data
+  const { data: menus = [] } = usePosMenus();
+  const { data: resellers = [] } = usePosResellers();
+  const { data: settings } = usePosSettings();
+  
+  const defaultTaxRate = settings?.defaultTaxRate ?? 0.11;
+
   const controller = usePosController({
-    menus: initialMenus,
-    resellers: initialResellers,
-    initialOrderData,
+    menus,
+    resellers,
     defaultTaxRate,
   });
   const {
@@ -126,7 +120,7 @@ export function PosScreen({
             paymentValues={controller.paymentValues}
             mode={controller.mode}
             onModeChange={controller.handleModeChange}
-            resellers={initialResellers}
+            resellers={resellers}
             selectedResellerId={controller.selectedResellerId}
             onSelectReseller={controller.handleSelectReseller}
             resellerQuery={controller.resellerQuery}
@@ -168,3 +162,4 @@ export function PosScreen({
     </div>
   );
 }
+

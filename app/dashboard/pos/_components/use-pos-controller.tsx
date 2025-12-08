@@ -11,13 +11,14 @@ import { useStore } from "@/lib/store/simple-store";
 
 import type { MenuListItem } from "@/features/menus/types";
 import type { ResellerListItem } from "@/features/resellers/types";
-import type { OrderFilters, OrderListItem } from "@/features/orders/types";
+
 import type { CreateOrderInput } from "@/features/orders/schemas";
 import {
   useCreateOrderMutation,
   useOrders,
   useOrdersRealtime,
 } from "@/features/orders/hooks";
+import { DEFAULT_POS_ORDER_FILTERS } from "@/features/pos/keys";
 import {
   cartStore,
   hydrateCartStore,
@@ -43,10 +44,7 @@ import {
   recordRecentReseller,
 } from "@/features/pos/preferences-store";
 
-type OrdersQueryData = {
-  items: OrderListItem[];
-  meta: Record<string, unknown> | null;
-};
+
 
 export type PaymentFormValues = {
   paymentMethod: CreateOrderInput["paymentMethod"];
@@ -75,7 +73,6 @@ export type PaymentFormApi = ReactFormExtendedApi<
 export type UsePosControllerProps = {
   menus: MenuListItem[];
   resellers: ResellerListItem[];
-  initialOrderData: OrdersQueryData;
   defaultTaxRate: number;
 };
 
@@ -87,7 +84,6 @@ export type VariantDialogState = {
 export function usePosController({
   menus,
   resellers,
-  initialOrderData,
   defaultTaxRate,
 }: UsePosControllerProps) {
   const [mode, setMode] = React.useState<"customer" | "reseller">("customer");
@@ -150,12 +146,9 @@ export function usePosController({
     };
   }, []);
 
-  const orderFilters = React.useMemo<OrderFilters>(
-    () => ({ channel: "all", status: "open", paymentStatus: "all", limit: 20 }),
-    [],
-  );
+  const orderFilters = DEFAULT_POS_ORDER_FILTERS;
 
-  const ordersQuery = useOrders(orderFilters, { initialData: initialOrderData });
+  const ordersQuery = useOrders(orderFilters);
   useOrdersRealtime(orderFilters, { enabled: true });
 
   const getResellerName = React.useCallback(

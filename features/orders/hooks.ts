@@ -23,8 +23,10 @@ import type {
   VoidOrderInput,
 } from "./schemas";
 import { computeOrderTotals } from "./utils";
+import { ordersQueryKey } from "./keys";
 
-const ORDERS_QUERY_KEY = "pos-orders";
+// Re-export query key for external usage
+export { ordersQueryKey } from "./keys";
 
 type UseOrdersOptions = {
   initialData?: Awaited<ReturnType<typeof listOrders>>;
@@ -39,7 +41,7 @@ type UseCreateOrderOptions = {
  */
 export function useOrders(filters: OrderFilters, options: UseOrdersOptions = {}) {
   return useQuery({
-    queryKey: [ORDERS_QUERY_KEY, filters],
+    queryKey: ordersQueryKey(filters),
     queryFn: () => listOrders(filters),
     placeholderData: keepPreviousData,
     ...CACHE_POLICIES.REALTIME,
@@ -47,6 +49,7 @@ export function useOrders(filters: OrderFilters, options: UseOrdersOptions = {})
     ...(options.initialData ? { initialData: options.initialData } : {}),
   });
 }
+
 
 /**
  * Hook for creating a new order with optimistic updates
@@ -60,16 +63,16 @@ export function useCreateOrderMutation(
   return useMutation({
     mutationFn: (input: CreateOrderInput) => createOrder(input),
     onMutate: async (input) => {
-      await queryClient.cancelQueries({ queryKey: [ORDERS_QUERY_KEY, filters] });
+      await queryClient.cancelQueries({ queryKey: ordersQueryKey(filters) });
       
       const previous = queryClient.getQueryData<Awaited<ReturnType<typeof listOrders>>>(
-        [ORDERS_QUERY_KEY, filters],
+        ordersQueryKey(filters),
       );
 
       const optimisticOrder = buildOptimisticOrder(input, options.getResellerName);
 
       queryClient.setQueryData<Awaited<ReturnType<typeof listOrders>>>(
-        [ORDERS_QUERY_KEY, filters],
+        ordersQueryKey(filters),
         (prev) => {
           if (!prev) {
             return { items: [optimisticOrder], meta: null };
@@ -85,12 +88,12 @@ export function useCreateOrderMutation(
     },
     onError: (_error, _input, context) => {
       if (context?.previous) {
-        queryClient.setQueryData([ORDERS_QUERY_KEY, filters], context.previous);
+        queryClient.setQueryData(ordersQueryKey(filters), context.previous);
       }
     },
     onSuccess: (order, _input, context) => {
       queryClient.setQueryData<Awaited<ReturnType<typeof listOrders>>>(
-        [ORDERS_QUERY_KEY, filters],
+        ordersQueryKey(filters),
         (prev) => {
           if (!prev) {
             return { items: [order], meta: null };
@@ -106,7 +109,7 @@ export function useCreateOrderMutation(
       );
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: [ORDERS_QUERY_KEY] });
+      void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
     },
   });
 }
@@ -176,7 +179,7 @@ export function useUpdateOrderPaymentMutation(filters: OrderFilters) {
     mutationFn: ({ orderId, input }: { orderId: string; input: UpdateOrderPaymentInput }) =>
       updateOrderPayment(orderId, input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [ORDERS_QUERY_KEY, filters] });
+      void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
     },
   });
 }
@@ -191,7 +194,7 @@ export function useVoidOrderMutation(filters: OrderFilters) {
     mutationFn: ({ orderId, input }: { orderId: string; input: VoidOrderInput }) =>
       voidOrder(orderId, input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [ORDERS_QUERY_KEY, filters] });
+      void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
     },
   });
 }
@@ -205,7 +208,7 @@ export function useDeleteOrderMutation(filters: OrderFilters) {
   return useMutation({
     mutationFn: deleteOrder,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [ORDERS_QUERY_KEY, filters] });
+      void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
     },
   });
 }
@@ -227,7 +230,7 @@ export function useOrdersRealtime(filters: OrderFilters, options: { enabled?: bo
       "postgres_changes",
       { event: "*", schema: "public", table: "orders" },
       () => {
-        void queryClient.invalidateQueries({ queryKey: [ORDERS_QUERY_KEY, filters] });
+        void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
       },
     );
 
