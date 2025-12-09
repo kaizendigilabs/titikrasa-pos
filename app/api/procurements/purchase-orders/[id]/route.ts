@@ -15,7 +15,7 @@ import {
   ensureAdminOrManager,
   requireActor,
 } from "@/features/users/server";
-import type { Database, TablesUpdate } from "@/lib/types/database";
+import type { TablesUpdate } from "@/lib/types/database";
 
 function mapPurchaseOrder(row: any): PurchaseOrderListItem {
   return {
@@ -32,77 +32,6 @@ function mapPurchaseOrder(row: any): PurchaseOrderListItem {
   };
 }
 
-async function applyCompletionEffects(purchaseOrder: PurchaseOrderListItem) {
-  const admin = adminClient();
-  const now = new Date().toISOString();
-
-  for (const item of purchaseOrder.items) {
-    const { data: ingredient, error: ingredientError } = await admin
-      .from("store_ingredients")
-      .select("id, current_stock, avg_cost")
-      .eq("id", item.storeIngredientId)
-      .single();
-
-    if (ingredientError || !ingredient) {
-      throw appError(ERR.SERVER_ERROR, {
-        message: "Failed to fetch store ingredient",
-        details: { hint: ingredientError?.message, ingredientId: item.storeIngredientId },
-      });
-    }
-
-    const currentStock = Number(ingredient.current_stock ?? 0);
-    const currentAvg = Number(ingredient.avg_cost ?? 0);
-    const qty = Math.max(0, Math.round(item.qty));
-    const nextStock = currentStock + qty;
-    const newAvgCost =
-      nextStock === 0
-        ? currentAvg
-        : Math.round(
-            (currentStock * currentAvg + qty * item.price) /
-              Math.max(nextStock, 1),
-          );
-
-    const { error: updateIngredientError } = await admin
-      .from("store_ingredients")
-      .update({
-        avg_cost: newAvgCost,
-      })
-      .eq("id", item.storeIngredientId);
-
-    if (updateIngredientError) {
-      throw appError(ERR.SERVER_ERROR, {
-        message: "Failed to update store ingredient",
-        details: { hint: updateIngredientError.message, ingredientId: item.storeIngredientId },
-      });
-    }
-
-    const { error: ledgerError } = await admin.from("stock_ledger").insert({
-      ingredient_id: item.storeIngredientId,
-      delta_qty: qty,
-      uom: item.baseUom as Database["public"]["Enums"]["base_uom"],
-      reason: "po",
-      ref_type: "purchase_order",
-      ref_id: purchaseOrder.id,
-      at: now,
-    });
-
-    if (ledgerError) {
-      throw appError(ERR.SERVER_ERROR, {
-        message: "Failed to append stock ledger",
-        details: { hint: ledgerError.message },
-      });
-    }
-
-    await admin
-      .from("ingredient_supplier_links")
-      .update({
-        last_purchase_price: item.price,
-        last_purchased_at: now,
-      })
-      .eq("store_ingredient_id", item.storeIngredientId)
-      .eq("catalog_item_id", item.catalogItemId);
-  }
-}
 
 export async function PATCH(
   request: NextRequest,
@@ -142,10 +71,14 @@ export async function PATCH(
     if (body.issuedAt !== undefined) updates.issued_at = body.issuedAt;
     if (body.completedAt !== undefined) updates.completed_at = body.completedAt;
 
-    const shouldComplete =
-      body.status === "complete" && existing.status !== "complete";
-    if (shouldComplete) {
+    // Set completed_at when status changes to complete
+    if (body.status === "complete" && existing.status !== "complete") {
       updates.completed_at = new Date().toISOString();
+    }
+
+    // Clear completed_at when status changes from complete to draft/pending (reversal)
+    if (existing.status === "complete" && body.status && body.status !== "complete") {
+      updates.completed_at = null;
     }
 
     const { data, error } = await admin
@@ -163,10 +96,6 @@ export async function PATCH(
     }
 
     const purchaseOrder = mapPurchaseOrder(data);
-
-    if (shouldComplete) {
-      await applyCompletionEffects(purchaseOrder);
-    }
 
     return ok({ purchaseOrder });
   } catch (error) {

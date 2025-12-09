@@ -85,6 +85,44 @@ export async function DELETE(
     await ensureLinkBelongsToSupplier(linkId, id);
 
     const admin = adminClient();
+
+    // Get the ingredient ID linked to this link
+    const { data: linkData } = await admin
+      .from("ingredient_supplier_links")
+      .select("store_ingredient_id")
+      .eq("id", linkId)
+      .single();
+
+    if (linkData?.store_ingredient_id) {
+      // Check if there are pending POs using this ingredient
+      const { data: pendingPOs, error: poError } = await admin
+        .from("purchase_orders")
+        .select("id")
+        .eq("status", "pending");
+
+      if (!poError && pendingPOs) {
+        // Check manually if any PO contains this ingredient
+        for (const po of pendingPOs) {
+          const { data: poDetail } = await admin
+            .from("purchase_orders")
+            .select("items")
+            .eq("id", po.id)
+            .single();
+
+          if (poDetail?.items && Array.isArray(poDetail.items)) {
+            const hasIngredient = poDetail.items.some(
+              (item: any) => item.store_ingredient_id === linkData.store_ingredient_id
+            );
+            if (hasIngredient) {
+              throw appError(ERR.BAD_REQUEST, {
+                message: "Tidak dapat menghapus link karena ada PO pending yang menggunakan ingredient ini",
+              });
+            }
+          }
+        }
+      }
+    }
+
     const { error } = await admin
       .from("ingredient_supplier_links")
       .delete()

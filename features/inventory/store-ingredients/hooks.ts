@@ -14,6 +14,7 @@ import {
   listStoreIngredients,
   updateStoreIngredient,
   createStoreIngredient,
+  deleteStoreIngredient,
   type StoreIngredientListResult,
   type PurchaseHistoryMeta,
 } from "./client";
@@ -136,3 +137,17 @@ export function useCreateStoreIngredientMutation() {
   });
 }
 
+/**
+ * Hook for deleting a store ingredient (hard delete)
+ */
+export function useDeleteStoreIngredientMutation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (ingredientId: string) => deleteStoreIngredient(ingredientId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STORE_INGREDIENTS_KEY] });
+      queryClient.invalidateQueries({ queryKey: [STORE_INGREDIENT_DETAIL_KEY] });
+    },
+  });
+}

@@ -17,12 +17,16 @@ function isLowStock(item: StoreIngredientListItem) {
 
 type ColumnOptions = {
   onEdit?: (ingredient: StoreIngredientListItem) => void;
+  onDelete?: (ingredient: StoreIngredientListItem) => void;
   canManage?: boolean;
+  isDeleting?: (ingredient: StoreIngredientListItem) => boolean;
 };
 
 export function createStoreIngredientColumns({
   onEdit,
+  onDelete,
   canManage,
+  isDeleting,
 }: ColumnOptions): ColumnDef<StoreIngredientListItem>[] {
   const columns: ColumnDef<StoreIngredientListItem>[] = [
     {
@@ -130,16 +134,29 @@ export function createStoreIngredientColumns({
     },
   ];
 
-  if (onEdit) {
+  if (onEdit || onDelete) {
+    const actions = [];
+
+    if (onEdit) {
+      actions.push({
+        label: "Edit ingredient",
+        onSelect: onEdit,
+        disabled: !canManage,
+      });
+    }
+
+    if (onDelete) {
+      actions.push({
+        label: "Delete ingredient",
+        onSelect: onDelete,
+        disabled: (row: StoreIngredientListItem) => !canManage || (isDeleting?.(row) ?? false),
+        variant: "destructive" as const,
+      });
+    }
+
     columns.push(
       createActionColumn<StoreIngredientListItem>({
-        actions: [
-          {
-            label: "Edit ingredient",
-            onSelect: onEdit,
-            disabled: !canManage,
-          },
-        ],
+        actions,
       }),
     );
   }

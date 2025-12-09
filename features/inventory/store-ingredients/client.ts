@@ -170,3 +170,10 @@ export async function createStoreIngredient(
   );
   return data.storeIngredient;
 }
+
+/**
+ * Deletes a store ingredient (hard delete)
+ */
+export async function deleteStoreIngredient(ingredientId: string): Promise<void> {
+  await apiClient.delete(`${ENDPOINT}/${ingredientId}`);
+}

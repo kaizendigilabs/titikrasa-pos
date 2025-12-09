@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
@@ -17,9 +16,9 @@ import { useCreateCatalogItemMutation } from "@/features/procurements/suppliers/
 const DEFAULT_STATE = {
   name: "",
   baseUom: "gr",
-  purchasePrice: "0",
-  unitLabel: "Pack",
-  conversionRate: "1",
+  purchasePrice: "",
+  unitLabel: "",
+  conversionRate: "",
 };
 
 const BASE_UOMS = ['gr', 'ml', 'pcs'] as const;
@@ -70,7 +69,7 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
         <form.Field name="name">
           {(field) => (
             <div className="space-y-2">
-              <Label htmlFor="catalog-name">Item name</Label>
+              <Label htmlFor="catalog-name">Nama Produk</Label>
               <Input
                 id="catalog-name"
                 value={field.state.value}
@@ -81,10 +80,26 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
             </div>
           )}
         </form.Field>
-        <form.Field name="baseUom">
+        <form.Field name="unitLabel">
           {(field) => (
             <div className="space-y-2">
-              <Label htmlFor="catalog-base-uom">Base UOM</Label>
+              <Label htmlFor="catalog-unit-label">Kemasan</Label>
+              <Input
+                id="catalog-unit-label"
+                placeholder="Contoh: Pak, Botol"
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        </form.Field>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+      <form.Field name="baseUom">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor="catalog-base-uom">Unit</Label>
               <select
                 id="catalog-base-uom"
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -101,35 +116,20 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
             </div>
           )}
         </form.Field>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <form.Field name="unitLabel">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="catalog-unit-label">Unit Label (Beli)</Label>
-              <Input
-                id="catalog-unit-label"
-                placeholder="Contoh: Pack, Botol, Karton"
-                value={field.state.value}
-                onChange={(event) => field.handleChange(event.target.value)}
-                onBlur={field.handleBlur}
-              />
-            </div>
-          )}
-        </form.Field>
         <form.Field name="conversionRate">
           {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="catalog-conversion-rate">Isi per Unit</Label>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="catalog-conversion-rate">Isi per Kemasan</Label>
               <Input
                 id="catalog-conversion-rate"
                 type="text"
                 inputMode="decimal"
-                placeholder="Contoh: 1000"
+                placeholder="1000"
                 value={field.state.value}
                 onChange={(event) => field.handleChange(event.target.value)}
                 onBlur={field.handleBlur}
               />
+              <small className="text-muted-foreground">Contoh: 1000gr/pak</small>
             </div>
           )}
         </form.Field>
@@ -137,7 +137,7 @@ export function CatalogCreateForm({ supplierId, onSuccess }: CatalogCreateFormPr
       <form.Field name="purchasePrice">
         {(field) => (
           <div className="space-y-2">
-            <Label htmlFor="catalog-price">Purchase price (IDR)</Label>
+            <Label htmlFor="catalog-price">Harga Beli (IDR)</Label>
             <Input
               id="catalog-price"
               type="text"

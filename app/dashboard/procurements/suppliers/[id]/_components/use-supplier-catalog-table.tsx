@@ -104,24 +104,6 @@ function createColumns({
       ),
     },
     {
-      accessorKey: "purchase_price",
-      header: "Harga",
-      cell: ({ row }) => (
-        <span className="font-semibold">
-          {formatCurrency(row.original.purchase_price / 100)}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "base_uom",
-      header: "Base UOM",
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground uppercase">
-          {row.original.base_uom}
-        </span>
-      ),
-    },
-    {
       id: "linked",
       header: "Linked Ingredients",
       cell: ({ row }) => {
@@ -141,6 +123,24 @@ function createColumns({
           </div>
         );
       },
+    },
+    {
+      accessorKey: "purchase_price",
+      header: "Harga",
+      cell: ({ row }) => (
+        <span className="font-semibold">
+          {formatCurrency(row.original.purchase_price / 100)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "base_uom",
+      header: "Base UOM",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground uppercase">
+          {row.original.base_uom}
+        </span>
+      ),
     },
     {
       accessorKey: "unit_label",

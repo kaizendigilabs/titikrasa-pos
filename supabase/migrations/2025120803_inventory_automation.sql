@@ -109,3 +109,186 @@ create trigger trg_deduct_inventory_on_sale
 after insert on public.order_items
 for each row
 execute function public.deduct_inventory_on_sale();
+
+
+-- 3. Trigger to add inventory when purchase_order status changes to 'complete'
+-- Function untuk handle inventory update (shared by INSERT and UPDATE triggers)
+create or replace function public.apply_po_completion_inventory()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  rec jsonb;
+  v_uom base_uom;
+  v_ingredient_id uuid;
+  v_qty int;
+  v_price int;
+  v_catalog_id uuid;
+  v_current_stock int;
+  v_current_avg int;
+  v_new_avg int;
+begin
+  -- Log untuk debugging
+  raise notice 'PO Completion Trigger: PO ID %, Items count: %', NEW.id, jsonb_array_length(NEW.items);
+  
+  -- Iterasi items dan tulis ke stock_ledger
+  for rec in select jsonb_array_elements(NEW.items) loop
+    v_ingredient_id := (rec->>'store_ingredient_id')::uuid;
+    v_qty := (rec->>'qty')::int;
+    v_price := (rec->>'price')::int;
+    v_catalog_id := (rec->>'catalog_item_id')::uuid;
+    
+    raise notice 'Processing item: ingredient_id=%, qty=%, price=%', v_ingredient_id, v_qty, v_price;
+    
+    -- Skip jika tidak ada ingredient_id atau qty <= 0
+    if v_ingredient_id is null or v_qty <= 0 then
+      raise notice 'Skipping item: ingredient_id is null or qty <= 0';
+      continue;
+    end if;
+    
+    -- Ambil base_uom dan current stock dari ingredient
+    select si.base_uom, si.current_stock, si.avg_cost 
+    into v_uom, v_current_stock, v_current_avg
+    from public.store_ingredients si 
+    where si.id = v_ingredient_id;
+    
+    raise notice 'Ingredient found: uom=%, current_stock=%, avg_cost=%', v_uom, v_current_stock, v_current_avg;
+    
+    -- Insert ke stock_ledger (positive delta untuk purchase)
+    -- Trigger sync_ingredient_stock akan otomatis update current_stock
+    insert into public.stock_ledger
+      (ingredient_id, delta_qty, uom, reason, ref_type, ref_id, at)
+    values
+      (v_ingredient_id,
+       v_qty,
+       coalesce(v_uom, 'pcs'::base_uom),
+       'po',
+       'purchase_orders',
+       NEW.id,
+       now());
+       
+    raise notice 'Stock ledger entry created';
+       
+    -- Update avg_cost di store_ingredients (weighted average)
+    v_new_avg := case 
+      when v_current_stock + v_qty = 0 then v_current_avg
+      else round(
+        (v_current_stock * v_current_avg + v_qty * v_price) / 
+        (v_current_stock + v_qty)
+      )
+    end;
+    
+    update public.store_ingredients
+    set avg_cost = v_new_avg
+    where id = v_ingredient_id;
+    
+    raise notice 'Avg cost updated to %', v_new_avg;
+    
+    -- Update ingredient_supplier_links (last purchase info)
+    if v_catalog_id is not null then
+      update public.ingredient_supplier_links
+      set 
+        last_purchase_price = v_price,
+        last_purchased_at = now()
+      where store_ingredient_id = v_ingredient_id
+        and catalog_item_id = v_catalog_id;
+      raise notice 'Supplier link updated';
+    end if;
+  end loop;
+  
+  raise notice 'PO Completion Trigger: Finished processing PO %', NEW.id;
+  
+  return NEW;
+end;
+$$;
+
+-- Function untuk REVERSAL - membalikkan stok ketika status berubah dari complete ke draft/pending
+create or replace function public.reverse_po_completion_inventory()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  rec jsonb;
+  v_uom base_uom;
+  v_ingredient_id uuid;
+  v_qty int;
+  v_catalog_id uuid;
+begin
+  -- Log untuk debugging
+  raise notice 'PO Reversal Trigger: PO ID %, Items count: %', NEW.id, jsonb_array_length(NEW.items);
+  
+  -- Iterasi items dan tulis ke stock_ledger dengan delta NEGATIF (reversal)
+  for rec in select jsonb_array_elements(NEW.items) loop
+    v_ingredient_id := (rec->>'store_ingredient_id')::uuid;
+    v_qty := (rec->>'qty')::int;
+    v_catalog_id := (rec->>'catalog_item_id')::uuid;
+    
+    raise notice 'Reversing item: ingredient_id=%, qty=%', v_ingredient_id, v_qty;
+    
+    -- Skip jika tidak ada ingredient_id atau qty <= 0
+    if v_ingredient_id is null or v_qty <= 0 then
+      raise notice 'Skipping reversal: ingredient_id is null or qty <= 0';
+      continue;
+    end if;
+    
+    -- Ambil base_uom dari ingredient
+    select si.base_uom 
+    into v_uom
+    from public.store_ingredients si 
+    where si.id = v_ingredient_id;
+    
+    -- Insert ke stock_ledger dengan delta NEGATIF untuk reverse
+    -- Trigger sync_ingredient_stock akan otomatis update current_stock
+    insert into public.stock_ledger
+      (ingredient_id, delta_qty, uom, reason, ref_type, ref_id, at)
+    values
+      (v_ingredient_id,
+       -v_qty,  -- NEGATIF untuk reversal
+       coalesce(v_uom, 'pcs'::base_uom),
+       'po',
+       'purchase_orders',
+       NEW.id,
+       now());
+       
+    raise notice 'Stock reversal entry created (qty: -%)', v_qty;
+  end loop;
+  
+  -- Clear completed_at since PO is no longer complete
+  NEW.completed_at := null;
+  
+  raise notice 'PO Reversal Trigger: Finished processing PO %', NEW.id;
+  
+  return NEW;
+end;
+$$;
+
+-- Trigger untuk INSERT dengan status langsung complete
+drop trigger if exists trg_po_complete_on_insert on public.purchase_orders;
+
+create trigger trg_po_complete_on_insert
+after insert on public.purchase_orders
+for each row
+when (NEW.status = 'complete')
+execute function public.apply_po_completion_inventory();
+
+-- Trigger untuk UPDATE dari status lain ke complete
+drop trigger if exists trg_apply_po_completion on public.purchase_orders;
+
+create trigger trg_apply_po_completion
+after update on public.purchase_orders
+for each row
+when (OLD.status is distinct from 'complete' and NEW.status = 'complete')
+execute function public.apply_po_completion_inventory();
+
+-- Trigger untuk REVERSAL: dari complete ke draft/pending
+drop trigger if exists trg_reverse_po_completion on public.purchase_orders;
+
+create trigger trg_reverse_po_completion
+before update on public.purchase_orders
+for each row
+when (OLD.status = 'complete' and NEW.status in ('draft', 'pending'))
+execute function public.reverse_po_completion_inventory();

@@ -637,6 +637,7 @@ export type Database = {
           base_uom: Database["public"]["Enums"]["base_uom"]
           created_at: string
           current_stock: number
+          deleted_at: string | null
           id: string
           is_active: boolean
           min_stock: number
@@ -648,6 +649,7 @@ export type Database = {
           base_uom: Database["public"]["Enums"]["base_uom"]
           created_at?: string
           current_stock?: number
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           min_stock?: number
@@ -659,6 +661,7 @@ export type Database = {
           base_uom?: Database["public"]["Enums"]["base_uom"]
           created_at?: string
           current_stock?: number
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           min_stock?: number

@@ -313,6 +313,8 @@ export async function POST(request: NextRequest) {
       totals: totals as TablesInsert<"purchase_orders">["totals"],
       issued_at: body.issuedAt ?? new Date().toISOString(),
       created_by: actor.user.id,
+      // Set completed_at if status is directly complete
+      ...(body.status === "complete" ? { completed_at: new Date().toISOString() } : {}),
     };
 
     const { data, error } = await admin

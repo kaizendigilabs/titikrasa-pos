@@ -17,6 +17,7 @@ import {
   useStoreIngredientsRealtime,
   useCreateStoreIngredientMutation,
   useUpdateStoreIngredientMutation,
+  useDeleteStoreIngredientMutation,
 } from "@/features/inventory/store-ingredients/hooks";
 import type {
   CreateStoreIngredientInput,
@@ -26,7 +27,7 @@ import type {
 import type { StoreIngredientListItem } from "@/features/inventory/store-ingredients/types";
 import type { StoreIngredientListResult } from "@/features/inventory/store-ingredients/client";
 import type { StoreIngredientFormValues } from "./edit-sheet";
-import { StoreIngredientCreateDialog, type StoreIngredientCreateValues } from "./create-dialog";
+import type { StoreIngredientCreateValues } from "./create-dialog";
 import { Button } from "@/components/ui/button";
 
 export type StoreIngredientsTableFilters = PaginationFilters & {
@@ -127,22 +128,45 @@ export function useStoreIngredientsTableController({
 
   const [createOpen, setCreateOpen] = React.useState(false);
   const [editingIngredient, setEditingIngredient] = React.useState<StoreIngredientListItem | null>(null);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
+  const createMutation = useCreateStoreIngredientMutation();
+  const updateMutation = useUpdateStoreIngredientMutation();
+  const deleteMutation = useDeleteStoreIngredientMutation();
+
+  const handleDelete = React.useCallback(
+    async (ingredient: StoreIngredientListItem) => {
+      if (!confirm(`Hapus ingredient "${ingredient.name}"?`)) return;
+      setDeletingId(ingredient.id);
+      try {
+        await deleteMutation.mutateAsync(ingredient.id);
+        toast.success("Ingredient deleted");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to delete ingredient";
+        toast.error(message);
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [deleteMutation],
+  );
 
   const columns = React.useMemo(
     () =>
       createStoreIngredientColumns({
         onEdit: canManage ? setEditingIngredient : undefined,
+        onDelete: canManage ? handleDelete : undefined,
         canManage,
+        isDeleting: (row) => deletingId === row.id,
       }),
-    [canManage],
+    [canManage, handleDelete, deletingId],
   );
 
   const queryHook = useStoreIngredientsDataTableQuery;
 
   useStoreIngredientsRealtime(true);
 
-  const createMutation = useCreateStoreIngredientMutation();
-  const updateMutation = useUpdateStoreIngredientMutation();
 
   const handleSubmitCreate = React.useCallback(
     async (values: StoreIngredientCreateValues) => {
@@ -268,7 +292,7 @@ export function useStoreIngredientsTableController({
         ) : undefined,
       };
     },
-    [canManage, initialFilters],
+    [canManage],
   );
 
   return {

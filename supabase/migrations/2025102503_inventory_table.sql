@@ -8,7 +8,8 @@ create table if not exists store_ingredients (
   current_stock  integer not null default 0,  -- base uom
   avg_cost       integer not null default 0,  -- IDR per base uom
   is_active      boolean not null default true,
-  created_at     timestamptz not null default now()
+  created_at     timestamptz not null default now(),
+  deleted_at     timestamptz default null     -- Soft delete
 );
 create index if not exists idx_si_name on store_ingredients(name);
 alter table public.store_ingredients enable row level security;
