@@ -20,7 +20,6 @@ import {
   useCreateRecipeMutation,
   useDeleteRecipeMutation,
   useRecipes,
-  useRecipesRealtime,
   useUpdateRecipeMutation,
 } from '@/features/recipes/hooks';
 import type { RecipeFilters, RecipeListItem } from '@/features/recipes/types';
@@ -359,20 +358,4 @@ export function useRecipesDataTableQuery(
   } as unknown as UseQueryResult<DataTableQueryResult<RecipeListItem>>;
 }
 
-export function RecipesRealtimeBridge({
-  filters,
-}: {
-  filters: RecipesTableFilters;
-}) {
-  const recipeFilters = React.useMemo<RecipeFilters>(
-    () => ({
-      ...(filters.search.trim().length > 0
-        ? { search: filters.search.trim() }
-        : {}),
-      ...(filters.menuId !== 'all' ? { menuId: filters.menuId } : {}),
-    }),
-    [filters],
-  );
-  useRecipesRealtime(recipeFilters);
-  return null;
-}
+

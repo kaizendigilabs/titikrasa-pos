@@ -10,7 +10,6 @@ import {
 } from "./_components/dialogs";
 import {
   useUsersTableController,
-  UsersRealtimeBridge,
   type UseUsersTableControllerArgs,
 } from "./_components/use-users-table";
 
@@ -31,7 +30,7 @@ export function UsersTable(props: UsersTableProps) {
       renderToolbar={(context) => (
         <DataTableToolbar {...controller.buildToolbarConfig(context)} />
       )}
-      renderAfterTable={(context) => (
+      renderAfterTable={() => (
         <>
           {props.canManage ? (
             <>
@@ -42,7 +41,6 @@ export function UsersTable(props: UsersTableProps) {
           <ToggleStatusDialog {...controller.dialogs.toggle} />
           <DeleteUserDialog {...controller.dialogs.delete} />
           <BulkDeleteDialog {...controller.dialogs.bulkDelete} />
-          <UsersRealtimeBridge filters={context.filters} />
         </>
       )}
     />

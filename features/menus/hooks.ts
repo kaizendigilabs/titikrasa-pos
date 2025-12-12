@@ -4,10 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import * as React from "react";
-
+import { useCallback } from "react";
 import { CACHE_POLICIES } from "@/lib/api/cache-policies";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 import {
   createMenu,
@@ -17,7 +15,7 @@ import {
   publishMenu,
   updateMenu,
 } from "./client";
-import { mapMenuRow, type RawMenuRow } from "./mappers";
+
 import type { MenuFilters } from "./types";
 
 const MENUS_KEY = "menus";
@@ -61,7 +59,7 @@ export function useMenus(
  * Hook for getting menus query key
  */
 export function useMenusQueryKey() {
-  return React.useCallback((filters: MenuFilters = {}) => {
+  return useCallback((filters: MenuFilters = {}) => {
     return [MENUS_KEY, normalizeFilters(filters)] as const;
   }, []);
 }
@@ -86,6 +84,9 @@ export function useMenuDetail(menuId: string | null, options?: { enabled?: boole
   });
 }
 
+/**
+ * Hook for creating a new menu
+ */
 /**
  * Hook for creating a new menu
  */
@@ -118,13 +119,43 @@ export function useUpdateMenuMutation() {
       menuId: string;
       input: Parameters<typeof updateMenu>[1];
     }) => updateMenu(menuId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
-      void queryClient.refetchQueries({
-        queryKey: [MENUS_KEY],
-        type: "active",
-      });
+    onMutate: async ({ menuId, input }) => {
+        await queryClient.cancelQueries({ queryKey: [MENUS_KEY] });
+        
+        // Optimistic update for lists
+        queryClient.setQueriesData({ queryKey: [MENUS_KEY] }, (old: any) => {
+            if (!old || !old.items) return old;
+            return {
+                ...old,
+                items: old.items.map((item: any) => 
+                    item.id === menuId ? { ...item, ...input } : item
+                )
+            };
+        });
+
+        // Optimistic update for detail
+        const detailKey = ["menu-detail", menuId];
+        await queryClient.cancelQueries({ queryKey: detailKey });
+        const previousDetail = queryClient.getQueryData(detailKey);
+
+        if (previousDetail) {
+            queryClient.setQueryData(detailKey, (old: any) => ({
+                ...old,
+                ...input
+            }));
+        }
+
+        return { previousDetail };
     },
+    onSuccess: () => {
+       // No invalidation needed
+    },
+    onError: (_err, _vars, context) => {
+        void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
+        if (context?.previousDetail) {
+            queryClient.setQueryData(["menu-detail", _vars.menuId], context.previousDetail);
+        }
+    }
   });
 }
 
@@ -136,13 +167,23 @@ export function useDeleteMenuMutation() {
   
   return useMutation({
     mutationFn: (menuId: string) => deleteMenu(menuId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
-      void queryClient.refetchQueries({
-        queryKey: [MENUS_KEY],
-        type: "active",
-      });
+    onMutate: async (menuId) => {
+        await queryClient.cancelQueries({ queryKey: [MENUS_KEY] });
+        
+        queryClient.setQueriesData({ queryKey: [MENUS_KEY] }, (old: any) => {
+           if (!old || !old.items) return old;
+           return {
+               ...old,
+               items: old.items.filter((item: any) => item.id !== menuId)
+           };
+        });
     },
+    onSuccess: () => {
+       // No invalidation needed
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
+    }
   });
 }
 
@@ -160,82 +201,42 @@ export function useToggleMenuStatusMutation() {
       menuId: string;
       isActive: boolean;
     }) => publishMenu(menuId, isActive),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
-      void queryClient.refetchQueries({
-        queryKey: [MENUS_KEY],
-        type: "active",
-      });
+    onMutate: async ({ menuId, isActive }) => {
+        await queryClient.cancelQueries({ queryKey: [MENUS_KEY] });
+        
+        // Optimistic update for lists
+        queryClient.setQueriesData({ queryKey: [MENUS_KEY] }, (old: any) => {
+            if (!old || !old.items) return old;
+            return {
+                ...old,
+                items: old.items.map((item: any) => 
+                    item.id === menuId ? { ...item, isActive } : item
+                )
+            };
+        });
+
+         // Optimistic update for detail
+         const detailKey = ["menu-detail", menuId];
+         await queryClient.cancelQueries({ queryKey: detailKey });
+         const previousDetail = queryClient.getQueryData(detailKey);
+ 
+         if (previousDetail) {
+             queryClient.setQueryData(detailKey, (old: any) => ({
+                 ...old,
+                 isActive
+             }));
+         }
+ 
+         return { previousDetail };
     },
+    onSuccess: () => {
+       // No invalidation needed
+    },
+    onError: (_err, _vars, context) => {
+        void queryClient.invalidateQueries({ queryKey: [MENUS_KEY] });
+        if (context?.previousDetail) {
+            queryClient.setQueryData(["menu-detail", _vars.menuId], context.previousDetail);
+        }
+    }
   });
-}
-
-/**
- * Hook for real-time menu updates via Supabase
- */
-export function useMenusRealtime(
-  filters: MenuFilters,
-  options: { enabled?: boolean } = {},
-) {
-  const enabled = options.enabled ?? true;
-  const queryClient = useQueryClient();
-  const normalized = normalizeFilters(filters);
-
-  React.useEffect(() => {
-    if (!enabled) return;
-    
-    const supabase = createBrowserClient();
-    const channel = supabase
-      .channel("menus-list")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "menus" },
-        (payload) => {
-          queryClient.setQueryData<MenusQueryResult>(
-            [MENUS_KEY, normalized],
-            (current) => {
-              if (!current) return current;
-              
-              const newRow = (payload.new ?? payload.old ?? {}) as RawMenuRow;
-              const mapped = mapMenuRow({
-                ...newRow,
-                categories: null,
-              });
-
-              if (payload.eventType === "DELETE") {
-                return {
-                  items: current.items.filter(
-                    (item) => item.id !== String(newRow.id ?? ""),
-                  ),
-                  meta: current.meta,
-                };
-              }
-
-              const exists = current.items.some(
-                (item) => item.id === mapped.id,
-              );
-
-              if (exists) {
-                return {
-                  items: current.items.map((item) =>
-                    item.id === mapped.id ? mapped : item,
-                  ),
-                  meta: current.meta,
-                };
-              }
-
-              return {
-                items: [mapped, ...current.items],
-                meta: current.meta,
-              };
-            },
-          );
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [enabled, normalized, queryClient]);
 }

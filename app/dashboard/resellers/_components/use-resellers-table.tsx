@@ -21,7 +21,6 @@ import type { ResellerFilters } from "@/features/resellers/schemas";
 import type { ResellerListMeta } from "@/features/resellers/client";
 import {
   useResellers,
-  useResellersRealtime,
   useCreateResellerMutation,
   useUpdateResellerMutation,
   useToggleResellerStatusMutation,
@@ -173,7 +172,7 @@ export function useResellersTableController({
     },
   );
 
-  useResellersRealtime(true);
+
 
   const createMutation = useCreateResellerMutation();
   const updateMutation = useUpdateResellerMutation();

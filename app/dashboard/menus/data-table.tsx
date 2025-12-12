@@ -10,7 +10,6 @@ import {
 } from './_components/dialogs';
 import {
   useMenusTableController,
-  MenusRealtimeBridge,
   type UseMenusTableControllerArgs,
 } from './_components/use-menus-table';
 
@@ -31,14 +30,13 @@ export function MenusTable(props: MenusTableProps) {
       renderToolbar={(context) => (
         <DataTableToolbar {...controller.buildToolbarConfig(context)} />
       )}
-      renderAfterTable={(context) => (
+      renderAfterTable={() => (
         <>
           {props.canManage ? (
             <MenuFormDialog {...controller.formDialogProps} />
           ) : null}
           <ToggleStatusDialog {...controller.dialogs.toggle} />
           <DeleteMenuDialog {...controller.dialogs.delete} />
-          <MenusRealtimeBridge filters={context.filters} />
         </>
       )}
     />

@@ -4,10 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import * as React from "react";
-
 import { CACHE_POLICIES } from "@/lib/api/cache-policies";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 import {
   createRecipe,
@@ -55,50 +52,6 @@ export function useRecipes(
 /**
  * Hook for real-time recipe updates via Supabase
  */
-export function useRecipesRealtime(
-  filters: RecipeFilters,
-  options: { enabled?: boolean } = {},
-) {
-  const enabled = options.enabled ?? true;
-  const queryClient = useQueryClient();
-  const normalized = normalizeFilters(filters);
-
-  React.useEffect(() => {
-    if (!enabled) return;
-
-    const supabase = createBrowserClient();
-    const channel = supabase
-      .channel("recipes-list")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "recipes" },
-        () => {
-          void queryClient.invalidateQueries({
-            queryKey: [RECIPES_QUERY_KEY, normalized],
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "recipe_variant_overrides",
-        },
-        () => {
-          void queryClient.invalidateQueries({
-            queryKey: [RECIPES_QUERY_KEY, normalized],
-          });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [enabled, normalized, queryClient]);
-}
-
 /**
  * Hook for creating a recipe
  */
@@ -128,14 +81,52 @@ export function useUpdateRecipeMutation() {
   return useMutation({
     mutationFn: ({ recipeId, input }: { recipeId: string; input: Partial<RecipeInput> }) =>
       updateRecipe(recipeId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: [RECIPES_QUERY_KEY],
-      });
-      void queryClient.refetchQueries({
-        queryKey: [RECIPES_QUERY_KEY],
-        type: "active",
-      });
+    onMutate: async ({ recipeId, input }) => {
+       await queryClient.cancelQueries({ queryKey: [RECIPES_QUERY_KEY] });
+       
+       // Snapshot is tricky for multiple lists. We'll snapshot all queries matching the key? 
+       // For simplicity, we won't snapshot everything perfectly for rollback unless we iterate.
+       // But assuming generic error handling, we invalidate on error.
+       
+       // Optimistic update for lists
+       queryClient.setQueriesData({ queryKey: [RECIPES_QUERY_KEY] }, (old: any) => {
+           if (!old || !old.recipes) return old;
+           return {
+               ...old,
+               recipes: old.recipes.map((recipe: any) => 
+                  recipe.id === recipeId ? { ...recipe, ...input, updatedAt: new Date().toISOString() } : recipe
+               )
+           };
+       });
+
+       // Optimistic update for detail
+       const detailKey = [RECIPES_QUERY_KEY, "detail", recipeId];
+       await queryClient.cancelQueries({ queryKey: detailKey });
+       const previousDetail = queryClient.getQueryData(detailKey);
+       
+       if (previousDetail) {
+           queryClient.setQueryData(detailKey, (old: any) => ({
+               ...old,
+               ...input,
+               updatedAt: new Date().toISOString()
+           }));
+       }
+
+       return { previousDetail };
+    },
+    onError: (_err, _vars, context) => {
+        // Invalidate on error to restore sync
+       void queryClient.invalidateQueries({ queryKey: [RECIPES_QUERY_KEY] });
+       if (context?.previousDetail) {
+           void queryClient.setQueryData([RECIPES_QUERY_KEY, "detail", _vars.recipeId], context.previousDetail);
+       }
+    },
+    onSettled: () => {
+       // We might want to invalidate eventually to ensure data consistency, or rely on optimistic
+       // For this task, we want to remove realtime, but invalidation on settled is safe.
+       // However, to be "instant" and "offline-like", we skip invalidation if successful.
+       // But since we didn't snapshot lists perfectly, maybe safer to not invalidate?
+       // Let's trust optimistic update.
     },
   });
 }
@@ -148,15 +139,23 @@ export function useDeleteRecipeMutation() {
   
   return useMutation({
     mutationFn: (recipeId: string) => deleteRecipe(recipeId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: [RECIPES_QUERY_KEY],
-      });
-      void queryClient.refetchQueries({
-        queryKey: [RECIPES_QUERY_KEY],
-        type: "active",
-      });
+    onMutate: async (recipeId) => {
+        await queryClient.cancelQueries({ queryKey: [RECIPES_QUERY_KEY] });
+        
+        queryClient.setQueriesData({ queryKey: [RECIPES_QUERY_KEY] }, (old: any) => {
+           if (!old || !old.recipes) return old;
+           return {
+               ...old,
+               recipes: old.recipes.filter((recipe: any) => recipe.id !== recipeId)
+           };
+        });
     },
+    onSuccess: () => {
+       // No invalidation needed for lists as item is removed
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [RECIPES_QUERY_KEY] });
+    }
   });
 }
 

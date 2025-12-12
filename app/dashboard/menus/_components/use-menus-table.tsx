@@ -16,7 +16,6 @@ import { createMenuColumns } from '../columns';
 import type { MenuListItem, MenuFilters } from '@/features/menus/types';
 import {
   useMenus,
-  useMenusRealtime,
   useCreateMenuMutation,
   useDeleteMenuMutation,
   useToggleMenuStatusMutation,
@@ -421,28 +420,7 @@ export function useMenusDataTableQuery(
   return useMenus(listFilters, hookOptions);
 }
 
-export function MenusRealtimeBridge({
-  filters,
-}: {
-  filters: MenusTableFilters;
-}) {
-  const realtimeFilters = React.useMemo<MenuFilters>(
-    () => ({
-      page: filters.page,
-      pageSize: filters.pageSize,
-      status: filters.status,
-      type: filters.type,
-      categoryId: filters.categoryId ?? undefined,
-      ...(filters.search.trim().length > 0
-        ? { search: filters.search.trim() }
-        : {}),
-    }),
-    [filters],
-  );
 
-  useMenusRealtime(realtimeFilters);
-  return null;
-}
 
 function mapPayloadToUpdateInput(payload: MenuFormSubmitPayload) {
   if (payload.type === 'simple') {

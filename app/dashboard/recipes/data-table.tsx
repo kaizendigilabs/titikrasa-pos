@@ -3,9 +3,7 @@
 import { DataTable } from '@/components/tables/data-table';
 import { DataTableToolbar } from '@/components/tables/data-table-toolbar';
 import {
-  RecipesRealtimeBridge,
   useRecipesTableController,
-  type RecipesTableFilters,
   type UseRecipesTableControllerArgs,
 } from './_components/use-recipes-table';
 import { RecipeFormDialog } from './_components/recipe-form-sheet';
@@ -42,7 +40,7 @@ export function RecipesTable(props: RecipesTableProps) {
       renderToolbar={(context) => (
         <DataTableToolbar {...controller.buildToolbarConfig(context)} />
       )}
-      renderAfterTable={(context) => (
+      renderAfterTable={() => (
         <>
           <Sheet
             open={Boolean(controller.detail.recipe)}
@@ -100,10 +98,6 @@ export function RecipesTable(props: RecipesTableProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-
-          <RecipesRealtimeBridge
-            filters={context.filters as RecipesTableFilters}
-          />
         </>
       )}
     />

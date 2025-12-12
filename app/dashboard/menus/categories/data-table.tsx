@@ -9,7 +9,6 @@ import {
   ToggleStatusDialog,
 } from './_components/dialogs';
 import {
-  MenuCategoriesRealtimeBridge,
   useMenuCategoriesTableController,
   type UseMenuCategoriesTableControllerArgs,
 } from './_components/use-menu-categories-table';
@@ -31,14 +30,13 @@ export function MenuCategoriesTable(props: MenuCategoriesTableProps) {
       renderToolbar={(context) => (
         <DataTableToolbar {...controller.buildToolbarConfig(context)} />
       )}
-      renderAfterTable={(context) => (
+      renderAfterTable={() => (
         <>
           {props.canManage ? (
             <CategoryFormDialog {...controller.formDialogProps} />
           ) : null}
           <ToggleStatusDialog {...controller.dialogs.toggle} />
           <DeleteCategoryDialog {...controller.dialogs.delete} />
-          <MenuCategoriesRealtimeBridge filters={context.filters} />
         </>
       )}
     />

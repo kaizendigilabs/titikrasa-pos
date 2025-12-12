@@ -30,7 +30,6 @@ import {
   useToggleUserStatusMutation,
   useUpdateUserMutation,
   useUsers,
-  useUsersRealtime,
 } from "@/features/users/hooks";
 import type { UserListItem } from "@/features/users/types";
 import type { ListUsersParams } from "@/features/users/client";
@@ -708,18 +707,7 @@ export function useUsersDataTableQuery(
   return useUsers(listParams, queryOptions);
 }
 
-export function UsersRealtimeBridge({
-  filters,
-}: {
-  filters: UsersTableFilters;
-}) {
-  const listFilters = React.useMemo(
-    () => mapFiltersToListParams(filters),
-    [filters],
-  );
-  useUsersRealtime(listFilters);
-  return null;
-}
+
 
 function mapFiltersToListParams(filters: UsersTableFilters): ListUsersParams {
   const trimmedSearch = filters.search.trim();

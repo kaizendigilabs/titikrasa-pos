@@ -20,7 +20,6 @@ import type { SupplierListItem } from "@/features/procurements/suppliers/types";
 import type { SupplierFilters } from "@/features/procurements/suppliers/schemas";
 import {
   useSuppliers,
-  useSuppliersRealtime,
   useCreateSupplierMutation,
   useUpdateSupplierMutation,
   useDeleteSupplierMutation,
@@ -156,7 +155,7 @@ export function useSuppliersTableController({
     getRowId: (row) => row.id,
   });
 
-  useSuppliersRealtime({ enabled: true });
+
 
   const createMutation = useCreateSupplierMutation();
   const updateMutation = useUpdateSupplierMutation();

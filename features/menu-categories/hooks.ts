@@ -4,10 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import * as React from "react";
-
+import { useCallback } from "react";
 import { CACHE_POLICIES } from "@/lib/api/cache-policies";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 import {
   createMenuCategory,
@@ -15,7 +13,7 @@ import {
   listMenuCategories,
   updateMenuCategory,
 } from "./client";
-import type { MenuCategory, MenuCategoryFilters } from "./types";
+import type { MenuCategoryFilters } from "./types";
 
 const MENU_CATEGORIES_KEY = "menu-categories";
 
@@ -76,11 +74,14 @@ export function useMenuCategories(
  * Hook for getting menu categories query key
  */
 export function useMenuCategoriesQueryKey() {
-  return React.useCallback((filters: MenuCategoryFilters = {}) => {
+  return useCallback((filters: MenuCategoryFilters = {}) => {
     return [MENU_CATEGORIES_KEY, normalizeFilters(filters)] as const;
   }, []);
 }
 
+/**
+ * Hook for creating a menu category
+ */
 /**
  * Hook for creating a menu category
  */
@@ -113,13 +114,26 @@ export function useUpdateMenuCategoryMutation() {
       categoryId: string;
       input: Parameters<typeof updateMenuCategory>[1];
     }) => updateMenuCategory(categoryId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [MENU_CATEGORIES_KEY] });
-      void queryClient.refetchQueries({
-        queryKey: [MENU_CATEGORIES_KEY],
-        type: "active",
-      });
+    onMutate: async ({ categoryId, input }) => {
+        await queryClient.cancelQueries({ queryKey: [MENU_CATEGORIES_KEY] });
+        
+        queryClient.setQueriesData({ queryKey: [MENU_CATEGORIES_KEY] }, (old: any) => {
+           if (!old || !old.items) return old;
+           return {
+               ...old,
+               items: old.items.map((item: any) => 
+                   item.id === categoryId ? { ...item, ...input } : item
+               )
+           };
+        });
     },
+    onSuccess: () => {
+       // Ideally no invalidation needed if optimistic is correct, but to be sure we can invalidate eventually
+       // or just trust optimistic.
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [MENU_CATEGORIES_KEY] });
+    }
   });
 }
 
@@ -131,94 +145,23 @@ export function useDeleteMenuCategoryMutation() {
   
   return useMutation({
     mutationFn: (categoryId: string) => deleteMenuCategory(categoryId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: [MENU_CATEGORIES_KEY] });
-      void queryClient.refetchQueries({
-        queryKey: [MENU_CATEGORIES_KEY],
-        type: "active",
-      });
+    onMutate: async (categoryId) => {
+        await queryClient.cancelQueries({ queryKey: [MENU_CATEGORIES_KEY] });
+        
+        queryClient.setQueriesData({ queryKey: [MENU_CATEGORIES_KEY] }, (old: any) => {
+           if (!old || !old.items) return old;
+           return {
+               ...old,
+               items: old.items.filter((item: any) => item.id !== categoryId),
+               meta: adjustMetaTotal(old.meta, -1)
+           };
+        });
     },
+    onSuccess: () => {
+       // No invalidation needed
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [MENU_CATEGORIES_KEY] });
+    }
   });
-}
-
-/**
- * Hook for real-time menu category updates via Supabase
- */
-export function useMenuCategoriesRealtime(
-  filters: MenuCategoryFilters,
-  options: { enabled?: boolean } = {},
-) {
-  const enabled = options.enabled ?? true;
-  const queryClient = useQueryClient();
-  const normalizedFilters = normalizeFilters(filters);
-
-  React.useEffect(() => {
-    if (!enabled) return;
-    
-    const supabase = createBrowserClient();
-    const channel = supabase
-      .channel("menu-categories-list")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "categories" },
-        (payload) => {
-          queryClient.setQueryData<MenuCategoriesQuery>(
-            [MENU_CATEGORIES_KEY, normalizedFilters],
-            (current) => {
-              if (!current) return current;
-
-              const newRow = (payload.new ?? payload.old ?? {}) as Record<string, unknown>;
-
-              const category: MenuCategory = {
-                id: String(newRow.id ?? ""),
-                name: String(newRow.name ?? ""),
-                slug: String(newRow.slug ?? ""),
-                sort_order: Number(newRow.sort_order ?? 0),
-                is_active: Boolean(newRow.is_active ?? true),
-                icon_url:
-                  typeof newRow.icon_url === "string"
-                    ? (newRow.icon_url as string)
-                    : null,
-                created_at:
-                  typeof newRow.created_at === "string"
-                    ? (newRow.created_at as string)
-                    : new Date().toISOString(),
-              };
-
-              if (payload.eventType === "DELETE") {
-                return {
-                  items: current.items.filter(
-                    (item) => item.id !== category.id,
-                  ),
-                  meta: adjustMetaTotal(current.meta, -1),
-                };
-              }
-
-              const exists = current.items.some(
-                (item) => item.id === category.id,
-              );
-              
-              if (exists) {
-                return {
-                  items: current.items.map((item) =>
-                    item.id === category.id ? category : item,
-                  ),
-                  meta: current.meta,
-                };
-              }
-
-              return {
-                items: [category, ...current.items],
-                meta: adjustMetaTotal(current.meta, 1),
-              };
-            },
-          );
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [enabled, normalizedFilters, queryClient]);
 }

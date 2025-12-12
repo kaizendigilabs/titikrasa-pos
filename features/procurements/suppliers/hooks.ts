@@ -4,10 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import * as React from "react";
-
 import { CACHE_POLICIES } from "@/lib/api/cache-policies";
-import { createBrowserClient } from "@/lib/supabase/client";
 import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
 
 import {
@@ -86,6 +83,9 @@ function updateSuppliersCache(
 /**
  * Hook for creating a supplier
  */
+/**
+ * Hook for creating a supplier
+ */
 export function useCreateSupplierMutation() {
   const queryClient = useQueryClient();
   
@@ -109,12 +109,25 @@ export function useUpdateSupplierMutation() {
   return useMutation({
     mutationFn: ({ supplierId, payload }: { supplierId: string; payload: UpdateSupplierPayload }) =>
       updateSupplier(supplierId, payload),
+    onMutate: async ({ supplierId, payload }) => {
+        await queryClient.cancelQueries({ queryKey: [SUPPLIERS_KEY] });
+        
+        updateSuppliersCache(queryClient, (current) => ({
+            items: current.items.map((item) => 
+                item.id === supplierId ? { ...item, ...payload } : item
+            ),
+            meta: current.meta
+        }));
+    },
     onSuccess: (supplier) => {
       updateSuppliersCache(queryClient, (current) => ({
         items: current.items.map((item) => (item.id === supplier.id ? supplier : item)),
         meta: current.meta,
       }));
     },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [SUPPLIERS_KEY] });
+    }
   });
 }
 
@@ -126,12 +139,20 @@ export function useDeleteSupplierMutation() {
   
   return useMutation({
     mutationFn: deleteSupplier,
-    onSuccess: (_result, supplierId) => {
-      updateSuppliersCache(queryClient, (current) => ({
-        items: current.items.filter((item) => item.id !== supplierId),
-        meta: current.meta,
-      }));
+    onMutate: async (supplierId) => {
+        await queryClient.cancelQueries({ queryKey: [SUPPLIERS_KEY] });
+        
+        updateSuppliersCache(queryClient, (current) => ({
+            items: current.items.filter((item) => item.id !== supplierId),
+            meta: current.meta
+        }));
     },
+    onSuccess: () => {
+       // Confirmed
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [SUPPLIERS_KEY] });
+    }
   });
 }
 
@@ -158,9 +179,28 @@ export function useUpdateCatalogItemMutation(supplierId: string) {
   return useMutation({
     mutationFn: ({ catalogItemId, payload }: { catalogItemId: string; payload: UpdateCatalogItemPayload }) =>
       updateCatalogItem(supplierId, catalogItemId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+    onMutate: async ({ catalogItemId, payload }) => {
+        await queryClient.cancelQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+        
+        // Optimistic update for catalog list
+        // Since we don't have a helper like updateSuppliersCache, and keys have filters,
+        // we use setQueriesData to target all catalogs for this supplier.
+        queryClient.setQueriesData({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] }, (old: any) => {
+            if (!old || !old.items) return old;
+            return {
+                ...old,
+                items: old.items.map((item: any) => 
+                    item.id === catalogItemId ? { ...item, ...payload } : item
+                )
+            };
+        });
     },
+    onSuccess: () => {
+      // confirm
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+    }
   });
 }
 
@@ -173,9 +213,25 @@ export function useToggleCatalogItemMutation(supplierId: string) {
   return useMutation({
     mutationFn: ({ catalogItemId, isActive }: { catalogItemId: string; isActive: boolean }) =>
       toggleCatalogItem(supplierId, catalogItemId, isActive),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+    onMutate: async ({ catalogItemId, isActive }) => {
+        await queryClient.cancelQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+        
+        queryClient.setQueriesData({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] }, (old: any) => {
+            if (!old || !old.items) return old;
+            return {
+                ...old,
+                items: old.items.map((item: any) => 
+                    item.id === catalogItemId ? { ...item, is_active: isActive } : item
+                )
+            };
+        });
     },
+    onSuccess: () => {
+      // confirm
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+    }
   });
 }
 
@@ -187,9 +243,23 @@ export function useDeleteCatalogItemMutation(supplierId: string) {
   
   return useMutation({
     mutationFn: (catalogItemId: string) => deleteCatalogItem(supplierId, catalogItemId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+    onMutate: async (catalogItemId) => {
+        await queryClient.cancelQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+        
+        queryClient.setQueriesData({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] }, (old: any) => {
+            if (!old || !old.items) return old;
+            return {
+                ...old,
+                items: old.items.filter((item: any) => item.id !== catalogItemId)
+            };
+        });
     },
+    onSuccess: () => {
+      // confirm
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
+    }
   });
 }
 
@@ -234,46 +304,6 @@ export function useDeleteSupplierLinkMutation(supplierId: string) {
       queryClient.invalidateQueries({ queryKey: [SUPPLIER_CATALOG_KEY, supplierId] });
     },
   });
-}
-
-type SupplierRealtimeOptions = {
-  enabled?: boolean;
-};
-
-/**
- * Hook for real-time supplier updates via Supabase
- */
-export function useSuppliersRealtime({ enabled = true }: SupplierRealtimeOptions = {}) {
-  const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    if (!enabled) return;
-
-    const supabase = createBrowserClient();
-    const channel = supabase
-      .channel("suppliers-list")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "suppliers" },
-        (payload) => {
-          const supplier = payload.new ?? payload.old;
-          if (!supplier) return;
-          queryClient.invalidateQueries({ queryKey: [SUPPLIERS_KEY] });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "supplier_catalog_items" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: [SUPPLIERS_KEY] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [enabled, queryClient]);
 }
 
 type UseSupplierOrdersOptions = {

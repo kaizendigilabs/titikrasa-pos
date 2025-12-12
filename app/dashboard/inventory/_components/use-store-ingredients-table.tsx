@@ -14,7 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { createStoreIngredientColumns } from "../columns";
 import {
   useStoreIngredients,
-  useStoreIngredientsRealtime,
   useCreateStoreIngredientMutation,
   useUpdateStoreIngredientMutation,
   useDeleteStoreIngredientMutation,
@@ -165,7 +164,7 @@ export function useStoreIngredientsTableController({
 
   const queryHook = useStoreIngredientsDataTableQuery;
 
-  useStoreIngredientsRealtime(true);
+
 
 
   const handleSubmitCreate = React.useCallback(

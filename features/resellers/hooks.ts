@@ -5,10 +5,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import * as React from "react";
-
 import { CACHE_POLICIES } from "@/lib/api/cache-policies";
-import { createBrowserClient } from "@/lib/supabase/client";
 import type { DataTableQueryResult } from "@/components/tables/use-data-table-state";
 
 import {
@@ -25,9 +22,7 @@ import type {
   ResellerOrderFilters,
   UpdateResellerPayload,
 } from "./schemas";
-import type { Json } from "@/lib/types/database";
 import type { ResellerListItem, ResellerOrder } from "./types";
-import { parseContact, parseTerms } from "./types";
 
 const RESELLERS_KEY = "resellers";
 const RESELLER_ORDERS_KEY = "reseller-orders";
@@ -93,6 +88,9 @@ export function useResellers(filters: ResellerFilters, options: UseResellersOpti
 /**
  * Hook for creating a reseller
  */
+/**
+ * Hook for creating a reseller
+ */
 export function useCreateResellerMutation() {
   const queryClient = useQueryClient();
   
@@ -122,6 +120,16 @@ export function useUpdateResellerMutation() {
   return useMutation({
     mutationFn: ({ resellerId, input }: { resellerId: string; input: UpdateResellerPayload }) =>
       updateReseller(resellerId, input),
+    onMutate: async ({ resellerId, input }) => {
+        await queryClient.cancelQueries({ queryKey: [RESELLERS_KEY] });
+        
+        updateResellersCache(queryClient, (current) => ({
+            items: current.items.map((item) =>
+              item.id === resellerId ? { ...item, ...input } : item,
+            ),
+            meta: current.meta,
+        }));
+    },
     onSuccess: (reseller) => {
       updateResellersCache(queryClient, (current) => ({
         items: current.items.map((item) =>
@@ -130,6 +138,9 @@ export function useUpdateResellerMutation() {
         meta: current.meta,
       }));
     },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [RESELLERS_KEY] });
+    }
   });
 }
 
@@ -147,14 +158,22 @@ export function useToggleResellerStatusMutation() {
       resellerId: string;
       isActive: boolean;
     }) => toggleResellerStatus(resellerId, isActive),
-    onSuccess: (reseller) => {
-      updateResellersCache(queryClient, (current) => ({
-        items: current.items.map((item) =>
-          item.id === reseller.id ? reseller : item,
-        ),
-        meta: current.meta,
-      }));
+    onMutate: async ({ resellerId, isActive }) => {
+        await queryClient.cancelQueries({ queryKey: [RESELLERS_KEY] });
+        
+        updateResellersCache(queryClient, (current) => ({
+            items: current.items.map((item) =>
+              item.id === resellerId ? { ...item, is_active: isActive } : item,
+            ),
+            meta: current.meta,
+        }));
     },
+    onSuccess: () => {
+      // confirmed
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [RESELLERS_KEY] });
+    }
   });
 }
 
@@ -166,104 +185,27 @@ export function useDeleteResellerMutation() {
   
   return useMutation({
     mutationFn: (resellerId: string) => deleteReseller(resellerId),
-    onSuccess: (_result, resellerId) => {
-      updateResellersCache(queryClient, (current) => {
-        const nextItems = current.items.filter((item) => item.id !== resellerId);
-        if (nextItems.length === current.items.length) {
-          return current;
-        }
-        return {
-          items: nextItems,
-          meta: adjustMetaTotal(current.meta, -1),
-        };
-      });
-    },
-  });
-}
-
-type RealtimeOptions = {
-  onUpsert?: (reseller: ResellerListItem) => void;
-  onDelete?: (resellerId: string) => void;
-};
-
-/**
- * Hook for real-time reseller updates via Supabase
- */
-export function useResellersRealtime(enabled: boolean, options: RealtimeOptions = {}) {
-  const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    if (!enabled) return;
-    
-    const supabase = createBrowserClient();
-    const channel = supabase
-      .channel("resellers-list")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "resellers" },
-        (payload) => {
-          const newRow = (payload.new ?? {}) as Record<string, unknown>;
-          const oldRow = (payload.old ?? {}) as Record<string, unknown>;
-
-          const contactJson =
-            (newRow.contact as unknown) ?? (oldRow.contact as unknown) ?? null;
-          const termsJson =
-            (newRow.terms as unknown) ?? (oldRow.terms as unknown) ?? null;
-
-          const reseller: ResellerListItem = {
-            id: String(newRow.id ?? oldRow.id ?? ""),
-            name: String(newRow.name ?? oldRow.name ?? ""),
-            contact: parseContact(contactJson as Json),
-            terms: parseTerms(termsJson as Json),
-            is_active: Boolean(newRow.is_active ?? oldRow.is_active ?? true),
-            created_at: String(
-              newRow.created_at ?? oldRow.created_at ?? new Date().toISOString(),
-            ),
-          };
-
-          updateResellersCache(queryClient, (current) => {
-            if (payload.eventType === "DELETE") {
-              const nextItems = current.items.filter(
-                (item) => item.id !== String(oldRow.id ?? ""),
-              );
-              if (nextItems.length === current.items.length) {
-                return current;
-              }
-              return {
-                items: nextItems,
-                meta: adjustMetaTotal(current.meta, -1),
-              };
+    onMutate: async (resellerId) => {
+        await queryClient.cancelQueries({ queryKey: [RESELLERS_KEY] });
+        
+        updateResellersCache(queryClient, (current) => {
+            const nextItems = current.items.filter((item) => item.id !== resellerId);
+            if (nextItems.length === current.items.length) {
+              return current;
             }
-
-            const exists = current.items.some((item) => item.id === reseller.id);
-            const items = exists
-              ? current.items.map((item) =>
-                  item.id === reseller.id ? reseller : item,
-                )
-              : [reseller, ...current.items];
-            const meta =
-              !exists && payload.eventType === "INSERT"
-                ? adjustMetaTotal(current.meta, 1)
-                : current.meta;
             return {
-              items,
-              meta,
+              items: nextItems,
+              meta: adjustMetaTotal(current.meta, -1),
             };
-          });
-
-          if (payload.eventType === "DELETE") {
-            options.onDelete?.(String(oldRow.id ?? ""));
-          } else {
-            options.onUpsert?.(reseller);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [options, enabled, queryClient]);
+        });
+    },
+    onSuccess: () => {
+       // Confirmed
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [RESELLERS_KEY] });
+    }
+  });
 }
 
 type UseResellerOrdersOptions = {

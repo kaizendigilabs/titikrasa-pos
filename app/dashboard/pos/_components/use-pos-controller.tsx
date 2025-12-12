@@ -16,7 +16,6 @@ import type { CreateOrderInput } from "@/features/orders/schemas";
 import {
   useCreateOrderMutation,
   useOrders,
-  useOrdersRealtime,
 } from "@/features/orders/hooks";
 import { DEFAULT_POS_ORDER_FILTERS } from "@/features/pos/keys";
 import {
@@ -96,7 +95,6 @@ export function usePosController({
   const [variantDialog, setVariantDialog] =
     React.useState<VariantDialogState | null>(null);
   const [paymentDrawerOpen, setPaymentDrawerOpen] = React.useState(false);
-  const [isOnline, setIsOnline] = React.useState(true);
   const cartState = useStore(cartStore, (state) => state);
   const preferences = useStore(preferencesStore, (state) => state);
 
@@ -131,25 +129,9 @@ export function usePosController({
     setHasHydrated(true);
   }, []);
 
-  React.useEffect(() => {
-    if (typeof navigator !== "undefined") {
-      setIsOnline(navigator.onLine);
-    }
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    if (typeof window === "undefined") return;
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
-
   const orderFilters = DEFAULT_POS_ORDER_FILTERS;
-
   const ordersQuery = useOrders(orderFilters);
-  useOrdersRealtime(orderFilters, { enabled: true });
+
 
   const getResellerName = React.useCallback(
     (id: string) => resellerMap.get(id),
@@ -530,7 +512,6 @@ export function usePosController({
     setVariantDialog,
     paymentDrawerOpen,
     setPaymentDrawerOpen,
-    isOnline,
     cartState,
     subtotal,
     discountAmount,

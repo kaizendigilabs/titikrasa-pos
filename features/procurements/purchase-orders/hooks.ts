@@ -4,10 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import * as React from "react";
-
 import { CACHE_POLICIES } from "@/lib/api/cache-policies";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 import {
   createPurchaseOrder,
@@ -68,6 +65,9 @@ function updatePurchaseOrdersCache(
 /**
  * Hook for creating a purchase order
  */
+/**
+ * Hook for creating a purchase order
+ */
 export function useCreatePurchaseOrderMutation() {
   const queryClient = useQueryClient();
   
@@ -91,12 +91,33 @@ export function useUpdatePurchaseOrderMutation() {
   return useMutation({
     mutationFn: ({ purchaseOrderId, payload }: { purchaseOrderId: string; payload: UpdatePurchaseOrderPayload }) =>
       updatePurchaseOrder(purchaseOrderId, payload),
+    onMutate: async ({ purchaseOrderId, payload }) => {
+       await queryClient.cancelQueries({ queryKey: [PURCHASE_ORDERS_KEY] });
+       
+       updatePurchaseOrdersCache(queryClient, (snapshot) => ({
+           items: snapshot.items.map((item) => {
+               if (item.id === purchaseOrderId) {
+                   return { 
+                       ...item, 
+                       ...payload,
+                       // status: payload.status ?? item.status // handled by payload spread
+                   } as PurchaseOrderListItem; // Casting as payload is partial
+               }
+               return item;
+           }),
+           meta: snapshot.meta
+       }));
+    },
     onSuccess: (purchaseOrder) => {
+        // Confirm with server response
       updatePurchaseOrdersCache(queryClient, (snapshot) => ({
         items: snapshot.items.map((item) => (item.id === purchaseOrder.id ? purchaseOrder : item)),
         meta: snapshot.meta,
       }));
     },
+    onError: () => {
+         void queryClient.invalidateQueries({ queryKey: [PURCHASE_ORDERS_KEY] });
+    }
   });
 }
 
@@ -108,38 +129,19 @@ export function useDeletePurchaseOrderMutation() {
   
   return useMutation({
     mutationFn: (purchaseOrderId: string) => deletePurchaseOrder(purchaseOrderId),
-    onSuccess: (_data, purchaseOrderId) => {
-      updatePurchaseOrdersCache(queryClient, (snapshot) => ({
-        items: snapshot.items.filter((item) => item.id !== purchaseOrderId),
-        meta: snapshot.meta,
-      }));
+    onMutate: async (purchaseOrderId) => {
+        await queryClient.cancelQueries({ queryKey: [PURCHASE_ORDERS_KEY] });
+        
+        updatePurchaseOrdersCache(queryClient, (snapshot) => ({
+            items: snapshot.items.filter((item) => item.id !== purchaseOrderId),
+            meta: snapshot.meta
+        }));
     },
+    onSuccess: () => {
+       // Confirmed
+    },
+    onError: () => {
+        void queryClient.invalidateQueries({ queryKey: [PURCHASE_ORDERS_KEY] });
+    }
   });
-}
-
-/**
- * Hook for real-time purchase order updates via Supabase
- */
-export function usePurchaseOrdersRealtime(enabled = true) {
-  const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    if (!enabled) return;
-
-    const supabase = createBrowserClient();
-    const channel = supabase
-      .channel("purchase-orders")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "purchase_orders" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: [PURCHASE_ORDERS_KEY] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [enabled, queryClient]);
 }

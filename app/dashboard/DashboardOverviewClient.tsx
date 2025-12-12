@@ -11,7 +11,7 @@ import { SalesOverviewChart } from "@/components/shared/SalesOverviewChart";
 import type { DashboardSummary } from "@/features/dashboard/types";
 import { getDateRange, type DateRangeType } from "@/lib/utils/date-helpers";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDashboardRealtime, useDashboardSummary } from "@/features/dashboard/hooks";
+import { useDashboardSummary } from "@/features/dashboard/hooks";
 import { OrderHistoryTable } from "@/app/dashboard/_components/order-history-table";
 import { DASHBOARD_ORDER_HISTORY_PAGE_SIZE } from "@/features/dashboard/constants";
 import { Button } from "@/components/ui/button";
@@ -64,7 +64,7 @@ export function DashboardOverviewClient({ initialRange }: DashboardOverviewClien
   }, [router, searchParams]);
 
   const summaryQuery = useDashboardSummary(range);
-  useDashboardRealtime(range);
+  
   const summary = summaryQuery.data ?? DEFAULT_SUMMARY;
   const isMetricsLoading = summaryQuery.isLoading && !summaryQuery.data;
   const isRefreshing = summaryQuery.isFetching || summaryQuery.isRefetching;

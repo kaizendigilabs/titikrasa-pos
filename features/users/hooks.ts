@@ -4,10 +4,9 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 
 import { CACHE_POLICIES } from "@/lib/api/cache-policies";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 import {
   createUser,
@@ -67,6 +66,9 @@ export function useRoles(options: UseRolesOptions = {}) {
 /**
  * Hook for creating a user
  */
+/**
+ * Hook for creating a user
+ */
 export function useCreateUserMutation() {
   const client = useQueryClient();
   
@@ -92,9 +94,25 @@ export function useUpdateUserMutation() {
       userId: string;
       input: Parameters<typeof updateUser>[1];
     }) => updateUser(userId, input),
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    onMutate: async ({ userId, input }) => {
+        await client.cancelQueries({ queryKey: [USERS_QUERY_KEY] });
+        
+        client.setQueriesData({ queryKey: [USERS_QUERY_KEY] }, (old: any) => {
+            if (!old || !old.items) return old;
+            return {
+                ...old,
+                items: old.items.map((item: any) => 
+                    item.id === userId ? { ...item, ...input } : item
+                )
+            };
+        });
     },
+    onSuccess: () => {
+      // confirm
+    },
+    onError: () => {
+        void client.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    }
   });
 }
 
@@ -112,9 +130,25 @@ export function useToggleUserStatusMutation() {
       userId: string;
       isActive: boolean;
     }) => setUserActiveStatus(userId, isActive),
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    onMutate: async ({ userId, isActive }) => {
+        await client.cancelQueries({ queryKey: [USERS_QUERY_KEY] });
+        
+        client.setQueriesData({ queryKey: [USERS_QUERY_KEY] }, (old: any) => {
+            if (!old || !old.items) return old;
+            return {
+                ...old,
+                items: old.items.map((item: any) => 
+                    item.id === userId ? { ...item, is_active: isActive } : item
+                )
+            };
+        });
     },
+    onSuccess: () => {
+      // confirm
+    },
+    onError: () => {
+        void client.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    }
   });
 }
 
@@ -126,9 +160,23 @@ export function useDeleteUserMutation() {
   
   return useMutation({
     mutationFn: (userId: string) => deleteUser(userId),
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    onMutate: async (userId) => {
+        await client.cancelQueries({ queryKey: [USERS_QUERY_KEY] });
+        
+        client.setQueriesData({ queryKey: [USERS_QUERY_KEY] }, (old: any) => {
+            if (!old || !old.items) return old;
+            return {
+                ...old,
+                items: old.items.filter((item: any) => item.id !== userId)
+            };
+        });
     },
+    onSuccess: () => {
+      // confirm
+    },
+    onError: () => {
+        void client.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
+    }
   });
 }
 
@@ -154,50 +202,4 @@ export function useUsersQueryKey() {
   return useCallback((filters: ListUsersParams = {}) => {
     return [USERS_QUERY_KEY, filters] as const;
   }, []);
-}
-
-type UseUsersRealtimeOptions = {
-  enabled?: boolean;
-};
-
-/**
- * Hook for real-time user updates via Supabase
- */
-export function useUsersRealtime(
-  filters: ListUsersParams,
-  options: UseUsersRealtimeOptions = {},
-) {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (options.enabled === false) return;
-
-    const supabase = createBrowserClient();
-    const filterKey = JSON.stringify(filters ?? {});
-    const channelName = `users-dashboard-${filterKey}-${Date.now()}`;
-    
-    const invalidate = () => {
-      void queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-    };
-
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "profiles" },
-        invalidate,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "user_roles" },
-        invalidate,
-      );
-
-    channel.subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [filters, options.enabled, queryClient]);
 }

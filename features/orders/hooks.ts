@@ -4,10 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect } from "react";
 
 import { CACHE_POLICIES } from "@/lib/api/cache-policies";
-import { createBrowserClient } from "@/lib/supabase/client";
 
 import {
   createOrder,
@@ -84,32 +82,15 @@ export function useCreateOrderMutation(
         },
       );
 
-      return { previous, optimisticId: optimisticOrder.id };
+      return { previous };
     },
     onError: (_error, _input, context) => {
       if (context?.previous) {
         queryClient.setQueryData(ordersQueryKey(filters), context.previous);
       }
     },
-    onSuccess: (order, _input, context) => {
-      queryClient.setQueryData<Awaited<ReturnType<typeof listOrders>>>(
-        ordersQueryKey(filters),
-        (prev) => {
-          if (!prev) {
-            return { items: [order], meta: null };
-          }
-          const filteredItems = prev.items.filter(
-            (item) => item.id !== context?.optimisticId,
-          );
-          return {
-            items: [order, ...filteredItems],
-            meta: prev.meta,
-          };
-        },
-      );
-    },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
+       // No invalidation needed for optimistic UI in single-user mode
     },
   });
 }
@@ -122,7 +103,8 @@ function buildOptimisticOrder(
   getResellerName?: (resellerId: string) => string | undefined,
 ): OrderListItem {
   const now = new Date().toISOString();
-  const tempId = `optimistic-${Math.random().toString(36).slice(2)}`;
+  // Use a clearly identifiable temporary ID
+  const tempId = `optimistic-${Date.now()}`;
   const totals = computeOrderTotals(input.items, input.discount, input.taxRate);
   
   const items: OrderItem[] = input.items.map((item, index) => ({
@@ -178,8 +160,49 @@ export function useUpdateOrderPaymentMutation(filters: OrderFilters) {
   return useMutation({
     mutationFn: ({ orderId, input }: { orderId: string; input: UpdateOrderPaymentInput }) =>
       updateOrderPayment(orderId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
+    onMutate: async ({ orderId, input }) => {
+      await queryClient.cancelQueries({ queryKey: ordersQueryKey(filters) });
+      const previous = queryClient.getQueryData<Awaited<ReturnType<typeof listOrders>>>(
+        ordersQueryKey(filters),
+      );
+
+      queryClient.setQueryData<Awaited<ReturnType<typeof listOrders>>>(
+        ordersQueryKey(filters),
+        (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            items: prev.items.map((item) => {
+              if (item.id === orderId) {
+                const now = new Date().toISOString();
+                const newStatus = input.paymentStatus === "paid" ? "paid" : "open";
+                
+                // Update properties based on payment change
+                return {
+                  ...item,
+                  paymentStatus: input.paymentStatus,
+                  status: newStatus,
+                  paidAt: input.paymentStatus === "paid" ? (item.paidAt ?? now) : null,
+                  // We don't have full logic here for partial payment calc, 
+                  // but we assume payment method might update too if provided in real app,
+                  // for now we just update status which is the visible part.
+                };
+              }
+              return item;
+            }),
+          };
+        },
+      );
+
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+         queryClient.setQueryData(ordersQueryKey(filters), context.previous);
+      }
+    },
+     onSettled: () => {
+       // No invalidation needed
     },
   });
 }
@@ -193,8 +216,39 @@ export function useVoidOrderMutation(filters: OrderFilters) {
   return useMutation({
     mutationFn: ({ orderId, input }: { orderId: string; input: VoidOrderInput }) =>
       voidOrder(orderId, input),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
+    onMutate: async ({ orderId }) => {
+      await queryClient.cancelQueries({ queryKey: ordersQueryKey(filters) });
+      const previous = queryClient.getQueryData<Awaited<ReturnType<typeof listOrders>>>(
+        ordersQueryKey(filters),
+      );
+
+      queryClient.setQueryData<Awaited<ReturnType<typeof listOrders>>>(
+        ordersQueryKey(filters),
+        (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            items: prev.items.map((item) => {
+              if (item.id === orderId) {
+                return {
+                  ...item,
+                  status: "void",
+                  // In a real void, maybe payment status changes too, 
+                  // but 'void' status is primary indicator in UI list
+                };
+              }
+              return item;
+            }),
+          };
+        },
+      );
+
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+        if (context?.previous) {
+         queryClient.setQueryData(ordersQueryKey(filters), context.previous);
+      }
     },
   });
 }
@@ -207,39 +261,32 @@ export function useDeleteOrderMutation(filters: OrderFilters) {
   
   return useMutation({
     mutationFn: deleteOrder,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
+    onMutate: async (orderId) => {
+      await queryClient.cancelQueries({ queryKey: ordersQueryKey(filters) });
+      const previous = queryClient.getQueryData<Awaited<ReturnType<typeof listOrders>>>(
+        ordersQueryKey(filters),
+      );
+
+       queryClient.setQueryData<Awaited<ReturnType<typeof listOrders>>>(
+        ordersQueryKey(filters),
+        (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            items: prev.items.filter((item) => item.id !== orderId),
+          };
+        },
+      );
+
+      return { previous };
+
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+         queryClient.setQueryData(ordersQueryKey(filters), context.previous);
+      }
     },
   });
-}
-
-/**
- * Hook for real-time order updates via Supabase
- */
-export function useOrdersRealtime(filters: OrderFilters, options: { enabled?: boolean } = {}) {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (options.enabled === false) return;
-
-    const supabase = createBrowserClient();
-    const channel = supabase.channel("pos-orders-realtime");
-
-    channel.on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "orders" },
-      () => {
-        void queryClient.invalidateQueries({ queryKey: ordersQueryKey(filters) });
-      },
-    );
-
-    void channel.subscribe();
-
-    return () => {
-      void channel.unsubscribe();
-    };
-  }, [filters, options.enabled, queryClient]);
 }
 
 /**

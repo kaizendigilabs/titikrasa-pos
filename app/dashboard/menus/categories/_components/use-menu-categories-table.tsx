@@ -19,7 +19,6 @@ import type {
 } from '@/features/menu-categories/types';
 import {
   useMenuCategories,
-  useMenuCategoriesRealtime,
   useCreateMenuCategoryMutation,
   useDeleteMenuCategoryMutation,
   useUpdateMenuCategoryMutation,
@@ -356,25 +355,7 @@ export function useMenuCategoriesDataTableQuery(
   return useMenuCategories(queryFilters, hookOptions);
 }
 
-export function MenuCategoriesRealtimeBridge({
-  filters,
-}: {
-  filters: MenuCategoriesTableFilters;
-}) {
-  const realtimeFilters = React.useMemo<MenuCategoryFilters>(
-    () => ({
-      page: filters.page,
-      pageSize: filters.pageSize,
-      status: filters.status,
-      ...(filters.search.trim().length > 0
-        ? { search: filters.search.trim() }
-        : {}),
-    }),
-    [filters],
-  );
-  useMenuCategoriesRealtime(realtimeFilters);
-  return null;
-}
+
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof AppError) {

@@ -17,7 +17,6 @@ import {
   useCreatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,
   usePurchaseOrders,
-  usePurchaseOrdersRealtime,
   useUpdatePurchaseOrderMutation,
 } from "@/features/procurements/purchase-orders/hooks";
 import {
@@ -275,7 +274,7 @@ export function usePurchaseOrdersTableController({
 
   const queryHook = usePurchaseOrdersDataTableQuery;
 
-  usePurchaseOrdersRealtime(true);
+
 
   const updatePurchaseOrderMutation = useUpdatePurchaseOrderMutation();
   const deletePurchaseOrderMutation = useDeletePurchaseOrderMutation();
