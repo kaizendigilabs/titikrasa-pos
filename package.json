@@ -7,11 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:link:prod": "supabase link --project-ref nhhiiokvigttnmqcmyyv",
     "db:new": "supabase migration new",
-    "db:types": "supabase gen types typescript --linked > lib/types/database.ts",
-    "db:migrate": "supabase migration up --linked",
-    "db:reset": "supabase db reset --linked",
-    "db:reset:types": "yes | supabase db reset --linked && supabase gen types typescript --linked > lib/types/database.ts"
+    "db:migrate:local": "supabase migration up",
+    "db:reset:local": "supabase db reset",
+    "db:types:local": "supabase gen types typescript --local > lib/types/database.ts",
+    "db:reset-types:local": "yes | supabase db reset && supabase gen types typescript --local > lib/types/database.ts",
+    "db:migrate:prod": "supabase migration up --linked",
+    "db:reset:prod": "echo 'WARNING: This will RESET PROD DB. CTRL+C to cancel.' && supabase db reset --linked",
+    "db:types:prod": "supabase gen types typescript --linked > lib/types/database.ts",
+    "db:reset-types:prod": "echo 'WARNING: This will RESET PROD DB. CTRL+C to cancel.' && supabase db reset --linked && supabase gen types typescript --linked > lib/types/database.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
