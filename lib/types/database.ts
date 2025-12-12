@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -77,6 +72,101 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cash_flow_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_system: boolean
+          name: string
+          type: Database["public"]["Enums"]["cash_flow_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          name: string
+          type: Database["public"]["Enums"]["cash_flow_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          name?: string
+          type?: Database["public"]["Enums"]["cash_flow_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cash_flows: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string | null
+          id: string
+          order_id: string | null
+          purchase_order_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          purchase_order_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          purchase_order_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_flows_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cash_flow_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_flows_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_flows_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_order_item_entries"
+            referencedColumns: ["purchase_order_id"]
+          },
+          {
+            foreignKeyName: "cash_flows_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -796,6 +886,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_sys_category_id: { Args: { cat_name: string }; Returns: string }
       has_role: { Args: { role_name: string; uid: string }; Returns: boolean }
       is_last_admin_user: { Args: { p_user_id: string }; Returns: boolean }
       is_role_admin_id: { Args: { p_role_id: string }; Returns: boolean }
@@ -806,6 +897,7 @@ export type Database = {
     }
     Enums: {
       base_uom: "gr" | "ml" | "pcs"
+      cash_flow_type: "in" | "out"
       channel: "pos" | "reseller"
       kds_item_status: "queue" | "making" | "ready" | "served"
       order_status: "open" | "paid" | "void" | "refunded"
@@ -943,6 +1035,7 @@ export const Constants = {
   public: {
     Enums: {
       base_uom: ["gr", "ml", "pcs"],
+      cash_flow_type: ["in", "out"],
       channel: ["pos", "reseller"],
       kds_item_status: ["queue", "making", "ready", "served"],
       order_status: ["open", "paid", "void", "refunded"],
@@ -952,3 +1045,4 @@ export const Constants = {
     },
   },
 } as const
+
