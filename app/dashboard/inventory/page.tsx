@@ -31,7 +31,7 @@ export default async function InventoryPage() {
   const canManage = actor.roles.isAdmin || actor.roles.isManager;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-8 lg:py-10">
+    <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6 py-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Store Ingredients</h1>
         <p className="text-sm text-muted-foreground">

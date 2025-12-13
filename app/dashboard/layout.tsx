@@ -54,9 +54,9 @@ export default async function DashboardLayout({
         }
         defaultOpen
       >
-        <AppSidebar variant="inset" user={sidebarUser} />
+        <AppSidebar variant="inset" />
         <SidebarInset>
-          <SiteHeader />
+          <SiteHeader user={sidebarUser} />
           {children}
         </SidebarInset>
       </SidebarProvider>

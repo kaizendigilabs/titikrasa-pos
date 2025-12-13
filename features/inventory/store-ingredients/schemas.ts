@@ -5,11 +5,7 @@ export const storeIngredientFiltersSchema = z.object({
   pageSize: z.coerce.number().min(1).max(200).default(25),
   status: z.enum(["all", "active", "inactive"]).default("all"),
   search: z.string().trim().optional(),
-  lowStockOnly: z
-    .enum(["true", "false"])
-    .default("false")
-    .transform((value) => value === "true")
-    .optional(),
+  stockLevel: z.enum(["all", "low", "high"]).default("all"),
 });
 
 export const purchaseHistoryFiltersSchema = z.object({

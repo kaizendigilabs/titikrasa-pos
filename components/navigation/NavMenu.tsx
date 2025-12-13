@@ -59,6 +59,7 @@ export default function NavMenu() {
                           <SidebarMenuSubButton
                             asChild
                             isActive={pathname === subItem.url}
+                            className="data-[active=true]:text-sidebar-primary data-[active=true]:font-medium transition-colors"
                           >
                             <Link href={subItem.url!}>
                               {subItem.icon && (
@@ -79,6 +80,7 @@ export default function NavMenu() {
                   asChild
                   tooltip={item.title}
                   isActive={pathname === item.url}
+                  className="data-[active=true]:bg-sidebar-primary/10 data-[active=true]:text-sidebar-primary data-[active=true]:font-medium transition-all duration-200"
                 >
                   <Link href={item.url!}>
                     {item.icon && <item.icon className="size-4" />}

@@ -1,7 +1,14 @@
 "use client";
 
 import { DateRangeType } from "@/lib/utils/date-helpers";
-import { Button } from "@/components/ui/button";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils/cn";
 
 interface DateRangeFilterProps {
@@ -11,10 +18,10 @@ interface DateRangeFilterProps {
 }
 
 const options: { label: string; value: DateRangeType }[] = [
-  { label: "Today", value: "today" },
-  { label: "This Week", value: "week" },
-  { label: "This Month", value: "month" },
-  { label: "This Year", value: "year" },
+  { label: "Hari Ini", value: "today" },
+  { label: "Minggu Ini", value: "week" },
+  { label: "Bulan Ini", value: "month" },
+  { label: "Tahun Ini", value: "year" },
 ];
 
 export default function DateRangeFilter({
@@ -23,17 +30,22 @@ export default function DateRangeFilter({
   className,
 }: DateRangeFilterProps) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      {options.map((option) => (
-        <Button
-          key={option.value}
-          variant={value === option.value ? "default" : "outline"}
-          size="sm"
-          onClick={() => onChange(option.value)}
+    <div className={cn("w-[150px]", className)}>
+        <Select
+            value={value}
+            onValueChange={(val) => onChange(val as DateRangeType)}
         >
-          {option.label}
-        </Button>
-      ))}
+            <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="Pilih Rentang Waktu" />
+            </SelectTrigger>
+            <SelectContent>
+                {options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
     </div>
   );
 }

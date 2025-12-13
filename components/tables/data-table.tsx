@@ -64,7 +64,7 @@ export function DataTable<TData, TFilters extends PaginationFilters>({
       <div className="@container/main flex flex-1 flex-col gap-2">
         {renderToolbar ? renderToolbar(context) : null}
 
-        <div className="px-4 lg:px-6">
+        <div>
           {renderAboveTable ? (
             <div className="mb-2">{renderAboveTable(context)}</div>
           ) : null}

@@ -101,7 +101,7 @@ export function DataTableToolbar({
     bulkActions.selectedCount >= (bulkActions.minSelection ?? 1);
 
   return (
-    <div className={cn("w-full px-4 py-4 lg:px-6", className)}>
+    <div className={cn("w-full py-4", className)}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         {search ? (
           <Input

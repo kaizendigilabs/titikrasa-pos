@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import type { CashFlow } from "@/features/finance/types";
 import { FinanceTableRowActions } from "./row-actions";
+import { formatCurrency } from "@/lib/utils/formatters";
 
 export const financeColumns: ColumnDef<CashFlow>[] = [
   {
@@ -24,9 +25,9 @@ export const financeColumns: ColumnDef<CashFlow>[] = [
       const isSystem = row.original.orderId || row.original.purchaseOrderId;
       return (
         <div className="flex items-center gap-2">
-          <span>{row.original.categoryName}</span>
+          <span className="font-medium text-foreground">{row.original.categoryName}</span>
           {isSystem ? (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-muted text-muted-foreground">
               System
             </Badge>
           ) : null}
@@ -39,7 +40,7 @@ export const financeColumns: ColumnDef<CashFlow>[] = [
     header: "Keterangan",
     cell: ({ row }) => {
        const desc = row.original.description || "-";
-       return <span className="max-w-[300px] truncate block" title={desc}>{desc}</span>;
+       return <span className="max-w-[300px] truncate block text-muted-foreground" title={desc}>{desc}</span>;
     },
   },
   {
@@ -48,12 +49,11 @@ export const financeColumns: ColumnDef<CashFlow>[] = [
     cell: ({ row }) => {
       const amount = row.original.amount;
       const type = row.original.categoryType;
-      const color = type === "in" ? "text-green-600" : "text-red-600";
-      const prefix = type === "in" ? "+" : "-";
+      const isIncome = type === "in";
       
       return (
-        <div className={`text-right font-medium ${color}`}>
-          {prefix} Rp {amount.toLocaleString("id-ID")}
+        <div className={`text-right font-bold ${isIncome ? "text-emerald-600" : "text-red-500"}`}>
+          {isIncome ? "+" : "-"} {formatCurrency(amount)}
         </div>
       );
     },

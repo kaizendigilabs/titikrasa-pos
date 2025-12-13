@@ -9,7 +9,7 @@ import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import { MetricCards } from "@/components/shared/MetricCards";
 import { SalesOverviewChart } from "@/components/shared/SalesOverviewChart";
 import type { DashboardSummary } from "@/features/dashboard/types";
-import { getDateRange, type DateRangeType } from "@/lib/utils/date-helpers";
+import { type DateRangeType } from "@/lib/utils/date-helpers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardSummary } from "@/features/dashboard/hooks";
 import { OrderHistoryTable } from "@/app/dashboard/_components/order-history-table";
@@ -69,34 +69,39 @@ export function DashboardOverviewClient({ initialRange }: DashboardOverviewClien
   const isMetricsLoading = summaryQuery.isLoading && !summaryQuery.data;
   const isRefreshing = summaryQuery.isFetching || summaryQuery.isRefetching;
 
-  const { start, end } = getDateRange(range);
-  const rangeLabel = `${start.toLocaleDateString()} — ${end.toLocaleDateString()}`;
-  const lastUpdatedLabel = summary.generatedAt ? formatDateTime(summary.generatedAt) : "-";
-
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          <div className="px-4 lg:px-6 space-y-2">
-            <div className="flex flex-col gap-3 justify-between sm:flex-row sm:items-center">
-              <DateRangeFilter value={range} onChange={setRange} />
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => summaryQuery.refetch()}
-                  disabled={isRefreshing}
-                  className="gap-2"
-                >
-                  <IconRefresh className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                  Refresh
-                </Button>
+          <div className="px-4 lg:px-6 space-y-6">
+            <div className="flex justify-between gap-4">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                  Selamat Datang, Owner
+                </h1>
+                <p className="text-muted-foreground">
+                  Berikut adalah ringkasan performa bisnis Anda hari ini, {formatDateTime(new Date())}.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 justify-between sm:flex-row sm:items-center rounded-2xl p-2">
+                <DateRangeFilter value={range} onChange={setRange} />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => summaryQuery.refetch()}
+                    disabled={isRefreshing}
+                    className="gap-2 bg-background p-4.5"
+                  >
+                    <IconRefresh className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                    Refresh Data
+                  </Button>
+                </div>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Menampilkan data {rangeLabel} · Pembaruan terakhir {lastUpdatedLabel}
-            </p>
+
           </div>
 
           {isMetricsLoading ? (

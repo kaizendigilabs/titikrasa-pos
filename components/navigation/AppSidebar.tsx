@@ -13,21 +13,12 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import NavMenu from "../navigation/NavMenu";
-import NavUser from "../navigation/NavUser";
 import Link from "next/link";
 import { STORE_NAME } from "@/lib/constants/app";
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string | null;
-    avatar?: string;
-  };
-}
-
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export function AppSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -48,7 +39,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       <SidebarContent>
         <NavMenu />
       </SidebarContent>
-      <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
+      <SidebarFooter />
     </Sidebar>
   );
 }

@@ -4,10 +4,20 @@ import { usePathname } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Breadcrumbs, type BreadcrumbItem } from "@/components/shared/Breadcrumbs";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useUserProfile } from "@/lib/hooks/use-user-profile";
 
-export function SiteHeader() {
+import NavUser from "../navigation/NavUser";
+
+interface SiteHeaderProps {
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+}
+
+export function SiteHeader({ user }: SiteHeaderProps) {
   const pathname = usePathname();
   const profile = useUserProfile();
 
@@ -37,16 +47,16 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+    <header className="sticky top-0 z-50 flex h-(--header-height) py-6 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) bg-background">
+      <div className="flex w-full items-center gap-1 px-4 lg:px-6 lg:gap-2">
         <SidebarTrigger className="-ml-1" />
         <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <Breadcrumbs items={getBreadcrumbs()} />
-        <div className="ml-auto">
-          <ThemeToggle />
+        <div className="ml-auto flex items-center gap-2">
+          {user && <NavUser user={user} />}
         </div>
       </div>
     </header>

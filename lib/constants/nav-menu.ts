@@ -27,16 +27,9 @@ export const NAV_MENU: NavMenuItem[] = [
     url: '/dashboard',
   },
   {
-    title: 'Finance',
-    icon: IconCash, // Or IconChartDonut or similar if available, reusing IconCash is fine or I can import another one.
-    url: '/dashboard/finance',
-  },
-  {
     title: 'Point of Sale',
     icon: IconCash,
-    items: [
-      { title: 'POS', url: '/dashboard/pos', icon: IconCash },
-    ],
+    url: '/dashboard/pos',
   },
   {
     title: 'Menu Management',
@@ -79,6 +72,11 @@ export const NAV_MENU: NavMenuItem[] = [
     title: 'Resellers',
     icon: IconUsers,
     url: '/dashboard/resellers',
+  },
+  {
+    title: 'Finance',
+    icon: IconCash,
+    url: '/dashboard/finance',
   },
   {
     title: 'Users',

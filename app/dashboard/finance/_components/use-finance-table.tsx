@@ -29,7 +29,12 @@ export type FinanceTableControllerResult = {
   summary: { totalIn: number; totalOut: number; net: number } | null;
 };
 
-export function useFinanceTableController() {
+type UseFinanceTableControllerProps = {
+  startDate: Date | null;
+  endDate: Date | null;
+};
+
+export function useFinanceTableController({ startDate, endDate }: UseFinanceTableControllerProps = { startDate: null, endDate: null }) {
   const initialFilters = React.useMemo<FinanceTableFilters>(
     () => ({
       page: 1,
@@ -37,10 +42,10 @@ export function useFinanceTableController() {
       type: "all",
       categoryId: null,
       search: "",
-      startDate: null,
-      endDate: null,
+      startDate,
+      endDate,
     }),
-    []
+    [startDate, endDate]
   );
 
   const queryHook: DataTableQueryHook<CashFlow, FinanceTableFilters> = (
@@ -85,55 +90,14 @@ export function useFinanceTableController() {
             ],
             placeholder: "Tipe",
           },
-          {
-            type: "custom",
-            id: "date-range-filter",
-            element: (
-              <div className="flex items-center gap-2">
-                 <input
-                    type="date"
-                    className="h-8 w-[130px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    value={context.filters.startDate ? context.filters.startDate.toISOString().split('T')[0] : ""}
-                    onChange={(e) => {
-                        const date = e.target.value ? new Date(e.target.value) : null;
-                        context.updateFilters({ startDate: date });
-                    }}
-                    placeholder="Mulai"
-                 />
-                 <span className="text-muted-foreground">-</span>
-                 <input
-                    type="date"
-                    className="h-8 w-[130px] rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    value={context.filters.endDate ? context.filters.endDate.toISOString().split('T')[0] : ""}
-                    onChange={(e) => {
-                         const date = e.target.value ? new Date(e.target.value) : null;
-                         // Set time to end of day for end date? 
-                         // Native date picking usually sets to 00:00 UTC or local. 
-                         // To encompass the whole day, often backend logic handles it (lte date + 1 day, or lte date 23:59:59).
-                         // Our API route uses lte 'date', which likely compares timestamps or date types.
-                         // If referencing a timestamptz column, '2023-01-01' compares assuming 00:00. 
-                         // If searching for "transactions on 2023-01-01", we need logic.
-                         // For now let's send the date object as-is. The API converts string 'YYYY-MM-DD' to comparison?
-                         // Wait, in route.ts: if (endDate) query = query.lte("date", endDate);
-                         // If date column is timestamptz, '2024-01-01' is '2024-01-01 00:00:00+00'.
-                         // If we want to include transactions on that day, we might need to adjust.
-                         // But avoiding overengineering for now: simple Date object.
-                        context.updateFilters({ endDate: date });
-                    }}
-                    placeholder="Selesai"
-                 />
-              </div>
-            ),
-          },
         ],
         reset: {
           onReset: () => context.updateFilters(() => initialFilters),
           visible:
             context.filters.search !== "" ||
             context.filters.type !== "all" ||
-            context.filters.categoryId !== null ||
-            context.filters.startDate !== null,
-            "aria-label": "Reset",
+            context.filters.categoryId !== null,
+          "aria-label": "Reset",
         },
         status: {
           isSyncing: context.isSyncing,

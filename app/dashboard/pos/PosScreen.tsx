@@ -13,8 +13,18 @@ import { usePosMenus, usePosResellers, usePosSettings } from "@/features/pos/hoo
  * POS Screen component that uses React Query hooks for data hydration
  * Data is prefetched on server and hydrated via HydrationBoundary
  */
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/utils/formatters";
+
 export function PosScreen() {
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [mobileCartOpen, setMobileCartOpen] = React.useState(false);
   
   // Use hooks to access hydrated data
   const { data: menus = [] } = usePosMenus();
@@ -86,54 +96,96 @@ export function PosScreen() {
     submitPaymentForm,
   ]);
 
-  return (
-    <div className="space-y-5">
-      <div
-        className="grid gap-5 lg:grid-cols-[2fr_1fr] xl:grid-cols-[2fr_1fr]"
-      >
-        <MenuPanel
-          searchInputRef={searchInputRef}
-          searchTerm={controller.searchTerm}
-          onSearchChange={controller.setSearchTerm}
-          categoryFilter={controller.categoryFilter}
-          onCategoryFilterChange={controller.setCategoryFilter}
-          categoryOptions={controller.categoryOptions}
-          totalMenuCount={controller.totalMenuCount}
-          menus={controller.filteredMenus}
-          onMenuClick={controller.handleMenuSelected}
-          favoriteMenuIds={controller.favoriteMenuIds}
-          onToggleFavorite={controller.handleToggleFavorite}
-          isLoading={controller.isHydrating}
-        />
+  const cartPanelProps = {
+    cart: controller.cartState,
+    subtotal: controller.subtotal,
+    discountAmount: controller.discountAmount,
+    tax: controller.tax,
+    grandTotal: controller.grandTotal,
+    onChangeQuantity: (lineId: string, qty: number) => controller.updateCartQuantity(lineId, qty),
+    onRemove: controller.removeCartLine,
+    onOpenPayment: () => controller.setPaymentDrawerOpen(true),
+    canSubmit: Boolean(controller.canSubmit),
+    isSubmitting: controller.isSubmittingOrder,
+    paymentValues: controller.paymentValues,
+    mode: controller.mode,
+    onModeChange: controller.handleModeChange,
+    resellers: resellers,
+    selectedResellerId: controller.selectedResellerId,
+    onSelectReseller: controller.handleSelectReseller,
+    resellerQuery: controller.resellerQuery,
+    onResellerQueryChange: controller.handleResellerQueryChange,
+    onCustomerNameChange: controller.handleCustomerNameChange,
+    onPaymentMethodChange: controller.handlePaymentMethodChange,
+    onAmountReceivedChange: controller.handleAmountReceivedChange,
+    onNoteChange: controller.handleNoteChange,
+    isLoading: controller.isHydrating,
+  };
 
-          <CartPanel
-            cart={controller.cartState}
-            subtotal={controller.subtotal}
-            discountAmount={controller.discountAmount}
-            tax={controller.tax}
-            grandTotal={controller.grandTotal}
-            onChangeQuantity={(lineId, qty) => controller.updateCartQuantity(lineId, qty)}
-            onRemove={controller.removeCartLine}
-            onOpenPayment={() => controller.setPaymentDrawerOpen(true)}
-            canSubmit={Boolean(controller.canSubmit)}
-            isSubmitting={controller.isSubmittingOrder}
-            paymentValues={controller.paymentValues}
-            mode={controller.mode}
-            onModeChange={controller.handleModeChange}
-            resellers={resellers}
-            selectedResellerId={controller.selectedResellerId}
-            onSelectReseller={controller.handleSelectReseller}
-            resellerQuery={controller.resellerQuery}
-            onResellerQueryChange={controller.handleResellerQueryChange}
-            onCustomerNameChange={controller.handleCustomerNameChange}
-            onPaymentMethodChange={controller.handlePaymentMethodChange}
-            onAmountReceivedChange={controller.handleAmountReceivedChange}
-            onNoteChange={controller.handleNoteChange}
+  const totalItems = controller.cartState.lines.reduce((acc, line) => acc + line.qty, 0);
+
+  return (
+    <div className="relative h-[calc(100vh-4rem)] overflow-hidden lg:overflow-visible">
+      {/* Scrollable Main Area for Mobile */}
+      <div className="h-full overflow-y-auto p-4 lg:h-auto">
+        <div className="grid h-full gap-5 pb-24 lg:grid-cols-[2fr_1fr] lg:pb-0 xl:grid-cols-[2fr_1fr]">
+          <MenuPanel
+            searchInputRef={searchInputRef}
+            searchTerm={controller.searchTerm}
+            onSearchChange={controller.setSearchTerm}
+            categoryFilter={controller.categoryFilter}
+            onCategoryFilterChange={controller.setCategoryFilter}
+            categoryOptions={controller.categoryOptions}
+            totalMenuCount={controller.totalMenuCount}
+            menus={controller.filteredMenus}
+            onMenuClick={controller.handleMenuSelected}
+            favoriteMenuIds={controller.favoriteMenuIds}
+            onToggleFavorite={controller.handleToggleFavorite}
             isLoading={controller.isHydrating}
           />
+          
+          {/* Desktop Cart */}
+          <div className="hidden lg:block">
+             <CartPanel {...cartPanelProps} />
+          </div>
+        </div>
       </div>
 
-      <PaymentDrawer
+      {/* Mobile Cart Floating Bar */}
+      <div className="fixed  bottom-0 left-0 right-0 z-20 border-t bg-background/80 p-4 backdrop-blur-lg lg:hidden">
+        <div className="mx-auto max-w-md">
+          <Sheet open={mobileCartOpen} onOpenChange={setMobileCartOpen}>
+            <SheetTrigger asChild>
+              <Button size="lg" className="w-full rounded-full shadow-lg">
+                <div className="flex w-full items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-foreground text-xs font-bold text-primary">
+                      {totalItems}
+                    </div>
+                    <span>Item</span>
+                  </div>
+                  <span className="font-bold">
+                    Total {formatCurrency(controller.grandTotal)}
+                  </span>
+                </div>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl p-0">
+               <div className="sr-only">
+                 <SheetTitle>Shopping Cart</SheetTitle>
+               </div>
+              <div className="h-full overflow-y-auto px-4 py-6">
+                <CartPanel 
+                  {...cartPanelProps} 
+                  className="border-none shadow-none lg:sticky lg:top-4" // Override sticky for mobile drawer
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
+       <PaymentDrawer
         open={controller.paymentDrawerOpen}
         onOpenChange={controller.setPaymentDrawerOpen}
         totals={{

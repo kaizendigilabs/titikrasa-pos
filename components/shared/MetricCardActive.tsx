@@ -22,7 +22,7 @@ interface MetricCardProps {
   className?: string;
 }
 
-export function MetricCard({
+export function MetricCardActive({
   title,
   value,
   trend,
@@ -65,10 +65,10 @@ export function MetricCard({
             </div>
           ) : (
             placeholderTrendLabel && (
-              <div className="text-muted-foreground">{placeholderTrendLabel}</div>
+              <div className="text-primary-foreground">{placeholderTrendLabel}</div>
             )
           )}
-          <div className="text-muted-foreground">{description}</div>
+          <div className="text-primary-foreground">{description}</div>
         </CardFooter>
       )}
     </Card>

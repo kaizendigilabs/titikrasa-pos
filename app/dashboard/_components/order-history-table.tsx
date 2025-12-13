@@ -102,7 +102,7 @@ export function OrderHistoryTable({ range, pageSize = 8 }: OrderHistoryTableProp
         </Button>
       </div>
 
-      <div className="rounded-b-2xl border-t border-muted-foreground/20">
+      <div className="rounded-b-2xl p-4">
         <DataTable
           key={`dashboard-orders-table-${range}`}
           columns={columns}

@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { IconSearch, IconStar, IconStarFilled } from "@tabler/icons-react";
+import {
+  IconSearch,
+  IconStar,
+  IconStarFilled,
+  IconPlus,
+} from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,37 +46,26 @@ export function MenuPanel({
   onToggleFavorite,
   isLoading = false,
 }: MenuPanelProps) {
-  const searchPlaceholder = "Cari menu atau SKU";
-  const visibleMenuCount = menus.length;
+  const searchPlaceholder = "Search Menu...";
   const categoryChips = React.useMemo(
-    () =>
-      [
-        { id: "all" as const, name: "Semua", count: totalMenuCount },
-        ...categoryOptions,
-      ],
-    [categoryOptions, totalMenuCount],
+    () => [
+      { id: "all" as const, name: "Semua", count: totalMenuCount },
+      ...categoryOptions,
+    ],
+    [categoryOptions, totalMenuCount]
   );
 
   return (
     <section className="space-y-5 rounded-3xl border bg-card/90 p-6 shadow-sm">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
             Create Transaction
           </p>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-            Pilih menu favorit pelanggan
+            Order coffee here
           </h2>
         </div>
-        <Badge variant="outline" className="rounded-full px-4 py-1 text-sm font-medium">
-          {totalMenuCount} menu tersedia
-        </Badge>
-      </header>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-medium text-muted-foreground">
-          Menampilkan {visibleMenuCount} menu
-        </p>
         <div className="relative w-full max-w-xs">
           <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -82,62 +76,69 @@ export function MenuPanel({
             ref={searchInputRef}
           />
         </div>
-      </div>
+      </header>
 
-      <div className="flex flex-wrap gap-2">
-        {categoryChips.map((category) => {
-          const isActive = categoryFilter === category.id;
-          return (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() =>
-                onCategoryFilterChange(category.id === "all" ? "all" : category.id)
-              }
-              className={cn(
-                "flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                isActive
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-transparent bg-muted/60 text-muted-foreground hover:border-primary/40 hover:text-foreground",
-              )}
-            >
-              <span>{category.name}</span>
-              <span
+      <div className="-mx-6 px-6 overflow-x-auto scrollbar-hide">
+        <div className="flex w-max gap-2">
+          {categoryChips.map((category) => {
+            const isActive = categoryFilter === category.id;
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() =>
+                  onCategoryFilterChange(
+                    category.id === "all" ? "all" : category.id
+                  )
+                }
                 className={cn(
-                  "rounded-full px-2 py-0.5 text-xs font-semibold",
+                  "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground",
+                    ? "border-primary bg-primary text-primary-foreground shadow-md"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                {category.count}
-              </span>
-            </button>
-          );
-        })}
+                <span>{category.name}</span>
+                <span
+                  className={cn(
+                    "ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                    isActive
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {category.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {isLoading ? (
         <MenuPanelSkeleton />
       ) : menus.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
-          Menu tidak ditemukan. Periksa filter kategori atau kata kunci pencarian.
+        <div className="flex flex-col items-center justify-center gap-2 rounded-3xl border border-dashed py-16 text-center text-muted-foreground">
+          <IconSearch className="h-10 w-10 opacity-20" />
+          <p>Menu tidak ditemukan</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {menus.map((menu) => {
             const pricePreview =
               resolveMenuPrice(
                 menu,
                 "pos",
                 menu.variants?.default_size ?? null,
-                menu.variants?.default_temperature ?? null,
-              ) ?? menu.price ?? 0;
+                menu.variants?.default_temperature ?? null
+              ) ??
+              menu.price ??
+              0;
 
             return (
               <div
                 key={menu.id}
-                className="group relative flex flex-col gap-4 rounded-3xl border border-muted-foreground/10 bg-card/90 p-5 text-left shadow-sm transition hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="group relative flex flex-col justify-between gap-3 rounded-3xl bg-card p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md cursor-pointer active:scale-95"
                 role="button"
                 tabIndex={0}
                 onClick={() => onMenuClick(menu)}
@@ -148,45 +149,49 @@ export function MenuPanel({
                   }
                 }}
               >
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-transparent bg-background/80 text-muted-foreground shadow-sm transition hover:border-primary"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onToggleFavorite(menu.id);
-                  }}
-                  aria-label="Toggle favorite"
-                >
-                  {favoriteMenuIds.includes(menu.id) ? (
-                    <IconStarFilled className="h-4 w-4 text-yellow-500" />
-                  ) : (
-                    <IconStar className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </button>
-                <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-                  <Badge variant="secondary" className="rounded-full px-3 py-1 text-[10px] font-medium">
-                    {menu.category_name ?? "General"}
-                  </Badge>
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full bg-secondary/20 text-secondary-foreground hover:bg-secondary/30"
+                    >
+                      {menu.category_name ?? "Umum"}
+                    </Badge>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-yellow-500 transition-colors"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleFavorite(menu.id);
+                      }}
+                    >
+                      {favoriteMenuIds.includes(menu.id) ? (
+                        <IconStarFilled className="h-5 w-5 text-yellow-500" />
+                      ) : (
+                        <IconStar className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div>
+                    <h3 className="line-clamp-2 font-semibold leading-tight text-foreground">
+                      {menu.name}
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {menu.sku ? `SKU: ${menu.sku}` : "No SKU"}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-base font-semibold text-foreground">
-                    {menu.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {menu.sku ? `SKU ${menu.sku}` : menu.category_name ?? "Menu favorit pelanggan"}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-lg font-semibold text-foreground">
+
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-lg font-bold text-primary">
                     {formatCurrency(pricePreview)}
                   </span>
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {menu.variants ? "Pilih Varian" : "Harga standar"}
-                  </span>
-                </div>
-                <div className="pt-2">
-                  <Button variant="outline" className="w-full rounded-full text-sm font-semibold">
-                    Tambah ke keranjang
+                  <Button
+                    size="icon"
+                    className="h-8 w-8 rounded-full shadow-sm"
+                  >
+                    <IconPlus className="h-5 w-5" />
                   </Button>
                 </div>
               </div>

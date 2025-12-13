@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
           filters: {
             status: filters.status,
             search: filters.search ?? null,
-            lowStockOnly: Boolean(filters.lowStockOnly),
+            stockLevel: filters.stockLevel,
           },
         },
       },

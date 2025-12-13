@@ -1,16 +1,17 @@
 "use client";
 
 import * as React from "react";
-import {
-  IconMinus,
-  IconPlus,
-  IconTrash,
-  IconCheck,
-} from "@tabler/icons-react";
+import { IconMinus, IconPlus, IconTrash, IconCheck } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +79,9 @@ export function CartPanel({
   const filteredResellers =
     mode === "reseller" && resellerQuery.trim().length > 0
       ? resellers.filter((reseller) =>
-          reseller.name.toLowerCase().includes(resellerQuery.trim().toLowerCase()),
+          reseller.name
+            .toLowerCase()
+            .includes(resellerQuery.trim().toLowerCase())
         )
       : [];
   const shouldShowSuggestions =
@@ -90,10 +93,13 @@ export function CartPanel({
 
   if (isLoading) {
     return (
-      <section className="space-y-4 rounded-2xl border bg-card/80 p-5 shadow-sm">
+      <section className="space-y-4 rounded-2xl border bg-card/80 p-6 shadow-sm">
         <Skeleton className="h-6 w-1/2" />
         {Array.from({ length: 2 }).map((_, index) => (
-          <div key={index} className="space-y-3 rounded-2xl border border-muted-foreground/20 bg-muted/30 p-4">
+          <div
+            key={index}
+            className="space-y-3 rounded-2xl border border-muted-foreground/20 bg-muted/30 p-4"
+          >
             <Skeleton className="h-4 w-2/3" />
             <Skeleton className="h-3 w-1/3" />
             <Skeleton className="h-8 w-full rounded-xl" />
@@ -113,24 +119,29 @@ export function CartPanel({
       className={cn(
         "flex flex-col gap-4 rounded-2xl border bg-card/80 p-5 shadow-sm",
         className,
-        "lg:sticky lg:top-4 lg:h-[calc(100vh-64px)]",
+        "lg:sticky lg:top-4 h-full lg:h-[calc(100vh-6rem)]"
       )}
     >
       <header className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-lg font-semibold">
-          Keranjang Aktif
-          <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
-            {totalItems} item
-          </Badge>
+          Keranjang
         </div>
+        <Badge variant="outline" className="px-3 py-1 text-xs">
+          {totalItems} item
+        </Badge>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-        <div className="rounded-2xl border border-muted-foreground/20 bg-background/70 p-4 space-y-4">
+        <div className="rounded-2xl space-y-4">
           <div className="grid gap-3 md:grid-cols-[160px_1fr]">
             <div className="space-y-2">
-              <Label>Mode Transaksi</Label>
-              <Select value={mode} onValueChange={(value) => onModeChange(value as typeof mode)}>
+              <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                Mode Transaksi
+              </Label>
+              <Select
+                value={mode}
+                onValueChange={(value) => onModeChange(value as typeof mode)}
+              >
                 <SelectTrigger className="h-10 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
@@ -142,11 +153,13 @@ export function CartPanel({
             </div>
             {mode === "customer" ? (
               <div className="space-y-2">
-                <Label>Nama Customer (opsional)</Label>
+                <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                  Nama Customer (opsional)
+                </Label>
                 <Input
                   value={paymentValues.customerName}
                   onChange={(event) => onCustomerNameChange(event.target.value)}
-                  placeholder="Isi bila ingin mencantumkan nama customer"
+                  placeholder="Nama pelanggan/reseller"
                   className="h-10 rounded-xl"
                 />
               </div>
@@ -156,7 +169,9 @@ export function CartPanel({
                 <div className="relative">
                   <Input
                     value={resellerQuery}
-                    onChange={(event) => onResellerQueryChange(event.target.value)}
+                    onChange={(event) =>
+                      onResellerQueryChange(event.target.value)
+                    }
                     placeholder="Ketik nama reseller"
                     className="h-10 rounded-xl pr-10"
                   />
@@ -185,7 +200,9 @@ export function CartPanel({
                   ) : null}
                 </div>
                 {mode === "reseller" && !selectedResellerId ? (
-                  <p className="text-xs text-destructive">Pilih reseller untuk melanjutkan transaksi.</p>
+                  <p className="text-xs text-destructive">
+                    Pilih reseller untuk melanjutkan transaksi.
+                  </p>
                 ) : null}
               </div>
             )}
@@ -206,11 +223,17 @@ export function CartPanel({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{line.menuName}</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {line.menuName}
+                      </p>
                       {line.variantLabel ? (
-                        <p className="text-xs text-muted-foreground">{line.variantLabel}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {line.variantLabel}
+                        </p>
                       ) : null}
-                      <p className="mt-1 text-sm text-muted-foreground">{formatCurrency(line.unitPrice)}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {formatCurrency(line.unitPrice)}
+                      </p>
                     </div>
                     <Button
                       variant="ghost"
@@ -223,13 +246,17 @@ export function CartPanel({
                     </Button>
                   </div>
                   <div className="flex items-center justify-between rounded-xl border bg-background/40 px-3 py-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Qty</span>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Qty
+                    </span>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 rounded-full"
-                        onClick={() => onChangeQuantity(line.lineId, line.qty - 1)}
+                        onClick={() =>
+                          onChangeQuantity(line.lineId, line.qty - 1)
+                        }
                       >
                         <IconMinus className="h-4 w-4" />
                       </Button>
@@ -239,18 +266,26 @@ export function CartPanel({
                         inputMode="numeric"
                         value={String(line.qty)}
                         onChange={(event) => {
-                          const sanitized = event.target.value.replace(/[^0-9]/g, "");
+                          const sanitized = event.target.value.replace(
+                            /[^0-9]/g,
+                            ""
+                          );
                           if (!sanitized) {
                             return;
                           }
-                          onChangeQuantity(line.lineId, Math.max(1, parseInt(sanitized, 10)));
+                          onChangeQuantity(
+                            line.lineId,
+                            Math.max(1, parseInt(sanitized, 10))
+                          );
                         }}
                       />
                       <Button
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 rounded-full"
-                        onClick={() => onChangeQuantity(line.lineId, line.qty + 1)}
+                        onClick={() =>
+                          onChangeQuantity(line.lineId, line.qty + 1)
+                        }
                       >
                         <IconPlus className="h-4 w-4" />
                       </Button>
@@ -265,18 +300,22 @@ export function CartPanel({
         <div />
       </div>
 
-      <div className="shrink-0 space-y-4 rounded-3xl border border-muted-foreground/20 bg-card/90 p-6">
+      <div className="shrink-0 space-y-4 rounded-3xl">
         <div className="space-y-2 text-sm">
           <div className="flex gap-3">
-            <div className="rounded-2xl w-56">
-              <p className="text-xs font-semibold uppercase text-muted-foreground">Pembayaran</p>
+            <div className="rounded-2xl w-32">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                Pembayaran
+              </p>
               <Select
                 value={paymentValues.paymentMethod}
                 onValueChange={(value) =>
-                  onPaymentMethodChange(value as PaymentFormValues["paymentMethod"])
+                  onPaymentMethodChange(
+                    value as PaymentFormValues["paymentMethod"]
+                  )
                 }
               >
-                <SelectTrigger className="mt-3 h-9 rounded-full text-xs font-semibold w-full">
+                <SelectTrigger className="mt-3 h-9 w-full rounded-full py-4 text-xs font-medium">
                   <SelectValue placeholder="Pilih metode" />
                 </SelectTrigger>
                 <SelectContent>
@@ -288,7 +327,9 @@ export function CartPanel({
 
             {paymentValues.paymentMethod === "cash" ? (
               <div className="rounded-2xl w-full">
-                <Label className="text-xs font-semibold uppercase text-muted-foreground">Uang Diterima</Label>
+                <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                  Uang Diterima
+                </Label>
                 <Input
                   type="text"
                   inputMode="decimal"
@@ -299,18 +340,19 @@ export function CartPanel({
                       : String(paymentValues.amountReceived)
                   }
                   onChange={(event) => {
-                    const sanitized = event.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+                    const sanitized = event.target.value
+                      .replace(/[^0-9.,]/g, "")
+                      .replace(",", ".");
                     const parsed = sanitized.length ? Number(sanitized) : 0;
-                    onAmountReceivedChange(Math.max(0, Number.isNaN(parsed) ? 0 : parsed));
+                    onAmountReceivedChange(
+                      Math.max(0, Number.isNaN(parsed) ? 0 : parsed)
+                    );
                   }}
                   className="mt-2 h-10 rounded-xl"
                 />
               </div>
             ) : (
-              <div className="rounded-2xl w-full">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Uang Diterima</p>
-                <p className="text-xs text-muted-foreground mt-2">Tidak perlu input untuk transfer.</p>
-              </div>
+              null
             )}
           </div>
 
@@ -341,26 +383,28 @@ export function CartPanel({
               <span>{formatCurrency(tax)}</span>
             </div>
             <Separator className="my-2" />
-            <div className="flex items-center justify-between text-lg font-semibold text-foreground">
+            <div className="flex items-center justify-between text-md font-semibold text-foreground">
               <span>Total Pembayaran</span>
               <span>{formatCurrency(grandTotal)}</span>
             </div>
             {paymentValues.paymentMethod === "cash" ? (
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Uang kembalian</span>
-                <span className='text-green-500'>{formatCurrency(changeDue)}</span>
+                <span className="text-green-500">
+                  {formatCurrency(changeDue)}
+                </span>
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="space-y-2 pt-4">
+        <div className="space-y-2 pt-2">
           <Button
-            className="h-12 w-full rounded-full text-base font-semibold"
+            className="h-12 w-full rounded-md text-base font-semibold"
             disabled={!canSubmit || isSubmitting || cart.lines.length === 0}
             onClick={onOpenPayment}
           >
-            {isSubmitting ? "Memproses..." : "Lanjut Bayar"}
+            {isSubmitting ? "Memproses..." : "Checkout"}
           </Button>
         </div>
       </div>

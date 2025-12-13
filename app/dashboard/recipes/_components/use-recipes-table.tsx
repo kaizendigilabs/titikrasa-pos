@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { IconPlus, IconRefresh } from '@tabler/icons-react';
+import { IconPlus } from "@tabler/icons-react";
 import { toast } from 'sonner';
 
 import type { DataTableRenderContext } from '@/components/tables/data-table';
@@ -243,21 +243,6 @@ export function useRecipesTableController({
         status: {
           isSyncing: context.isSyncing,
         },
-        additionalControls: (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => context.queryResult.refetch()}
-            disabled={context.isSyncing}
-            aria-label="Refresh recipes"
-          >
-            <IconRefresh
-              className={`h-4 w-4 ${
-                context.isSyncing ? 'animate-spin' : ''
-              }`}
-            />
-          </Button>
-        ),
         primaryAction:
           canManage && menus.length > 0 ? (
             <Button onClick={() => {

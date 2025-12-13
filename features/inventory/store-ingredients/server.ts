@@ -122,7 +122,7 @@ export async function fetchStoreIngredients(
     query = query.or(`name.ilike.${pattern},sku.ilike.${pattern}`);
   }
 
-  const applyRange = !filters.lowStockOnly;
+  const applyRange = filters.stockLevel === "all";
   if (applyRange) {
     query = query.range(offset, rangeTo);
   }
@@ -140,8 +140,12 @@ export async function fetchStoreIngredients(
   let filteredRows = allRows;
   let total = count ?? allRows.length;
 
-  if (filters.lowStockOnly) {
+  if (filters.stockLevel === "low") {
     filteredRows = allRows.filter((row) => row.current_stock <= row.min_stock);
+    total = filteredRows.length;
+    filteredRows = filteredRows.slice(offset, offset + limit);
+  } else if (filters.stockLevel === "high") {
+    filteredRows = allRows.filter((row) => row.current_stock > row.min_stock);
     total = filteredRows.length;
     filteredRows = filteredRows.slice(offset, offset + limit);
   }
@@ -186,7 +190,7 @@ export type StoreIngredientsTableBootstrap = {
     filters: {
       status: StoreIngredientFilters["status"];
       search: string | null;
-      lowStockOnly: boolean;
+      stockLevel: StoreIngredientFilters["stockLevel"];
     };
   };
 };
@@ -201,7 +205,8 @@ export async function getStoreIngredientsTableBootstrap(
     page: "1",
     pageSize: String(pageSize),
     status: "all",
-    lowStockOnly: "false",
+    search: undefined,
+    stockLevel: "all",
   });
 
   const result = await fetchStoreIngredients(filters);
@@ -217,7 +222,7 @@ export async function getStoreIngredientsTableBootstrap(
       filters: {
         status: filters.status,
         search: filters.search ?? null,
-        lowStockOnly: Boolean(filters.lowStockOnly),
+        stockLevel: filters.stockLevel,
       },
     },
   };

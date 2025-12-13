@@ -38,27 +38,26 @@ export function SettingsScreen() {
   const data = settingsQuery.data;
 
   return (
-    <div className="flex flex-1 flex-col bg-muted/5 px-4 py-8 lg:px-10">
-      <div className="mb-6 space-y-1">
-        <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Dashboard</p>
+    <div className="flex flex-col gap-6 px-4 lg:px-6 py-6">
+      <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground">
           Kelola pajak, diskon, dan informasi gerai Titikrasa POS.
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col gap-6 rounded-3xl border border-border/40 bg-card/70 p-4 shadow-lg lg:flex-row lg:p-6">
+      <div className="flex flex-1 flex-col gap-6 lg:flex-row">
         <Tabs
           value={tab}
           onValueChange={(value) => setTab(value as typeof tab)}
           className="flex w-full flex-1 flex-col gap-6 lg:flex-row"
         >
-          <TabsList className="grid h-fit w-full gap-2 rounded-2xl border border-border/30 bg-background/80 p-4 lg:w-64">
+          <TabsList className="grid h-fit w-full gap-2 rounded-2xl bg-transparent p-4 lg:w-64">
             {TAB_ITEMS.map((item) => (
               <TabsTrigger
                 key={item.value}
                 value={item.value}
-                className="group justify-start rounded-2xl border border-transparent px-4 py-3 text-left text-sm font-medium text-muted-foreground transition data-[state=active]:border-primary/30 data-[state=active]:bg-primary/5 data-[state=active]:text-foreground"
+                className="group justify-start rounded-md px-4 py-3 text-left text-sm font-medium text-muted-foreground transition data-[state=active]:bg-primary/5 data-[state=active]:text-foreground data-[state=active]:shadow-none"
               >
                 <div>
                   <p className="font-semibold">{item.label}</p>
@@ -110,7 +109,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border border-border/40 bg-background/90 shadow-2xl">
+    <div className="rounded-3xl border border-border/40 bg-background/90">
       <div className="space-y-1 border-b border-border/40 px-6 py-5">
         <h2 className="text-xl font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">{description}</p>

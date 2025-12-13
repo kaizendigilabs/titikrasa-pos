@@ -10,7 +10,6 @@ import {
   type PaginationFilters,
 } from "@/components/tables/use-data-table-state";
 import type { DataTableToolbarProps } from "@/components/tables/data-table-toolbar";
-import { Checkbox } from "@/components/ui/checkbox";
 import { createStoreIngredientColumns } from "../columns";
 import {
   useStoreIngredients,
@@ -32,7 +31,7 @@ import { Button } from "@/components/ui/button";
 export type StoreIngredientsTableFilters = PaginationFilters & {
   status: "all" | "active" | "inactive";
   search: string;
-  lowStockOnly: boolean;
+  stockLevel: "all" | "low" | "high";
 };
 
 export type UseStoreIngredientsTableControllerArgs = {
@@ -42,7 +41,7 @@ export type UseStoreIngredientsTableControllerArgs = {
     filters: {
       status: "all" | "active" | "inactive";
       search: string | null;
-      lowStockOnly: boolean;
+      stockLevel: "all" | "low" | "high";
     };
   };
   canManage: boolean;
@@ -94,7 +93,7 @@ export function useStoreIngredientsDataTableQuery(
     ...(filters.search.trim().length > 0
       ? { search: filters.search.trim() }
       : {}),
-    lowStockOnly: filters.lowStockOnly,
+    stockLevel: filters.stockLevel,
   };
 
   const hookOptions = options?.initialData
@@ -120,7 +119,7 @@ export function useStoreIngredientsTableController({
       pageSize: initialMeta.pagination.pageSize,
       status: initialMeta.filters.status,
       search: initialMeta.filters.search ?? "",
-      lowStockOnly: Boolean(initialMeta.filters.lowStockOnly),
+      stockLevel: initialMeta.filters.stockLevel ?? "all",
     }),
     [initialMeta],
   );
@@ -225,7 +224,7 @@ export function useStoreIngredientsTableController({
       const showReset =
         context.filters.search.trim().length > 0 ||
         context.filters.status !== "all" ||
-        context.filters.lowStockOnly;
+        context.filters.stockLevel !== "all";
 
       return {
         search: {
@@ -248,23 +247,20 @@ export function useStoreIngredientsTableController({
             disabled: context.isSyncing,
           },
           {
-            type: "custom",
-            id: "low-stock",
-            element: (
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Checkbox
-                  checked={context.filters.lowStockOnly}
-                  onCheckedChange={(checked) =>
-                    context.updateFilters(
-                      { lowStockOnly: Boolean(checked) },
-                      { resetPage: true },
-                    )
-                  }
-                  disabled={context.isSyncing}
-                />
-                Low stock only
-              </label>
-            ),
+            type: "select",
+            id: "stock-level",
+            value: context.filters.stockLevel,
+            onValueChange: (value) =>
+              context.updateFilters({
+                stockLevel: (value ?? "all") as StoreIngredientsTableFilters["stockLevel"],
+              }),
+            options: [
+              { label: "All Stock", value: "all" },
+              { label: "Low Stock", value: "low" },
+              { label: "High Stock", value: "high" },
+            ],
+            placeholder: "Stock Level",
+            disabled: context.isSyncing,
           },
         ],
         reset: {
@@ -275,7 +271,7 @@ export function useStoreIngredientsTableController({
                 ...context.filters,
                 search: "",
                 status: "all",
-                lowStockOnly: false,
+                stockLevel: "all",
               }),
               { resetPage: true },
             ),

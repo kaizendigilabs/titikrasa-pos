@@ -62,7 +62,7 @@ function SettingSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-4 rounded-2xl border border-border/40 bg-background/70 p-5 shadow-inner">
+    <div className="space-y-4 rounded-2xl border border-border/40 bg-background/70 p-5">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
           {title}
@@ -244,7 +244,7 @@ export function TaxDiscountForm({ tax, discount }: TaxDiscountFormProps) {
           mutation.isPending || form.state.isSubmitting || !form.state.isDirty
         }
       >
-        {mutation.isPending || form.state.isSubmitting ? "Menyimpan..." : "Simpan Pengaturan"}
+        {mutation.isPending || form.state.isSubmitting ? "Menyimpan..." : "Simpan"}
       </Button>
     </form>
   );

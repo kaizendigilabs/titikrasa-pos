@@ -248,7 +248,7 @@ export function useMenuCategoriesTableController({
         search: {
           value: context.filters.search,
           onChange: (value) => context.updateFilters({ search: value }),
-          placeholder: 'Cari nama atau slug',
+          placeholder: 'Cari menu...',
           disabled: isBusy,
         },
         filters: [

@@ -1,4 +1,4 @@
-export const STORE_NAME = "TITIKRASA POS" as const;
+export const STORE_NAME = "TITIKRASA" as const;
 
 export const CHANNEL = {
   CUSTOMER: "customer",

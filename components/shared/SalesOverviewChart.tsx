@@ -31,7 +31,7 @@ export function SalesOverviewChart({
   const chartConfig = {
     revenue: {
       label: 'Revenue',
-      color: 'hsl(var(--chart-1))',
+      color: 'hsl(var(--primary))',
     },
   };
 
@@ -81,13 +81,13 @@ export function SalesOverviewChart({
               <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="hsl(var(--chart-1))"
-                  stopOpacity={0.8}
+                  stopColor="hsl(var(--primary))"
+                  stopOpacity={0.6}
                 />
                 <stop
                   offset="95%"
-                  stopColor="hsl(var(--chart-1))"
-                  stopOpacity={0.1}
+                  stopColor="hsl(var(--primary))"
+                  stopOpacity={0.0}
                 />
               </linearGradient>
             </defs>
@@ -114,7 +114,7 @@ export function SalesOverviewChart({
             <Area
               type="monotone"
               dataKey="revenue"
-              stroke="hsl(var(--chart-1))"
+              stroke="hsl(var(--primary))"
               fillOpacity={1}
               fill="url(#fillRevenue)"
             />

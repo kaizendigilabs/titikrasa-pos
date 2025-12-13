@@ -40,11 +40,21 @@ export default async function MenusPage() {
   }
 
   return (
-    <MenusTable
-      initialMenus={bootstrap.initialMenus}
-      initialMeta={bootstrap.initialMeta}
-      categories={bootstrap.categories}
-      canManage={actor.roles.isAdmin || actor.roles.isManager}
-    />
+    <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6 py-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Menus
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Manage your menus.
+        </p>
+      </div>
+      <MenusTable
+        initialMenus={bootstrap.initialMenus}
+        initialMeta={bootstrap.initialMeta}
+        categories={bootstrap.categories}
+        canManage={actor.roles.isAdmin || actor.roles.isManager}
+      />
+    </div>
   );
 }
