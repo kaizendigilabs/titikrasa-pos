@@ -28,6 +28,7 @@ type CartPanelProps = {
   subtotal: number;
   discountAmount: number;
   tax: number;
+  defaultTaxRate: number;
   grandTotal: number;
   onChangeQuantity: (lineId: string, qty: number) => void;
   onRemove: (lineId: string) => void;
@@ -55,6 +56,7 @@ export function CartPanel({
   subtotal,
   discountAmount,
   tax,
+  defaultTaxRate,
   grandTotal,
   onChangeQuantity,
   onRemove,
@@ -379,7 +381,7 @@ export function CartPanel({
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Tax</span>
+              <span>PPN ({Math.round(defaultTaxRate * 100)}%)</span>
               <span>{formatCurrency(tax)}</span>
             </div>
             <Separator className="my-2" />

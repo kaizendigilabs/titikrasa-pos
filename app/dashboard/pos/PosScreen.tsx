@@ -26,7 +26,6 @@ export function PosScreen() {
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
   const [mobileCartOpen, setMobileCartOpen] = React.useState(false);
   
-  // Use hooks to access hydrated data
   const { data: menus = [] } = usePosMenus();
   const { data: resellers = [] } = usePosResellers();
   const { data: settings } = usePosSettings();
@@ -101,6 +100,7 @@ export function PosScreen() {
     subtotal: controller.subtotal,
     discountAmount: controller.discountAmount,
     tax: controller.tax,
+    defaultTaxRate,
     grandTotal: controller.grandTotal,
     onChangeQuantity: (lineId: string, qty: number) => controller.updateCartQuantity(lineId, qty),
     onRemove: controller.removeCartLine,

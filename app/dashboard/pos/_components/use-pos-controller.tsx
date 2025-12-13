@@ -242,10 +242,11 @@ export function usePosController({
     [paymentForm],
   );
 
-  const subtotal = React.useMemo(
-    () => cartState.lines.reduce((sum, line) => sum + line.unitPrice * line.qty, 0),
-    [cartState.lines],
-  );
+  const subtotal = React.useMemo(() => {
+    return cartState.lines.reduce((sum, line) => {
+      return sum + line.unitPrice * line.qty;
+    }, 0);
+  }, [cartState.lines]);
 
   const discountAmount = React.useMemo(() => {
     if (cartState.discount.type === "amount") {

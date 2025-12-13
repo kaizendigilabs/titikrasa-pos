@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { useUpdateSettingsMutation } from "@/features/settings/hooks";
 import type { DiscountSettings, TaxSettings } from "@/features/settings/types";
+import { cn } from "@/lib/utils";
+import { IconLoader2, IconPercentage, IconReceiptTax, IconTag, IconX } from "@tabler/icons-react";
 
 type TaxDiscountFormProps = {
   tax: TaxSettings;
@@ -52,24 +54,27 @@ function parseNumber(value: string, fallback = 0) {
   return Number.isFinite(result) ? result : fallback;
 }
 
-function SettingSection({
+function FormSection({
   title,
-  description,
   children,
+  className,
 }: {
   title: string;
-  description?: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="space-y-4 rounded-2xl border border-border/40 bg-background/70 p-5">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+    <div
+      className={cn(
+        "rounded-2xl border border-border/40 bg-card p-6 shadow-sm transition-all hover:shadow-md hover:shadow-stone-200/50 dark:hover:shadow-none",
+        className,
+      )}
+    >
+      <div className="border-b border-border/40 pb-4 mb-6">
+        <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground/80">
+          <span className="inline-block h-1 w-1 rounded-full bg-primary/40" />
           {title}
-        </p>
-        {description ? (
-          <p className="text-xs text-muted-foreground/80">{description}</p>
-        ) : null}
+        </h3>
       </div>
       {children}
     </div>
@@ -97,7 +102,7 @@ export function TaxDiscountForm({ tax, discount }: TaxDiscountFormProps) {
       };
 
       await mutation.mutateAsync({ tax: taxPayload, discount: discountPayload });
-      toast.success("Pengaturan pajak & diskon tersimpan");
+      toast.success("Pengaturan berhasil disimpan");
     },
   });
 
@@ -115,77 +120,111 @@ export function TaxDiscountForm({ tax, discount }: TaxDiscountFormProps) {
       }}
       className="space-y-6"
     >
-      <SettingSection title="Pajak" description="Tarif PPN default untuk semua transaksi.">
-        <div className="grid gap-4 lg:grid-cols-2">
-          <form.Field name="taxRatePercent">
-            {(field) => (
-              <div className="space-y-2">
-                <Label>Tarif PPN (%)</Label>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  min={0}
-                  max={30}
-                  step="0.1"
-                  placeholder="Contoh: 11"
-                  value={field.state.value}
-                  onChange={(event) =>
-                    field.handleChange(event.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))
-                  }
-                  onBlur={field.handleBlur}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nilai 11 berarti 11% (disimpan sebagai 0.11)
-                </p>
-              </div>
-            )}
-          </form.Field>
+      <FormSection title="Pajak (PPN)">
+        <div className="flex flex-col gap-6">
+           <div className="flex flex-col-reverse gap-6 md:flex-row md:items-start">
+            <div className="flex-1 space-y-4">
+              <form.Field name="taxRatePercent">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-muted-foreground uppercase">Rate (%)</Label>
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        className="h-11 pl-10 border-border/60 bg-muted/20 font-medium transition-colors hover:border-primary/30 focus:border-primary/50 focus:bg-background"
+                        placeholder="0"
+                        value={field.state.value}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))
+                        }
+                        onBlur={field.handleBlur}
+                      />
+                       <IconReceiptTax className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                       Masukkan angka saja (contoh: 11 untuk 11%)
+                    </p>
+                  </div>
+                )}
+              </form.Field>
 
-          <form.Field name="autoApplyTax">
-            {(field) => (
-              <div className="flex items-center justify-between gap-6 rounded-2xl border border-white/5 bg-foreground/5 px-4 py-4">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Terapkan otomatis</p>
-                  <p className="text-xs text-muted-foreground">
-                    PPN langsung masuk ke transaksi baru
+              <form.Field name="autoApplyTax">
+                {(field) => (
+                  <div className="flex items-center justify-between rounded-xl border border-border/40 bg-muted/10 p-4 transition-colors hover:bg-muted/20">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-medium">Otomatis Terapkan</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Tambahkan pajak ke setiap order baru.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={field.state.value}
+                      onCheckedChange={(checked) => field.handleChange(checked)}
+                    />
+                  </div>
+                )}
+              </form.Field>
+            </div>
+
+            {/* Status Card */}
+            <div className="shrink-0 md:w-64">
+               <div className="h-full rounded-xl bg-orange-50/50 p-4 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30">
+                  <p className="text-xs font-medium uppercase tracking-wider text-orange-600/80 dark:text-orange-400">
+                    Status Pajak
                   </p>
-                </div>
-                <Switch
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => field.handleChange(checked)}
-                />
-              </div>
-            )}
-          </form.Field>
+                  <div className="mt-2 flex items-baseline gap-1">
+                     <span className="text-3xl font-bold text-foreground">
+                       {parseNumber(formValues.taxRatePercent).toFixed(1)}
+                     </span>
+                     <span className="text-sm font-medium text-muted-foreground">%</span>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className={cn(
+                      "flex h-2 w-2 rounded-full",
+                      formValues.autoApplyTax ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-muted-foreground/30"
+                    )} />
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {formValues.autoApplyTax ? "Terpasang Otomatis" : "Manual"}
+                    </span>
+                  </div>
+               </div>
+            </div>
+           </div>
         </div>
-        <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-xs font-medium text-emerald-900 dark:text-emerald-200">
-          Tarif aktif:{" "}
-          <span className="font-semibold">
-            {parseNumber(formValues.taxRatePercent).toFixed(2)}%
-          </span>{" "}
-          {formValues.autoApplyTax ? "(otomatis)" : "(manual)"}
-        </div>
-      </SettingSection>
+      </FormSection>
 
-      <SettingSection title="Diskon Transaksi" description="Diskon default untuk POS & reseller.">
-        <div className="grid gap-4 lg:grid-cols-2">
+      <FormSection title="Diskon Transaksi">
+        <div className="grid gap-6 md:grid-cols-[1fr,1.5fr]">
           <form.Field name="discountMode">
             {(field) => (
               <div className="space-y-2">
-                <Label>Jenis Diskon</Label>
+                <Label className="text-xs font-medium text-muted-foreground uppercase">Tipe Diskon</Label>
                 <Select
                   value={field.state.value}
                   onValueChange={(value) =>
                     field.handleChange(value as DiscountSettings["mode"])
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih jenis diskon" />
+                  <SelectTrigger className="h-11 border-border/60 bg-muted/20 hover:border-primary/30">
+                    <SelectValue placeholder="Pilih tipe" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Tidak ada</SelectItem>
-                    <SelectItem value="percentage">Persentase</SelectItem>
-                    <SelectItem value="nominal">Nominal (Rp)</SelectItem>
+                    <SelectItem value="none">
+                       <span className="flex items-center gap-2">
+                         <IconX className="h-4 w-4 opacity-50"/> Tidak Aktif
+                       </span>
+                    </SelectItem>
+                    <SelectItem value="percentage">
+                        <span className="flex items-center gap-2">
+                         <IconPercentage className="h-4 w-4 opacity-50"/> Persentase (%)
+                       </span>
+                    </SelectItem>
+                    <SelectItem value="nominal">
+                        <span className="flex items-center gap-2">
+                         <span className="text-xs font-bold opacity-70">Rp</span> Nominal
+                       </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -195,57 +234,62 @@ export function TaxDiscountForm({ tax, discount }: TaxDiscountFormProps) {
           <form.Field name="discountValue">
             {(field) => (
               <div className="space-y-2">
-                <Label>
-                  Nilai Diskon{" "}
-                  {formValues.discountMode === "percentage" ? "(%)" : "(Rp)"}
+                <Label className="text-xs font-medium text-muted-foreground uppercase">
+                   Besaran Diskon {formValues.discountMode === "percentage" ? "(%)" : "(Rp)"}
                 </Label>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.1"
-                  placeholder={
-                    formValues.discountMode === "percentage"
-                      ? "Contoh: 5"
-                      : "Contoh: 5000"
-                  }
-                  value={field.state.value}
-                  onChange={(event) =>
-                    field.handleChange(event.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))
-                  }
-                  onBlur={field.handleBlur}
-                  disabled={formValues.discountMode === "none"}
-                />
-                <p className="text-xs text-muted-foreground">
+                <div className="relative">
+                  <Input
+                    className="h-11 pl-10 border-border/60 bg-muted/20 font-medium hover:border-primary/30 focus:border-primary/50"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={field.state.value}
+                    onChange={(event) =>
+                      field.handleChange(event.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))
+                    }
+                    onBlur={field.handleBlur}
+                    disabled={formValues.discountMode === "none"}
+                  />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      {formValues.discountMode === "nominal" ? (
+                         <span className="text-xs font-bold">Rp</span>
+                      ) : (
+                         <IconTag className="h-5 w-5" />
+                      )}
+                  </div>
+                </div>
+                 <p className="text-[10px] text-muted-foreground">
                   {formValues.discountMode === "percentage"
-                    ? "Nilai 5 berarti diskon 5%."
-                    : "Masukkan dalam Rupiah, contoh 5000."}
+                    ? "Contoh: 10 untuk diskon 10%"
+                    : "Contoh: 5000 untuk diskon Rp 5.000"}
                 </p>
               </div>
             )}
           </form.Field>
         </div>
-        <div className="rounded-2xl border border-border/30 bg-foreground/5 px-4 py-3 text-xs text-muted-foreground">
-          Diskon aktif:{" "}
-          {formValues.discountMode === "none"
-            ? "tidak diterapkan otomatis."
-            : formValues.discountMode === "percentage"
-              ? `${parseNumber(formValues.discountValue).toFixed(2)}%`
-              : `Rp ${Intl.NumberFormat("id-ID").format(
-                  Math.round(parseNumber(formValues.discountValue)),
-                )}`}
-        </div>
-      </SettingSection>
+      </FormSection>
 
-      <Button
-        type="submit"
-        className="w-full rounded-2xl bg-primary px-6 py-3 text-base font-semibold tracking-wide sm:w-auto"
-        disabled={
-          mutation.isPending || form.state.isSubmitting || !form.state.isDirty
-        }
-      >
-        {mutation.isPending || form.state.isSubmitting ? "Menyimpan..." : "Simpan"}
-      </Button>
+      <div className="flex justify-end pt-2">
+        <Button
+          type="submit"
+          size="lg"
+           className="min-w-[120px] rounded-xl font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30"
+          disabled={
+            mutation.isPending || form.state.isSubmitting || !form.state.isDirty
+          }
+        >
+          {mutation.isPending || form.state.isSubmitting ? (
+             <>
+               <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+               Menyimpan...
+             </>
+          ) : (
+            "Simpan Perubahan"
+          )}
+        </Button>
+      </div>
     </form>
   );
 }
+
+

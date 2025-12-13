@@ -30,6 +30,8 @@ export function useUpdateSettingsMutation() {
     mutationFn: (input: SettingsUpdateInput) => updateSettings(input),
     onSuccess: (data) => {
       queryClient.setQueryData(settingsQueryKey, data);
+      // Invalidate POS settings cache so tax changes appear immediately
+      queryClient.invalidateQueries({ queryKey: ['pos-settings'] });
     },
   });
 }
