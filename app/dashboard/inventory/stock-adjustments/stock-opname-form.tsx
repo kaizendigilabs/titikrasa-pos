@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StockOpnameToolbar } from "./_components/toolbar";
+import { Button } from "@/components/ui/button";
 import { StockOpnameTable } from "./_components/table";
 import { StockOpnameSummary } from "./_components/summary";
+import { StockOpnameDialog } from "./_components/stock-opname-dialog";
 import {
   useStockOpnameController,
   type StockOpnameIngredientRow,
@@ -19,29 +19,41 @@ export function StockOpnameForm({ ingredients, canApprove }: StockOpnameFormProp
 
   if (ingredients.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-medium">Stock Opname</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            No active ingredients found. Add ingredients before performing stock opname.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border border-border p-8 text-center">
+        <p className="text-muted-foreground">
+          No active ingredients found. Add ingredients before performing stock opname.
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base font-medium">Physical Count</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        <StockOpnameToolbar controller={controller} />
+    <div className="flex flex-col gap-6">
+      {/* 1. Statistics at the top */}
+      <StockOpnameSummary controller={controller} />
+
+      {/* 2. Table */}
+      <div className="rounded-md border bg-card">
         <StockOpnameTable controller={controller} />
-        <StockOpnameSummary controller={controller} />
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* 3. Actions (Reset & Process) */}
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          variant="secondary"
+          onClick={controller.resetCounts}
+          disabled={controller.isSubmitting || controller.outstandingCount === 0}
+        >
+          Undo
+        </Button>
+        <StockOpnameDialog controller={controller} />
+      </div>
+
+      {controller.statusMessage && (
+        <p className="text-right text-sm text-emerald-600">
+          {controller.statusMessage}
+        </p>
+      )}
+    </div>
   );
 }

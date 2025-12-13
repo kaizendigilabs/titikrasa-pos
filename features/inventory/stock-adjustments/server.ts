@@ -144,64 +144,28 @@ export async function createStockAdjustment(
     });
   }
 
-  const shouldApprove = Boolean(body.commit) && (actor.roles.isAdmin || actor.roles.isManager);
-  let currentRow = inserted;
+  // Always approve immediately - no draft mode
+  try {
+    const { data: approvedRow, error: approveError } = await supabase
+      .from("stock_adjustments")
+      .update({ status: "approved", approved_by: actor.user.id })
+      .eq("id", inserted.id)
+      .select("*")
+      .single();
 
-  if (shouldApprove) {
-    const previousStocks: Array<{ id: string; stock: number }> = [];
-
-    try {
-      for (const item of items) {
-        const previous = ingredientMap.get(item.ingredientId)?.current_stock ?? 0;
-        previousStocks.push({ id: item.ingredientId, stock: previous });
-
-        if (previous === item.countedQty) {
-          continue;
-        }
-
-        const { error: updateError } = await supabase
-          .from("store_ingredients")
-          .update({ current_stock: item.countedQty })
-          .eq("id", item.ingredientId);
-
-        if (updateError) {
-          throw appError(ERR.SERVER_ERROR, {
-            message: "Failed to update ingredient stock",
-            details: { hint: updateError.message, ingredientId: item.ingredientId },
-          });
-        }
-      }
-
-      const { data: approvedRow, error: approveError } = await supabase
-        .from("stock_adjustments")
-        .update({ status: "approved", approved_by: actor.user.id })
-        .eq("id", inserted.id)
-        .select("*")
-        .single();
-
-      if (approveError || !approvedRow) {
-        throw appError(ERR.SERVER_ERROR, {
-          message: "Failed to approve stock adjustment",
-          details: { hint: approveError?.message },
-        });
-      }
-
-      currentRow = approvedRow;
-    } catch (error) {
-      for (const entry of previousStocks.reverse()) {
-        await supabase
-          .from("store_ingredients")
-          .update({ current_stock: entry.stock })
-          .eq("id", entry.id);
-      }
-
-      await supabase.from("stock_adjustments").delete().eq("id", inserted.id);
-
-      throw error;
+    if (approveError || !approvedRow) {
+      throw appError(ERR.SERVER_ERROR, {
+        message: "Failed to approve stock adjustment",
+        details: { hint: approveError?.message },
+      });
     }
-  }
 
-  return mapStockAdjustment(currentRow);
+    return mapStockAdjustment(approvedRow);
+  } catch (error) {
+    // If approval fails, delete the adjustment to clean up
+    await supabase.from("stock_adjustments").delete().eq("id", inserted.id);
+    throw error;
+  }
 }
 
 export async function approveStockAdjustment(
@@ -258,37 +222,7 @@ export async function approveStockAdjustment(
     ingredientMap.set(row.id, row);
   }
 
-  const previousStocks: Array<{ id: string; stock: number }> = [];
-
   try {
-    for (const item of items) {
-      const ingredient = ingredientMap.get(item.ingredientId);
-      if (!ingredient) {
-        throw appError(ERR.BAD_REQUEST, {
-          message: "Ingredient not found for adjustment",
-          details: { ingredientId: item.ingredientId },
-        });
-      }
-
-      previousStocks.push({ id: ingredient.id, stock: ingredient.current_stock ?? 0 });
-
-      if ((ingredient.current_stock ?? 0) === item.countedQty) {
-        continue;
-      }
-
-      const { error: updateError } = await supabase
-        .from("store_ingredients")
-        .update({ current_stock: item.countedQty })
-        .eq("id", ingredient.id);
-
-      if (updateError) {
-        throw appError(ERR.SERVER_ERROR, {
-          message: "Failed to update ingredient stock",
-          details: { hint: updateError.message, ingredientId: ingredient.id },
-        });
-      }
-    }
-
     const { data: approvedRow, error: approveError } = await supabase
       .from("stock_adjustments")
       .update({ status: "approved", approved_by: actor.user.id })
@@ -305,13 +239,6 @@ export async function approveStockAdjustment(
 
     return mapStockAdjustment(approvedRow);
   } catch (error) {
-    for (const entry of previousStocks.reverse()) {
-      await supabase
-        .from("store_ingredients")
-        .update({ current_stock: entry.stock })
-        .eq("id", entry.id);
-    }
-
     throw error;
   }
 }

@@ -114,7 +114,7 @@ export function createStoreIngredientColumns({
       ),
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground">
-          {formatCurrency(row.original.avgCost)}
+          {formatCurrency(row.original.avgCost / 100)}
         </span>
       ),
     },

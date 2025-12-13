@@ -60,7 +60,7 @@ export function useCreateStockAdjustmentMutation() {
       }
     },
     onSettled: () => {
-       // No invalidation needed
+       queryClient.invalidateQueries({ queryKey: [STORE_INGREDIENTS_QUERY_KEY] });
     },
   });
 }

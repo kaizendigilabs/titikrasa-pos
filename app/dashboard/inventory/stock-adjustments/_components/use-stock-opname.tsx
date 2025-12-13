@@ -69,21 +69,15 @@ export type UseStockOpnameControllerResult = {
   statusMessage: string | null;
   resetCounts: () => void;
   submit: () => Promise<void>;
-  commitMode: "draft" | "commit";
-  setCommitMode: (mode: "draft" | "commit") => void;
-  canCommit: boolean;
 };
 
 export function useStockOpnameController({
   ingredients,
-  canApprove,
 }: UseStockOpnameControllerArgs): UseStockOpnameControllerResult {
   const mutation = useCreateStockAdjustmentMutation();
   const [error, setError] = React.useState<string | null>(null);
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
-  const [commitMode, setCommitModeState] = React.useState<"draft" | "commit">(
-    canApprove ? "commit" : "draft",
-  );
+
 
   const buildDefaults = React.useCallback((): StockOpnameFormValues => {
     return {
@@ -160,9 +154,7 @@ export function useStockOpnameController({
       try {
         const payload = buildPayload(commit);
         await mutation.mutateAsync(payload);
-        const message = commit
-          ? "Stock synced successfully"
-          : "Draft saved—awaiting approval";
+        const message = "Stock synced successfully";
         toast.success(message);
         setStatusMessage(message);
         form.setFieldValue("notes", "");
@@ -202,16 +194,6 @@ export function useStockOpnameController({
     error,
     statusMessage,
     resetCounts,
-    submit: () => submit(commitMode === "commit"),
-    commitMode,
-    setCommitMode: (mode) => {
-      if (mode === "commit" && !canApprove) {
-        setCommitModeState("draft");
-        return;
-      }
-      setCommitModeState(mode);
-      setStatusMessage(null);
-    },
-    canCommit: canApprove,
+    submit: () => submit(true), // Always attempt commit
   };
 }
